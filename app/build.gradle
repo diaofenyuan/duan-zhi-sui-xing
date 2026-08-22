@@ -1,0 +1,32 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.example.localai'
+    compileSdk Integer.parseInt(libs.versions.compileSdk.get())
+    buildToolsVersion libs.versions.buildTools.get()
+    ndkVersion libs.versions.ndk.get()
+
+    defaultConfig {
+        applicationId "com.example.localai"
+        minSdk Integer.parseInt(libs.versions.minSdk.get())
+        targetSdk Integer.parseInt(libs.versions.targetSdk.get())
+        versionCode 1
+        versionName "0.1.0"
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.valueOf("VERSION_" + libs.versions.javaVersion.get())
+        targetCompatibility JavaVersion.valueOf("VERSION_" + libs.versions.javaVersion.get())
+    }
+}
