@@ -1,0 +1,88 @@
+# =============================================================================
+# 设备矩阵与三档分档标准（S004，2026-08-23）
+#
+# 状态说明（重要）：
+#   本项目当前无真实 Android 测试设备。以下所有条目均为基于公开规格的
+#   参考档位定义，verification 字段统一为 REFERENCE_UNVERIFIED。
+#   真机到位后：按 docs/device-baseline.md 的回填流程逐台登记为
+#   MEASURED 条目并保留参考条目作对照；本文件只增不删。
+#
+# 用途：
+#   1. 兼容性硬约束输入（S025 CompatibilityEngine 的过滤条件来源）；
+#   2. Benchmark 分档对照（S010/S038 按档位归组）；
+#   3. 内存预算分档假设的初始值（S024，实测后覆盖）。
+# =============================================================================
+
+schema_version: 1
+updated: '2026-08-23'
+tier_standard_verified: false
+
+# ---------------------------------------------------------------------------
+# 分档硬约束：运行时自动打分（S023 画像 -> S024 预算 -> S025 规则引擎）的
+# 硬过滤阈值。任何真机/用户设备先按此过滤，再进入软评分。
+# ---------------------------------------------------------------------------
+hard_constraints:
+  min_android_api: 26          # 等于 app minSdk
+  required_abis: [arm64-v8a]   # x86_64 仅模拟器专项测试，不进入分档
+  min_storage_free_gb: 20      # 需容纳 .part + 最终文件 + 旧版本（见方案 6.4）
+  min_ram_gb: 6                # 低于此值直接 UNSUPPORTED（待实测校准）
+  page_sizes_supported: [4096] # 16KB(16384) 页设备列入 special 档单独验证
+
+tiers:
+  - tier_id: flagship
+    tier_name: 旗舰
+    verification: REFERENCE_UNVERIFIED
+    reference_soc:
+      - Qualcomm Snapdragon 8 Gen 2
+      - Qualcomm Snapdragon 8 Gen 3
+      - MediaTek Dimensity 9300
+    ram_gb: 12
+    android_version_min: '14'
+    android_api_min: 34
+    abi: arm64-v8a
+    page_size_bytes: 4096
+    storage_free_gb_min: 60
+    model_policy: 1.5B/3B，CPU 与后续 GPU 后端对比；测长上下文与持续温控
+    notes: 参考技术参考正文 11.1 节；具体机型待真机到位后回填 brand/model
+
+  - tier_id: midrange
+    tier_name: 中端
+    verification: REFERENCE_UNVERIFIED
+    reference_soc:
+      - Qualcomm Snapdragon 7+ Gen 2
+      - MediaTek Dimensity 8200
+    ram_gb: 8
+    android_version_min: '13'
+    android_api_min: 33
+    abi: arm64-v8a
+    page_size_bytes: 4096
+    storage_free_gb_min: 30
+    model_policy: 1.5B，自动上下文；测内存余量、后台恢复、UI 掉帧、模型切换
+    notes: 同上
+
+  - tier_id: entry
+    tier_name: 入门
+    verification: REFERENCE_UNVERIFIED
+    reference_soc:
+      - Qualcomm Snapdragon 695
+      - MediaTek Dimensity 700
+    ram_gb: 6
+    android_version_min: '12'
+    android_api_min: 32
+    abi: arm64-v8a
+    page_size_bytes: 4096
+    storage_free_gb_min: 20
+    model_policy: 1.3B-1.5B，CPU 优先；测低内存、低电量、长对话、熔断重启
+    notes: 同上
+
+# 特殊档：非 arm64 / 低 API / 16KB 页大小设备。不参与三档基线，
+# 仅做安装、Native 加载与提示文案验证（方案 11.1“特殊”行）。
+special_tier:
+  verification: REFERENCE_UNVERIFIED
+  covers:
+    - abi_not_arm64
+    - api_below_26
+    - page_size_16kb
+  policy: 按硬约束禁用加载或单独适配；验证提示文案可解释性
+
+measured_devices: []           # 真机实测条目追加于此，格式见 docs/device-baseline.md

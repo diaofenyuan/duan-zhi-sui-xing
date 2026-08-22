@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-- 当前步骤：`S004`
+- 当前步骤：`S005`
 - 当前状态：`NOT_STARTED`
 - 最近完成：`S003`
-- 最近阻塞：无
-- 下一可执行步骤：`S004`
+- 最近阻塞：`S004`（真机实测部分；分档标准已交付）
+- 下一可执行步骤：`S005`（用户已授权无真机推进 S005-S006）
 
 ## 记录规则
 
@@ -223,4 +223,33 @@
   - Room 刻意停留在 2.8.4：Room 3.x 仅支持 Kotlin/KSP，与本 Java 工程不匹配，已在政策文档写明禁止引入。
   - llama.cpp/ggml 具体版本号留待 S005 固定后回填 `docs/native-baseline.md` 并同步本清单。
 - 下一步依赖：`S004` 可以开始；本轮没有执行 S004。
+
+### 2026-08-23 07:44 | S004 | IN_PROGRESS
+
+- 目标：建立三档设备分档基线。**范围变更（用户本轮明确授权）**：项目当前无任何真实 Android 设备，原步骤卡“登记三台真实设备”无法满足；经用户选择，本步改造为——①用公开规格定义旗舰/中端/入门三档分档标准与硬约束（全部标注 `REFERENCE_UNVERIFIED`）；②写明真机数据回填流程；③真机实测部分记 `BLOCKED` 等待设备。不运行推理 Benchmark，不做运行时打分实现（那是 S023-S025 的任务）。
+- 依赖：`S002` 已 DONE。
+- 计划修改：
+  - `qa/device-matrix/devices.yaml`: 新建。三档分档标准 + 每档参考机型规格 + 兼容性硬约束（minApi/ABI/存储），`verification: REFERENCE_UNVERIFIED`。
+  - `docs/device-baseline.md`: 新建。字段字典、采集方式（adb/getprop 命令清单）、与 S023-S025 自动画像/预算/规则引擎的衔接说明、回填流程、风险声明。
+- 计划验证：
+  - `python -c "import yaml; yaml.safe_load(open('qa/device-matrix/devices.yaml', encoding='utf-8'))"`：YAML 可解析。
+  - 结构检查：3 个 tier、每档必填字段完整、无序列号等个人信息。
+- 风险预告：无真机期间，所有性能相关阈值均为未校准假设；S007 起必须至少 1 台 arm64-v8a 真机才能继续。
+
+### 2026-08-23 07:52 | S004 | BLOCKED
+
+- 目标：建立三档设备分档基线（改造版：标准表 + 回填流程；真机实测挂起）。
+- 依赖：`S002` 已 DONE。
+- 实际修改：
+  - `qa/device-matrix/devices.yaml`: 新建。`hard_constraints` 五项硬约束（minApi 26 / arm64-v8a / 存储≥20GB / RAM≥6GB / 页大小 4KB，16KB 设备列 special）；三档 tier（flagship/midrange/entry）含 SoC 参考、RAM、API 下限、ABI、页大小、存储下限与模型策略，全部 `verification: REFERENCE_UNVERIFIED`；`measured_devices` 空列表待回填。
+  - `docs/device-baseline.md`: 新建。范围变更声明、三档标准表、字段字典 + adb 无 root 采集命令、与 S023-S025 运行时自动打分链路的衔接说明、五步回填流程、解除条件。
+- 验证：
+  - 命令：`python` + PyYAML 解析与结构断言脚本
+  - 结果：`PASS`；YAML parse OK；tiers=[flagship, midrange, entry]；ram_gb={12, 8, 6}；api_min={34, 33, 32}；全部 REFERENCE_UNVERIFIED；无 serialno/imei 等个人标识。
+- 阻塞原因：项目当前没有任何真实 Android 设备，原步骤卡“至少三台真实设备”无法满足。
+- 已尝试命令：`adb devices -l`（本机 SDK platform-tools，无设备连接）。
+- 需要的外部输入：真机硬件——至少 1 台 arm64-v8a 真机可开始后续推理验证；三档齐备才能完整通过 G0 门禁设备项。
+- 解除条件：按 `docs/device-baseline.md` 第 3/5 节采集并回填 `measured_devices` 后补全验收。
+- 范围变更备注：用户于本轮明确授权“无真机时改造 S004 并先推进 S005-S006”；S005/S006 不依赖 S004（其依赖为 S002/S003 与 S005），G0 设备项以 BLOCKED 挂起方式处理，风险已写入 device-baseline.md 第 1 节。
+- 下一步依赖：`S005` 可以开始（依赖 S002、S003 均 DONE，且用户已授权）；本轮没有执行 S005。
 
