@@ -1,0 +1,40 @@
+local-ai
+Copyright 2026 the local-ai project authors
+
+This product includes software developed by third parties:
+
+===========================================================================
+llama.cpp
+Copyright (c) 2023-2024 Georgi Gerganov and contributors
+Licensed under the MIT License.
+https://github.com/ggml-org/llama.cpp
+Vendored as source under app/src/main/cpp/engine_llama/ from a fixed
+commit recorded in docs/native-baseline.md (locked at step S005).
+
+ggml
+Copyright (c) 2016-2024 Georgi Gerganov and ggml contributors
+Licensed under the MIT License.
+https://github.com/ggml-org/ggml
+Distributed together with llama.cpp.
+
+AndroidX / Jetpack libraries (Room, WorkManager, AppCompat, Core,
+RecyclerView, Lifecycle)
+Copyright The Android Open Source Project
+Licensed under the Apache License, Version 2.0.
+https://android.googlesource.com/platform/frameworks/support
+
+OkHttp
+Copyright (C) 2024 Square, Inc.
+Licensed under the Apache License, Version 2.0.
+https://github.com/square/okhttp
+
+JUnit
+Copyright (c) 2007-2015 JUnit team
+Licensed under the Eclipse Public License 1.0 (test scope only,
+not distributed with the application APK).
+https://github.com/junit-team/junit4
+
+Full version and source listing: docs/license-policy.md
+Model weights, tokenizers and chat templates are licensed separately and
+are NOT covered by this NOTICE; see the per-model manifest shown on each
+model detail page.

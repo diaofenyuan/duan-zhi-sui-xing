@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-- 当前步骤：`S003`
+- 当前步骤：`S004`
 - 当前状态：`NOT_STARTED`
-- 最近完成：`S002`
+- 最近完成：`S003`
 - 最近阻塞：无
-- 下一可执行步骤：`S003`
+- 下一可执行步骤：`S004`
 
 ## 记录规则
 
@@ -191,4 +191,36 @@
   - 本网络对 services.gradle.org 直连不稳定（wrapper 默认 10s 超时即失败）；后续若 CI 或他人机器拉取 `-all` 发行版慢，可考虑镜像或调大 `networkTimeout`，属基础设施事项，不阻塞当前步骤。
   - AGP 构建期提示“Deprecated Gradle features … incompatible with Gradle 9.0”，为常规前瞻性警告，不影响 8.x 构建。
 - 下一步依赖：`S003` 可以开始；本轮没有执行 S003。
+
+### 2026-08-23 07:21 | S003 | IN_PROGRESS
+
+- 目标：记录 llama.cpp、ggml、AndroidX、OkHttp、Room、WorkManager 等代码依赖的许可证和版本来源，完成代码依赖清单；不审查模型权重许可证。
+- 依赖：`S002` 已 DONE。
+- 计划修改：
+  - `gradle/libs.versions.toml`: 在 `[libraries]` 登记后续步骤将采用的三方库坐标与版本（仅登记，不在 app/build.gradle 引入依赖），并补充 `[versions]` 条目。
+  - `docs/license-policy.md`: 新建许可证政策文档：每个直接依赖的名称、版本、SPDX 许可证、来源 URL、引入步骤与审查范围边界（不含模型权重）。
+  - `NOTICE`: 新建第三方声明文件，汇总随分发组件的版权与许可归属。
+- 版本核实方式（2026-08-23）：Google Maven maven-metadata.xml 直查（androidx.core 1.19.0 / appcompat 1.8.0 / recyclerview 1.4.0 / lifecycle-runtime 2.11.0 / room 2.8.4 / work-runtime 2.11.2）；Maven Central 检索（okhttp 5.5.0）；llama.cpp/ggml 的具体 commit 由 S005 锁定，本步只登记仓库与 MIT 许可证。
+- 计划验证：
+  - `.\gradlew.bat :app:dependencies --offline`: 构建成功，确认当前 app 无直接依赖（清单为“已登记待采用”状态）。
+  - 清单覆盖检查：核对 `app/build.gradle` 当前实际直接依赖集合为空集，登记清单与之无冲突。
+
+### 2026-08-23 07:35 | S003 | DONE
+
+- 目标：记录 llama.cpp、ggml、AndroidX、OkHttp、Room、WorkManager 等代码依赖的许可证和版本来源，完成代码依赖清单；不审查模型权重许可证。
+- 依赖：`S002` 已 DONE。
+- 实际修改：
+  - `gradle/libs.versions.toml`: `[versions]` 新增 androidxCore=1.19.0、androidxAppcompat=1.8.0、androidxRecyclerview=1.4.0、androidxLifecycle=2.11.0、androidxRoom=2.8.4、androidxWork=2.11.2、okhttp=5.5.0、junit=4.13.2；`[libraries]` 登记 9 个库别名（core/appcompat/recyclerview/lifecycle-runtime/room-runtime/room-compiler/work-runtime/okhttp/junit），仅登记未在 app/build.gradle 引用。
+  - `docs/license-policy.md`: 新建。含政策规则 5 条（登记制、闭源许可证兼容红线、发布前核对命令）、SPDX 兼容速查表、四组直接依赖清单（Native 引擎 llama.cpp/ggml MIT 待 S005 锁 commit；AndroidX 七项 Apache-2.0；OkHttp Apache-2.0；JUnit EPL-1.0 仅测试域）、构建工具链说明、当前状态核对节。
+  - `NOTICE`: 新建。汇总 llama.cpp/ggml/AndroidX/OkHttp/JUnit 的版权、许可证与来源 URL，并声明模型权重许可证不在本文件覆盖范围。
+- 验证：
+  - 命令：`.\gradlew.bat :app:dependencies --offline --console=plain`
+  - 结果：`PASS`；BUILD SUCCESSFUL in 2s。implementation/debugCompileClasspath 等用户配置全部为 `No dependencies`，证实 app 当前实际直接依赖为空集；版本目录 TOML 解析无误。输出中 FAILED 仅为 AGP 内部 `_internal-unified-test-platform-*` 配置在离线模式下的未解析条目，与应用依赖无关。
+  - 命令：清单覆盖检查
+  - 结果：`PASS`；`git status --short` 显示本轮改动仅 `gradle/libs.versions.toml`、`NOTICE`、`docs/license-policy.md` 加日志文件本身，均在步骤卡允许列表内。
+- 风险/阻塞：
+  - okhttp 取 Maven Central 最新稳定 5.5.0（2026-08-17 发布），5.x 为 Kotlin Multiplatform 发布物，AGP 会经 Gradle Module Metadata 自动选择 android 变体；S015 实际引入时需以 Range/ETag 行为实测复核。
+  - Room 刻意停留在 2.8.4：Room 3.x 仅支持 Kotlin/KSP，与本 Java 工程不匹配，已在政策文档写明禁止引入。
+  - llama.cpp/ggml 具体版本号留待 S005 固定后回填 `docs/native-baseline.md` 并同步本清单。
+- 下一步依赖：`S004` 可以开始；本轮没有执行 S004。
 

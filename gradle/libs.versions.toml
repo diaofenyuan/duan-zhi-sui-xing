@@ -1,4 +1,6 @@
-# 工具链版本目录（S002 固定）。第三方代码依赖在 S003 登记。
+# 工具链版本目录（S002 固定）；第三方代码依赖坐标与版本由 S003 登记。
+# 登记不等于采用：库只有在对应步骤把依赖写入 app/build.gradle 后才算引入，
+# 引入时若需变更版本，必须同步更新 docs/license-policy.md 与 NOTICE。
 [versions]
 agp = "8.13.2"
 compileSdk = "36"
@@ -9,7 +11,26 @@ javaVersion = "17"
 ndk = "28.2.13676358"
 cmake = "3.22.1"
 
+# 代码依赖版本（S003 登记，2026-08-23 核实）
+androidxCore = "1.19.0"
+androidxAppcompat = "1.8.0"
+androidxRecyclerview = "1.4.0"
+androidxLifecycle = "2.11.0"
+androidxRoom = "2.8.4"
+androidxWork = "2.11.2"
+okhttp = "5.5.0"
+junit = "4.13.2"
+
 [libraries]
+androidx-core = { group = "androidx.core", name = "core", version.ref = "androidxCore" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidxAppcompat" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "androidxRecyclerview" }
+androidx-lifecycle-runtime = { group = "androidx.lifecycle", name = "lifecycle-runtime", version.ref = "androidxLifecycle" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidxRoom" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidxRoom" }
+androidx-work-runtime = { group = "androidx.work", name = "work-runtime", version.ref = "androidxWork" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
