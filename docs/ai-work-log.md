@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-- 当前步骤：`S005`
+- 当前步骤：`S006`
 - 当前状态：`NOT_STARTED`
-- 最近完成：`S003`
+- 最近完成：`S005`
 - 最近阻塞：`S004`（真机实测部分；分档标准已交付）
-- 下一可执行步骤：`S005`（用户已授权无真机推进 S005-S006）
+- 下一可执行步骤：`S006`
 
 ## 记录规则
 
@@ -252,4 +252,38 @@
 - 解除条件：按 `docs/device-baseline.md` 第 3/5 节采集并回填 `measured_devices` 后补全验收。
 - 范围变更备注：用户于本轮明确授权“无真机时改造 S004 并先推进 S005-S006”；S005/S006 不依赖 S004（其依赖为 S002/S003 与 S005），G0 设备项以 BLOCKED 挂起方式处理，风险已写入 device-baseline.md 第 1 节。
 - 下一步依赖：`S005` 可以开始（依赖 S002、S003 均 DONE，且用户已授权）；本轮没有执行 S005。
+
+### 2026-08-23 07:56 | S005 | IN_PROGRESS
+
+- 目标：锁定 llama.cpp 提交并导入 Native 构建，完成 `arm64-v8a` CPU/NEON 编译，生成 `.so`；不接 Java UI。
+- 依赖：`S002`、`S003` 已 DONE。
+- 版本锁定决策（2026-08-23 经 GitHub API 核实）：采用 llama.cpp **v0.2.0**——官方 2026-08-21 起启用的语义化稳定版 tag，发布说明明确“vX.Y.Z 为 stable，推荐下游分发锁定；b[NUM] 为 nightly”。tag v0.2.0（annotated，sha 8a35040e）指向 commit `bb4caa7540188872173c44d161602d9271386413`。
+- 计划修改：
+  - `app/src/main/cpp/engine_llama/`: 导入 v0.2.0 完整源码树（codeload tarball 解包去根目录），不改动其内部文件、不打 patch（本项目 patch 列表为空）。
+  - `app/src/main/cpp/CMakeLists.txt`: 新建。CPU-only 配置 add_subdirectory(engine_llama)：BUILD_SHARED_LIBS=ON、GGML_OPENMP=OFF（bionic 无 OpenMP）、GGML_NATIVE=OFF（交叉编译禁 -march=native）、LLAMA_BUILD_EXAMPLES/TESTS/TOOLS=OFF、LLAMA_CURL=OFF、GGML_BACKEND_DL=OFF。
+  - `docs/native-baseline.md`: 新建。记录 tag、commit、下载 URL、CMake 参数、构建输出与 `.so` 产物 SHA-256。
+- 计划外文件（必要基础设施，验证命令所需，参照 S002 先例记录偏差）：`app/build.gradle` 追加 `externalNativeBuild { cmake { path ... } }` 接线，否则 `:app:externalNativeBuildDebug` 无法运行。
+- 计划验证：
+  - `.\gradlew.bat :app:externalNativeBuildDebug`: BUILD SUCCESSFUL 且产出 arm64-v8a 的 `libllama.so` 及 ggml 系列共享库。
+  - 对全部 `.so` 计算 SHA-256 记入 native-baseline.md。
+- 风险预告：GitHub 直连在本机网络可能超时（S002 有 services.gradle.org 超时先例）；若 codeload 失败将尝试 git clone，再失败记 BLOCKED。
+
+### 2026-08-23 07:56 | S005 | DONE
+
+- 目标：锁定 llama.cpp 提交并导入 Native 构建，完成 `arm64-v8a` CPU/NEON 编译；不接 Java UI。
+- 依赖：`S002`、`S003` 已 DONE。
+- 实际修改：
+  - `app/src/main/cpp/engine_llama/`: 导入 llama.cpp v0.2.0（commit `bb4caa7540188872173c44d161602d9271386413`）完整源码树，零修改、零 patch；tarball SHA-256 `72E6C3E7...C947958` 全值见 native-baseline.md。
+  - `app/src/main/cpp/CMakeLists.txt`: 新建构建入口，CPU-only 开关组（BUILD_SHARED_LIBS=ON、GGML_OPENMP/NATIVE/BACKEND_DL=OFF、LLAMA_BUILD_*全关、UI/OpenSSL 关闭），add_subdirectory(engine_llama)。
+  - `app/build.gradle`: 追加 externalNativeBuild cmake 接线（计划外文件，验证命令必需基础设施，已在 IN_PROGRESS 预告并记录偏差，参照 S002 先例）。
+  - `docs/native-baseline.md`: 新建。tag/annotated sha/commit、下载与哈希、开关及理由、产物清单与 SHA-256、已知告警。
+- 验证：
+  - 命令：`.\gradlew.bat :app:externalNativeBuildDebug --offline --console=plain`
+  - 结果：`PASS`；BUILD SUCCESSFUL in 26s。产出 4 个 arm64-v8a 共享库：libllama.so(78.2MB, Debug 含符号)、libggml.so、libggml-base.so、libggml-cpu.so；llvm-readelf 复核 `Machine: AArch64`、`Type: DYN`；四个 .so 的 SHA-256 已记入 native-baseline.md 第 3 节。
+- 风险/阻塞：
+  - `[CXX5304]` SDK XML v4 提示：cmdline-tools 与 AGP 描述文件版本差异，不影响构建产物，已记录于 native-baseline.md 第 4 节。
+  - libllama.so 当前为独立 .so；S006 JNI 层接入时可能改为静态并入单一 .so，届时同步更新基线文档。
+  - 真机加载验证属 S007 范围，当前无设备（沿用 S004 BLOCKED 记录）。
+  - 时钟备注：本机时区为 UTC+7，自本条起时间戳按 Asia/Shanghai（UTC+8）换算生成；此前条目为本地时钟直读，存在约一小时的表观偏移。
+- 下一步依赖：`S006` 可以开始；本轮没有执行 S006。
 

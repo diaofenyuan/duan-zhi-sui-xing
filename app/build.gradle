@@ -29,4 +29,11 @@ android {
         sourceCompatibility JavaVersion.valueOf("VERSION_" + libs.versions.javaVersion.get())
         targetCompatibility JavaVersion.valueOf("VERSION_" + libs.versions.javaVersion.get())
     }
+
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+            version libs.versions.cmake.get()
+        }
+    }
 }
