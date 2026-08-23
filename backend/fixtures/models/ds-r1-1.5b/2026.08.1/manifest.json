@@ -1,0 +1,17 @@
+{
+  "modelId": "ds-r1-1.5b",
+  "version": "2026.08.1",
+  "displayName": "DeepSeek-R1-Distill-1.5B",
+  "source": { "publisher": "DeepSeek", "url": "https://huggingface.co/DeepSeek" },
+  "license": { "spdx": "MIT", "url": "https://huggingface.co/DeepSeek" },
+  "format": "gguf",
+  "architecture": "qwen2",
+  "parameterCount": 1500000000,
+  "quantization": "Q4_K_M",
+  "contextLength": 32768,
+  "description": "Dev fixture payload (not real weights) for catalog/download integration testing.",
+  "files": [
+    { "name": "model-q4_k_m.gguf", "sizeBytes": 4194304, "sha256": "3beb11325d8e8fa944019f9817bc318f8061521fe948c20404e92c39d05c05b6", "urls": ["/v1/models/ds-r1-1.5b/2026.08.1/model-q4_k_m.gguf"] }
+  ],
+  "runtime": { "minAndroidApi": 26, "abis": ["arm64-v8a"], "backends": ["cpu"] }
+}

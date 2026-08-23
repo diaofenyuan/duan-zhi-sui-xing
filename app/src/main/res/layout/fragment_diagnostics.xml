@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="28dp">
+
+        <TextView
+            style="@style/Text.App.PageTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/diag_title"
+            android:paddingStart="@dimen/pad_screen"
+            android:paddingEnd="@dimen/pad_screen"
+            android:paddingTop="14dp" />
+
+        <!-- 设备卡片 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_sm">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <FrameLayout
+                        android:layout_width="@dimen/box_icon"
+                        android:layout_height="@dimen/box_icon">
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/grad_b" />
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_phone"
+                            app:tint="@android:color/white" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Text.App.ItemTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/diag_device_name" />
+
+                        <TextView
+                            style="@style/Text.App.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/diag_device_tier" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 规格网格：两列三行 -->
+                <LinearLayout style="@style/SpecRow">
+                    <TextView style="@style/SpecLabel" android:text="@string/diag_soc" />
+                    <TextView android:id="@+id/spec_soc" style="@style/SpecValue" />
+                    <TextView style="@style/SpecLabel" android:text="@string/diag_ram" />
+                    <TextView android:id="@+id/spec_ram" style="@style/SpecValue" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/SpecRow">
+                    <TextView style="@style/SpecLabel" android:text="@string/diag_os" />
+                    <TextView android:id="@+id/spec_os" style="@style/SpecValue" />
+                    <TextView style="@style/SpecLabel" android:text="@string/diag_abi" />
+                    <TextView android:id="@+id/spec_abi" style="@style/SpecValue" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/SpecRow">
+                    <TextView style="@style/SpecLabel" android:text="@string/diag_storage" />
+                    <TextView android:id="@+id/spec_storage" style="@style/SpecValue" />
+                    <TextView style="@style/SpecLabel" android:text="@string/diag_page" />
+                    <TextView android:id="@+id/spec_page" style="@style/SpecValue" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 实时状态 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="10dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content">
+
+                <LinearLayout style="@style/StatusCell">
+                    <ImageView style="@style/StatusIcon" android:src="@drawable/ic_thermo" app:tint="@color/status_success" />
+                    <TextView android:id="@+id/chip_thermal" style="@style/StatusText" android:text="@string/chip_thermal_ok" android:textColor="@color/status_success" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp">
+
+                <LinearLayout style="@style/StatusCell">
+                    <ImageView style="@style/StatusIcon" android:src="@drawable/ic_battery" app:tint="@color/md_primary" />
+                    <TextView android:id="@+id/chip_battery" style="@style/StatusText" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp">
+
+                <LinearLayout style="@style/StatusCell">
+                    <ImageView style="@style/StatusIcon" android:src="@drawable/ic_pulse" app:tint="@color/md_secondary" />
+                    <TextView style="@style/StatusText" android:text="@string/chip_backend" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- 性能基准 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_lg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/Text.App.Section"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    android:text="@string/bench_title" />
+
+                <TextView
+                    style="@style/Text.App.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/bench_note" />
+
+                <LinearLayout
+                    android:id="@+id/bench_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="10dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 兼容性总览 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_md">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/Text.App.Section"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    android:text="@string/compat_overview_title" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="10dp">
+
+                    <TextView
+                        android:id="@+id/legend_recommended"
+                        style="@style/Text.App.Badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_rounded_badge"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp" />
+
+                    <TextView
+                        android:id="@+id/legend_runnable"
+                        style="@style/Text.App.Badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_rounded_badge"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp" />
+
+                    <TextView
+                        android:id="@+id/legend_high"
+                        style="@style/Text.App.Badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_rounded_badge"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp" />
+
+                    <TextView
+                        android:id="@+id/legend_unsupported"
+                        style="@style/Text.App.Badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_rounded_badge"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/reason_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</ScrollView>

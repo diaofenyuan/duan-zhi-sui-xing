@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "note": "P3 approved evaluation model. Weights are NOT distributed inside the APK; download and install manually for device verification. Model weights, tokenizer and chat template are licensed under Apache-2.0 by HuggingFaceTB.",
+  "models": [
+    {
+      "modelId": "smollm-135m-instruct",
+      "version": "2026.08.1",
+      "displayName": "SmolLM-135M-Instruct",
+      "publisher": "HuggingFaceTB",
+      "license": "Apache-2.0",
+      "sourceUrl": "https://huggingface.co/HuggingFaceTB/SmolLM-135M-Instruct",
+      "ggufUrl": "https://huggingface.co/second-state/SmolLM-135M-Instruct-GGUF/resolve/main/SmolLM-135M-Instruct-Q4_K_M.gguf",
+      "mirrorUrl": "https://hf-mirror.com/second-state/SmolLM-135M-Instruct-GGUF/resolve/main/SmolLM-135M-Instruct-Q4_K_M.gguf",
+      "fileName": "SmolLM-135M-Instruct-Q4_K_M.gguf",
+      "quantization": "Q4_K_M",
+      "sizeBytes": 105453984,
+      "sha256": "30A78B6B6B6130A32A704F32AD589E69790AC4E2772BF43DBD2EBDBE0B52788A",
+      "contextLength": 2048,
+      "threadCount": 4,
+      "temperature": 0.7,
+      "topP": 0.9,
+      "maxNewTokens": 256,
+      "installLayout": "files/models/smollm-135m-instruct/2026.08.1/SmolLM-135M-Instruct-Q4_K_M.gguf",
+      "installHint": "adb push <file> /data/local/tmp/ && adb shell run-as com.example.localai mkdir -p files/models/smollm-135m-instruct/2026.08.1 && adb shell run-as com.example.localai cat /data/local/tmp/<file> > files/models/smollm-135m-instruct/2026.08.1/SmolLM-135M-Instruct-Q4_K_M.gguf"
+    }
+  ]
+}

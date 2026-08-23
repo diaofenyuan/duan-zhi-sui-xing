@@ -1,0 +1,17 @@
+{
+  "modelId": "smollm2-360m",
+  "version": "2026.08.1",
+  "displayName": "SmolLM2-360M-Instruct",
+  "source": { "publisher": "HuggingFaceTB", "url": "https://huggingface.co/HuggingFaceTB" },
+  "license": { "spdx": "Apache-2.0", "url": "https://huggingface.co/HuggingFaceTB" },
+  "format": "gguf",
+  "architecture": "llama",
+  "parameterCount": 360000000,
+  "quantization": "Q8_0",
+  "contextLength": 8192,
+  "description": "Dev fixture payload (not real weights) for catalog/download integration testing.",
+  "files": [
+    { "name": "model-q4_k_m.gguf", "sizeBytes": 1048576, "sha256": "1cc07a486f1bd9ce6c29d22956851ba0e22c3cf442de66ae161877cfa2a908cd", "urls": ["/v1/models/smollm2-360m/2026.08.1/model-q4_k_m.gguf"] }
+  ],
+  "runtime": { "minAndroidApi": 26, "abis": ["arm64-v8a"], "backends": ["cpu"] }
+}

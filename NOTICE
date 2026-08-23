@@ -28,11 +28,48 @@ Copyright (C) 2024 Square, Inc.
 Licensed under the Apache License, Version 2.0.
 https://github.com/square/okhttp
 
+Gson
+Copyright (C) 2008-2025 Google Inc.
+Licensed under the Apache License, Version 2.0.
+https://github.com/google/gson
+
+Material Components for Android
+Copyright (C) The Material Foundation / Google LLC
+Licensed under the Apache License, Version 2.0.
+https://github.com/material-components/material-components-android
+
 JUnit
 Copyright (c) 2007-2015 JUnit team
 Licensed under the Eclipse Public License 1.0 (test scope only,
 not distributed with the application APK).
 https://github.com/junit-team/junit4
+
+Robolectric
+Copyright (C) 2010-2025 Robolectric contributors
+Licensed under the MIT License (test scope only, not distributed
+with the application APK).
+https://github.com/robolectric/robolectric
+
+AndroidX Test (runner, rules, ext:junit)
+Copyright The Android Open Source Project
+Licensed under the Apache License, Version 2.0 (androidTest scope only,
+not distributed with the application APK).
+https://android.googlesource.com/platform/frameworks/testing
+
+SmolLM-135M-Instruct (approved evaluation model, model weights)
+Copyright HuggingFaceTB
+Licensed under the Apache License, Version 2.0 (weights, tokenizer and
+chat template are licensed separately from this product's code; not
+distributed inside the application APK).
+Source: https://huggingface.co/HuggingFaceTB/SmolLM-135M-Instruct
+GGUF conversion: second-state/SmolLM-135M-Instruct-GGUF
+
+Ed25519 verifier (verify-only Java implementation)
+Based on the algorithm structure of ed25519-java by str4d
+(https://github.com/str4d/ed25519-java), dedicated to the public domain
+under CC0. This product contains an independent re-implementation of the
+verification path only; cross-validated against JDK 17 Ed25519 in tests.
+See docs/license-policy.md section 3.7.
 
 Full version and source listing: docs/license-policy.md
 Model weights, tokenizers and chat templates are licensed separately and

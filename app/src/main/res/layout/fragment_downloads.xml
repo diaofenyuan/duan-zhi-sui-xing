@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="@dimen/pad_screen"
+            android:paddingEnd="@dimen/pad_screen"
+            android:paddingTop="14dp">
+
+            <TextView
+                style="@style/Text.App.PageTitle"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/dl_title" />
+
+            <TextView
+                android:id="@+id/text_summary"
+                style="@style/Text.App.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- 存储卡片（实测 StatFs） -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_sm">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_folder"
+                        app:tint="@color/md_primary" />
+
+                    <TextView
+                        style="@style/Text.App.ItemTitle"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/storage_title" />
+                </LinearLayout>
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/storage_bar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:trackThickness="8dp"
+                    app:trackCornerRadius="4dp"
+                    app:indicatorColor="@color/md_primary"
+                    app:trackColor="?attr/colorSurfaceVariant" />
+
+                <TextView
+                    android:id="@+id/storage_text"
+                    style="@style/Text.App.Caption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 模型目录（签名验证通过的目录数据） -->
+        <LinearLayout
+            android:id="@+id/catalog_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="@dimen/pad_screen"
+            android:paddingEnd="@dimen/pad_screen"
+            android:paddingTop="@dimen/gap_lg"
+            android:paddingBottom="@dimen/gap_xs">
+
+            <TextView
+                style="@style/Text.App.Label"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/dl_section_catalog"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/catalog_status"
+                style="@style/Text.App.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/btn_sync_catalog"
+                style="@style/Text.App.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="6dp"
+                android:text="@string/action_retry"
+                android:textColor="@color/md_primary" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/list_catalog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
+
+        <!-- 进行中 -->
+        <TextView
+            android:id="@+id/label_active"
+            style="@style/Text.App.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/pad_screen"
+            android:paddingEnd="@dimen/pad_screen"
+            android:paddingTop="@dimen/gap_lg"
+            android:paddingBottom="@dimen/gap_xs"
+            android:text="@string/dl_section_active"
+            android:textStyle="bold" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/list_active"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
+
+        <!-- 已安装 -->
+        <TextView
+            android:id="@+id/label_installed"
+            style="@style/Text.App.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/pad_screen"
+            android:paddingEnd="@dimen/pad_screen"
+            android:paddingTop="@dimen/gap_lg"
+            android:paddingBottom="@dimen/gap_xs"
+            android:text="@string/dl_section_installed"
+            android:textStyle="bold" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/list_installed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.example.localai.common.widget.EmptyStateView
+                android:id="@+id/empty"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:visibility="gone"
+                app:esIcon="@drawable/ic_download"
+                app:esTitle="@string/empty_dl_title"
+                app:esSubtitle="@string/empty_dl_sub"
+                app:esAction="@string/action_goto_market" />
+        </FrameLayout>
+    </LinearLayout>
+</ScrollView>

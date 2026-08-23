@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand (light) -->
+    <color name="md_primary">#4F46E5</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_primary_container">#E0E7FF</color>
+    <color name="md_on_primary_container">#1E1B4B</color>
+    <color name="md_secondary">#0D9488</color>
+    <color name="md_on_secondary">#FFFFFF</color>
+    <color name="md_secondary_container">#CCFBF1</color>
+    <color name="md_on_secondary_container">#042F2E</color>
+    <color name="md_tertiary">#D97706</color>
+    <color name="md_on_tertiary">#FFFFFF</color>
+    <color name="md_tertiary_container">#FEF3C7</color>
+    <color name="md_on_tertiary_container">#78350F</color>
+
+    <!-- Surfaces (light) -->
+    <color name="app_background">#F6F7FB</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#EDF0F8</color>
+    <color name="on_surface">#111827</color>
+    <color name="on_surface_variant">#5A6473</color>
+    <color name="outline">#E4E7EE</color>
+
+    <!-- Text (light) -->
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#5A6473</color>
+    <color name="text_tertiary">#98A1B0</color>
+    <color name="text_on_brand">#FFFFFF</color>
+
+    <!-- Status (light) -->
+    <color name="status_success">#059669</color>
+    <color name="status_success_container">#DCF5EA</color>
+    <color name="status_info">#2563EB</color>
+    <color name="status_info_container">#DFEAFF</color>
+    <color name="status_warn">#B45309</color>
+    <color name="status_warn_container">#FDEFC8</color>
+    <color name="status_danger">#DC2626</color>
+    <color name="status_danger_container">#FCE3E3</color>
+
+    <!-- Gradients (light) -->
+    <color name="hero_start">#4F46E5</color>
+    <color name="hero_end">#7C3AED</color>
+    <color name="hero_sub_text">#DDD6FE</color>
+
+    <!-- Launcher -->
+    <color name="launcher_bg">#4F46E5</color>
+</resources>

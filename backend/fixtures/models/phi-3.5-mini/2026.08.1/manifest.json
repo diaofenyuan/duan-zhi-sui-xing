@@ -1,0 +1,17 @@
+{
+  "modelId": "phi-3.5-mini",
+  "version": "2026.08.1",
+  "displayName": "Phi-3.5-mini-instruct",
+  "source": { "publisher": "Microsoft", "url": "https://huggingface.co/Microsoft" },
+  "license": { "spdx": "MIT", "url": "https://huggingface.co/Microsoft" },
+  "format": "gguf",
+  "architecture": "phi3",
+  "parameterCount": 3800000000,
+  "quantization": "Q4_K_M",
+  "contextLength": 131072,
+  "description": "Dev fixture payload (not real weights) for catalog/download integration testing.",
+  "files": [
+    { "name": "model-q4_k_m.gguf", "sizeBytes": 5242880, "sha256": "a429885f3c466e535c434887105b46d1e57d44674873d7fa0521ef5e1123827a", "urls": ["/v1/models/phi-3.5-mini/2026.08.1/model-q4_k_m.gguf"] }
+  ],
+  "runtime": { "minAndroidApi": 26, "abis": ["arm64-v8a"], "backends": ["cpu"] }
+}

@@ -53,3 +53,13 @@
 ## 5. 下一步接口预告
 
 S006 将在 `app/src/main/cpp/ai_jni/` 新增 JNI 封装并链接 `llama`/`ggml` 目标；届时若改为单一大 .so 静态并入方案，需同步更新本文件的产物清单。
+
+## 6. P3 接入：JNI 推理层（2026-08-23）
+
+- JNI 层：\pp/src/main/cpp/ai_jni/native_session.cpp\ 重写为真实 llama.cpp 接入：
+  - 加载链：\llama_backend_init\ -> \llama_model_load_from_file\（n_gpu_layers=0，CPU-only）-> \llama_init_from_model\（n_batch=2048 / n_ubatch=512，abort_callback 挂原子取消标志）-> 采样器链 top_k(40) + top_p + temp + dist。
+  - 生成：单工作线程 tokenize（add_special/parse_special）-> 分批 decode 提示 -> 采样循环 -> \llama_token_to_piece\ 批量合并（8 token / 64 字符 / 60ms 窗口）回调 Java；EOS/EOT/maxNewTokens/cancel 终止。
+  - 生命周期：stop 只置取消标志（decode 经 abort_callback 快速返回）；release 置取消后 join 工作线程再释放 smpl/ctx/model/backend；重复释放幂等；C++ 异常不穿 JNI。
+  - 每轮生成前 \llama_memory_clear(llama_get_memory(ctx), true)\ 重置 KV（全量历史重发策略）。
+- 错误码扩展：MODEL_LOAD_FAILED=1101、CONTEXT_CREATE_FAILED=1102、TOKENIZE_FAILED=1103（Java/C++ 双侧镜像）。
+- ABI 说明：release 保持 arm64-v8a；debug ABI 为 x86_64（模拟器验证用，见 build-baseline.md）。

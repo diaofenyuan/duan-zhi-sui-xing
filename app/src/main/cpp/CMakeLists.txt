@@ -22,3 +22,8 @@ set(GGML_BACKEND_DL      OFF CACHE BOOL "" FORCE) # 后端静态并入 .so，不
 set(GGML_CCACHE          OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(engine_llama)
+
+# ---- JNI 封装层（S006 建立，P3 接入真实推理）----
+# 链接 llama/ggml 目标与 Android log（logcat 诊断输出）。
+add_library(ai_jni SHARED ai_jni/native_session.cpp)
+target_link_libraries(ai_jni PRIVATE llama ggml log)

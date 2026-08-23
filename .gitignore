@@ -10,3 +10,8 @@ local.properties
 /captures
 .externalNativeBuild/
 .cxx/
+backend/signing/keys/*.seed
+backend/build-tools/
+
+# 批准模型权重（体积大，不入库；SHA-256 见 qa/fixtures/approved-model.json）
+qa/fixtures/models/*.gguf

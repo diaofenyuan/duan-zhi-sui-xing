@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="28dp">
+
+        <!-- 顶栏 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="10dp"
+            android:paddingEnd="@dimen/pad_screen"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp">
+
+            <ImageButton
+                android:id="@+id/btn_back"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_back"
+                app:tint="@color/text_primary"
+                android:contentDescription="@string/action_close" />
+
+            <TextView
+                style="@style/Text.App.Section"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:text="@string/detail_title" />
+        </LinearLayout>
+
+        <!-- 渐变头图 -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.App.Card.Hero"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="6dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_gradient_hero"
+                android:clipToOutline="true"
+                android:outlineProvider="background">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                <TextView
+                    android:id="@+id/hero_tag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_badge"
+                    android:backgroundTint="#33FFFFFF"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="3dp"
+                    android:textColor="@color/text_on_brand"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/hero_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textColor="@color/text_on_brand"
+                    android:textSize="20sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/hero_publisher"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textColor="@color/hero_sub_text"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="14dp">
+
+                    <TextView
+                        android:id="@+id/hero_param"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_rounded_badge"
+                        android:backgroundTint="#26FFFFFF"
+                        android:paddingStart="9dp"
+                        android:paddingEnd="9dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:textColor="@color/text_on_brand"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/hero_quant"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_rounded_badge"
+                        android:backgroundTint="#26FFFFFF"
+                        android:paddingStart="9dp"
+                        android:paddingEnd="9dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:textColor="@color/text_on_brand"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/hero_ctx"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_rounded_badge"
+                        android:backgroundTint="#26FFFFFF"
+                        android:paddingStart="9dp"
+                        android:paddingEnd="9dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:textColor="@color/text_on_brand"
+                        android:textSize="11sp" />
+                </LinearLayout>
+                </LinearLayout>
+            </FrameLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 三格数据 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_md">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content">
+
+                <LinearLayout style="@style/StatCell">
+                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_folder" />
+                    <TextView android:id="@+id/val_size" style="@style/StatValue" />
+                    <TextView style="@style/StatLabel" android:text="@string/stat_size" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp">
+
+                <LinearLayout style="@style/StatCell">
+                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_pulse" />
+                    <TextView android:id="@+id/val_speed" style="@style/StatValue" />
+                    <TextView style="@style/StatLabel" android:text="@string/stat_speed" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp">
+
+                <LinearLayout style="@style/StatCell">
+                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_history" />
+                    <TextView android:id="@+id/val_ttft" style="@style/StatValue" />
+                    <TextView style="@style/StatLabel" android:text="@string/stat_ttft" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- 设备适配结论 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_lg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <ImageView
+                    android:id="@+id/compat_icon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_check_circle" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/compat_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/compat_reason"
+                        style="@style/Text.App.BodySec"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 简介 -->
+        <TextView
+            style="@style/Text.App.Section"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_xl"
+            android:text="@string/section_about" />
+
+        <TextView
+            android:id="@+id/text_desc"
+            style="@style/Text.App.BodySec"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="8dp" />
+
+        <!-- 详细信息 -->
+        <TextView
+            style="@style/Text.App.Section"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_xl"
+            android:text="@string/section_meta" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_sm">
+
+            <LinearLayout
+                android:id="@+id/meta_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 示例指令 -->
+        <TextView
+            style="@style/Text.App.Section"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_xl"
+            android:text="@string/section_samples" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="6dp"
+            app:singleLine="false"
+            app:chipSpacingHorizontal="8dp"
+            app:chipSpacingVertical="-4dp">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/sample_1"
+                style="@style/Widget.App.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:chipBackgroundColor="?attr/colorSurfaceVariant"
+                android:text="帮我总结一篇文章的要点" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/sample_2"
+                style="@style/Widget.App.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:chipBackgroundColor="?attr/colorSurfaceVariant"
+                android:text="解释什么是模型量化" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/sample_3"
+                style="@style/Widget.App.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:chipBackgroundColor="?attr/colorSurfaceVariant"
+                android:text="写一首关于离线 AI 的短诗" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- 底部操作 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_action"
+            style="@style/Widget.App.Button"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginStart="@dimen/pad_screen"
+            android:layout_marginEnd="@dimen/pad_screen"
+            android:layout_marginTop="@dimen/gap_xl"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/btn_note"
+            style="@style/Text.App.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="@dimen/gap_sm" />
+    </LinearLayout>
+</ScrollView>

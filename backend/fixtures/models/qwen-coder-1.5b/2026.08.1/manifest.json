@@ -1,0 +1,17 @@
+{
+  "modelId": "qwen-coder-1.5b",
+  "version": "2026.08.1",
+  "displayName": "Qwen2.5-Coder-1.5B-Instruct",
+  "source": { "publisher": "Qwen", "url": "https://huggingface.co/Qwen" },
+  "license": { "spdx": "Apache-2.0", "url": "https://huggingface.co/Qwen" },
+  "format": "gguf",
+  "architecture": "qwen2",
+  "parameterCount": 1500000000,
+  "quantization": "Q4_K_M",
+  "contextLength": 16384,
+  "description": "Dev fixture payload (not real weights) for catalog/download integration testing.",
+  "files": [
+    { "name": "model-q4_k_m.gguf", "sizeBytes": 3145728, "sha256": "72a993904902768619746aed83366a5ac803e74ad85dcdc2ed55cf346792dcc6", "urls": ["/v1/models/qwen-coder-1.5b/2026.08.1/model-q4_k_m.gguf"] }
+  ],
+  "runtime": { "minAndroidApi": 26, "abis": ["arm64-v8a"], "backends": ["cpu"] }
+}

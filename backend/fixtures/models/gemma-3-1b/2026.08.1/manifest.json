@@ -1,0 +1,17 @@
+{
+  "modelId": "gemma-3-1b",
+  "version": "2026.08.1",
+  "displayName": "Gemma-3-1B-IT",
+  "source": { "publisher": "Google", "url": "https://huggingface.co/Google" },
+  "license": { "spdx": "Gemma Terms of Use", "url": "https://huggingface.co/Google" },
+  "format": "gguf",
+  "architecture": "gemma3",
+  "parameterCount": 1000000000,
+  "quantization": "Q4_0",
+  "contextLength": 32768,
+  "description": "Dev fixture payload (not real weights) for catalog/download integration testing.",
+  "files": [
+    { "name": "model-q4_k_m.gguf", "sizeBytes": 2097152, "sha256": "8348f2c5e36e5032303b27ce9cdd87e3a430831d953085ab82c72123d277f936", "urls": ["/v1/models/gemma-3-1b/2026.08.1/model-q4_k_m.gguf"] }
+  ],
+  "runtime": { "minAndroidApi": 26, "abis": ["arm64-v8a"], "backends": ["cpu"] }
+}

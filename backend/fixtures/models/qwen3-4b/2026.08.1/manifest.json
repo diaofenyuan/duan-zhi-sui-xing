@@ -1,0 +1,17 @@
+{
+  "modelId": "qwen3-4b",
+  "version": "2026.08.1",
+  "displayName": "Qwen3-4B-Instruct",
+  "source": { "publisher": "Qwen", "url": "https://huggingface.co/Qwen" },
+  "license": { "spdx": "Apache-2.0", "url": "https://huggingface.co/Qwen" },
+  "format": "gguf",
+  "architecture": "qwen3",
+  "parameterCount": 4000000000,
+  "quantization": "Q4_K_M",
+  "contextLength": 32768,
+  "description": "Dev fixture payload (not real weights) for catalog/download integration testing.",
+  "files": [
+    { "name": "model-q4_k_m.gguf", "sizeBytes": 6291456, "sha256": "52f2c773a6ceae9a0d301df61d4fcafc5c8cc43b84a505dfc619a99afdc6b535", "urls": ["/v1/models/qwen3-4b/2026.08.1/model-q4_k_m.gguf"] }
+  ],
+  "runtime": { "minAndroidApi": 26, "abis": ["arm64-v8a"], "backends": ["cpu"] }
+}

@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/model-manifest.schema.json",
+  "title": "ModelManifest",
+  "description": "模型分发 Manifest。签名不内嵌于本文件：Ed25519 签名由同目录 manifest.sig 侧车文件承载，签名载荷为 manifest.json 的原始字节流。",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "modelId",
+    "version",
+    "displayName",
+    "source",
+    "license",
+    "format",
+    "architecture",
+    "parameterCount",
+    "quantization",
+    "contextLength",
+    "files",
+    "runtime"
+  ],
+  "properties": {
+    "modelId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "description": "不可变版本号；发布后不得覆盖同版本内容。"
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "source": {
+      "type": "object",
+      "required": ["publisher", "url"],
+      "properties": {
+        "publisher": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri", "minLength": 1 }
+      }
+    },
+    "license": {
+      "type": "object",
+      "required": ["spdx", "url"],
+      "properties": {
+        "spdx": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri", "minLength": 1 }
+      }
+    },
+    "format": {
+      "type": "string",
+      "const": "gguf"
+    },
+    "architecture": {
+      "type": "string",
+      "minLength": 1,
+      "description": "必须与 GGUF 元数据 general.architecture 一致。"
+    },
+    "parameterCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "quantization": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contextLength": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "sizeBytes", "sha256", "urls"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "sizeBytes": { "type": "integer", "minimum": 1 },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "etag": { "type": "string" },
+          "urls": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "format": "uri", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["minAndroidApi", "abis", "backends"],
+      "properties": {
+        "minAndroidApi": { "type": "integer", "minimum": 1 },
+        "abis": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["arm64-v8a", "armeabi-v7a", "x86_64", "x86"] }
+        },
+        "backends": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["cpu", "vulkan", "opencl", "npu"] }
+        }
+      }
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 512
+    }
+  }
+}

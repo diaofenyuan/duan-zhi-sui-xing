@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="pad_screen">18dp</dimen>
+    <dimen name="pad_card">16dp</dimen>
+    <dimen name="gap_xs">4dp</dimen>
+    <dimen name="gap_sm">8dp</dimen>
+    <dimen name="gap_md">12dp</dimen>
+    <dimen name="gap_lg">16dp</dimen>
+    <dimen name="gap_xl">22dp</dimen>
+    <dimen name="radius_card">18dp</dimen>
+    <dimen name="radius_btn">14dp</dimen>
+    <dimen name="radius_badge">8dp</dimen>
+    <dimen name="radius_box">14dp</dimen>
+    <dimen name="h_button">46dp</dimen>
+    <dimen name="box_icon">44dp</dimen>
+    <dimen name="bubble_max">270dp</dimen>
+    <dimen name="bar_height">6dp</dimen>
+</resources>

@@ -36,9 +36,9 @@
 
 | 名称 | 坐标 | 版本 | 许可证 | 计划引入步骤 |
 | --- | --- | --- | --- | --- |
-| AndroidX Core | androidx.core:core | 1.19.0 | Apache-2.0 | S006+（首个 UI/组件步骤按需） |
-| AppCompat | androidx.appcompat:appcompat | 1.8.0 | Apache-2.0 | G4 UI 步骤（S029-S034） |
-| RecyclerView | androidx.recyclerview:recyclerview | 1.4.0 | Apache-2.0 | G4 列表页（S029/S031） |
+| AndroidX Core | androidx.core:core | 1.16.0（P1 由 1.19.0 调整：1.19.0 要求 compileSdk 37 + AGP 9.1，与工程固定工具链 AGP 8.13.2/compileSdk 36 不兼容） | Apache-2.0 | P1（首次实际引入） |
+| AppCompat | androidx.appcompat:appcompat | 1.8.0 | Apache-2.0 | P1（首次实际引入） |
+| RecyclerView | androidx.recyclerview:recyclerview | 1.4.0 | Apache-2.0 | P1（首次实际引入） |
 | Lifecycle Runtime | androidx.lifecycle:lifecycle-runtime | 2.11.0 | Apache-2.0 | 随 ViewModel 使用步骤 |
 | Room Runtime | androidx.room:room-runtime | 2.8.4 | Apache-2.0 | S014（下载状态机）/ S028 |
 | Room Compiler | androidx.room:room-compiler | 2.8.4 | Apache-2.0 | 同上，Java annotationProcessor 方式 |
@@ -48,20 +48,49 @@
 
 ### 3.3 网络
 
-| 名称 | 坐标 | 版本 | 许可证 | 来源 | 计划引入步骤 |
+| 名称 | 坐标 | 版本 | 许可证 | 来源 | 实际引入步骤 |
 | --- | --- | --- | --- | --- | --- |
-| OkHttp | com.squareup.okhttp3:okhttp | 5.5.0 | Apache-2.0 | https://github.com/square/okhttp （Maven Central） | S013/S015（Manifest 校验、断点下载） |
+| OkHttp | com.squareup.okhttp3:okhttp | 4.12.0（P2 由 5.5.0 调整：5.5.0 强制 compileSdk 37，与工程固定工具链 AGP 8.13.2 / compileSdk 36 不兼容；4.12.0 为 4.x 稳定线最终版，Range/ETag/流式下载 API 与本项目所需一致） | Apache-2.0 | https://github.com/square/okhttp （Maven Central） | P2（Manifest 校验、断点下载） |
 
-### 3.4 测试（testImplementation，不随 APK 分发）
+### 3.6 JSON 解析（P2 引入）
 
-| 名称 | 坐标 | 版本 | 许可证 | 来源 | 计划引入步骤 |
+| 名称 | 坐标 | 版本 | 许可证 | 来源 | 实际引入步骤 |
+| --- | --- | --- | --- | --- | --- |
+| Gson | com.google.code.gson:gson | 2.11.0 | Apache-2.0 | https://github.com/google/gson （Maven Central） | P2（Manifest/Catalog 解析） |
+
+### 3.4 UI 组件（P1 引入，2026-08-23 登记）
+
+| 名称 | 坐标 | 版本 | 许可证 | 来源 | 实际引入步骤 |
+| --- | --- | --- | --- | --- | --- |
+| Material Components for Android | com.google.android.material:material | 1.12.0 | Apache-2.0 | https://github.com/material-components/material-components-android （Google Maven） | P1（前端视觉基线：M3 主题、Chip、BottomNav、BottomSheet、ProgressIndicator、MaterialSwitch、Dialog） |
+
+### 3.5 测试（testImplementation，不随 APK 分发）
+
+| 名称 | 坐标 | 版本 | 许可证 | 来源 | 实际引入步骤 |
 | --- | --- | --- | --- | --- | --- |
 | JUnit 4 | junit:junit | 4.13.2 | EPL-1.0 | https://github.com/junit-team/junit4 | S006 |
+| Robolectric | org.robolectric:robolectric | 4.16 | MIT | https://github.com/robolectric/robolectric （Maven Central） | P2（Room DAO / 下载管线 JVM 测试；android-all 镜像走阿里云 central） |
+| AndroidX Test Core | androidx.test:core | 1.6.1 | Apache-2.0 | Google Maven | P2（Robolectric 配套 ApplicationProvider） |
+| AndroidX Test Runner | androidx.test:runner | 1.6.2 | Apache-2.0 | Google Maven | P3（仪器化测试运行器，androidTest 域，不随 APK 分发） |
+| AndroidX Test Rules | androidx.test:rules | 1.6.1 | Apache-2.0 | Google Maven | P3（同上） |
+| AndroidX Test ext:junit | androidx.test.ext:junit | 1.2.1 | Apache-2.0 | Google Maven | P3（AndroidJUnit4 运行器） |
+
+### 3.7 自研/vendored 代码（P2 引入）
+
+| 名称 | 位置 | 许可证 | 说明 |
+| --- | --- | --- | --- |
+| Ed25519 验证器（verify-only） | `app/src/main/java/com/example/localai/data/network/Ed25519.java` | CC0（公共领域，算法结构参考 str4d/ed25519-java） | 自研纯 Java 验证路径，供 API 26+ 无平台 EdDSA 设备使用；单测与 JDK 17 Ed25519 交叉验证；归属声明见 NOTICE |
 
 ## 4. 构建工具链（不随应用分发，仅列示）
 
 Gradle 8.14（Apache-2.0）、Android Gradle Plugin 8.13.2（Apache-2.0）、NDK r28（Apache-2.0 及第三方组件见 `$SDK/ndk/.../NOTICE`）、CMake 3.22.1（BSD-3）、JDK Temurin 17（GPLv2+Classpath）。工具链产物不打包进 APK，发布归档时在 SBOM 中单独列出。
 
-## 5. 当前状态核对（2026-08-23）
+## 5. 当前状态核对（2026-08-23，P3 更新）
 
-`app/build.gradle` 目前未声明任何 `dependencies {}` 条目，故当前**实际**直接依赖集合为空；上表全部为“已登记、待采用”。首次真实引入发生在 S006（JUnit）或更早的 Native vendored 导入（S005），届时更新本节。
+截至 P3，`app/build.gradle` 实际直接依赖集合（不含传递依赖）：
+
+- implementation：androidx.core 1.16.0、appcompat 1.8.0、recyclerview 1.4.0、material 1.12.0、okhttp 4.12.0、gson 2.11.0、room-runtime 2.8.4（annotationProcessor：room-compiler 2.8.4）。
+- testImplementation：junit 4.13.2、robolectric 4.16、androidx.test:core 1.6.1、room-runtime 2.8.4（testAnnotationProcessor：room-compiler 2.8.4）。
+- androidTestImplementation（不随 APK 分发）：androidx.test:runner 1.6.2、rules 1.6.1、ext:junit 1.2.1、core 1.6.1。
+
+全部条目已在本清单登记；Room 2.8.4 / OkHttp（4.12.0 调整）版本决策见上表备注。`NOTICE` 已同步更新（含批准评估模型 SmolLM-135M-Instruct 的权重许可归属说明）。

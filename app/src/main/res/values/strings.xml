@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">端智随行</string>
+
+    <!-- 底部导航 -->
+    <string name="tab_market">市场</string>
+    <string name="tab_chat">聊天</string>
+    <string name="tab_download">下载</string>
+    <string name="tab_diag">诊断</string>
+    <string name="tab_settings">设置</string>
+
+    <!-- 通用 -->
+    <string name="action_ok">确定</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_delete">删除</string>
+    <string name="action_retry">重试</string>
+    <string name="action_close">关闭</string>    
+    <string name="action_send">发送消息</string>
+
+    <!-- 市场 -->
+    <string name="market_subtitle">本地大模型 · 完全离线运行</string>
+    <string name="market_search_hint">搜索模型、任务或厂商</string>
+    <string name="section_recommended">推荐模型</string>
+    <string name="market_count_fmt">共 %d 个模型</string>
+    <string name="empty_market_title">没有符合条件的模型</string>
+    <string name="empty_market_sub">换个关键词，或清除筛选条件重新浏览</string>
+    <string name="action_clear_filters">清除筛选</string>
+    <string name="hero_tag">本周精选</string>
+    <string name="hero_title">Qwen3-4B-Instruct</string>
+    <string name="hero_desc">中文对话首选 · 32K 上下文 · 实测 14 tok/s</string>
+    <string name="hero_cta">查看详情 →</string>
+    <string name="compat_recommended">推荐</string>
+    <string name="compat_runnable">可运行</string>
+    <string name="compat_high">高负载</string>
+    <string name="compat_unsupported">不支持</string>
+
+    <!-- 模型详情 -->
+    <string name="detail_title">模型详情</string>
+    <string name="stat_size">模型大小</string>
+    <string name="stat_speed">输出速度</string>
+    <string name="stat_ttft">首字延迟</string>
+    <string name="speed_fmt">%s tok/s</string>
+    <string name="ttft_fmt">%d ms</string>
+    <string name="section_about">关于此模型</string>
+    <string name="section_meta">详细信息</string>
+    <string name="meta_license">许可证</string>
+    <string name="meta_quant">量化格式</string>
+    <string name="meta_template">对话模板</string>
+    <string name="meta_source">来源</string>
+    <string name="meta_updated">更新时间</string>
+    <string name="section_samples">示例指令</string>
+    <string name="detail_compat_title">设备适配结论</string>
+    <string name="btn_download_fmt">下载（%s）</string>
+    <string name="btn_open_chat">开始对话</string>
+    <string name="btn_unsupported">当前设备不支持</string>
+    <string name="download_note_fmt">下载前将校验签名、SHA-256 与 GGUF 结构，通过后原子安装</string>
+
+    <!-- 下载管理 -->
+    <string name="dl_title">下载管理</string>
+    <string name="dl_summary_fmt">%1$d 个进行中 · 可用空间 %2$s</string>
+    <string name="dl_section_catalog">模型目录</string>
+    <string name="dl_section_active">进行中</string>
+    <string name="dl_section_installed">已安装</string>
+    <string name="catalog_status_loading">正在同步目录…</string>
+    <string name="catalog_status_fmt">已同步 %d 个模型</string>
+    <string name="catalog_status_error">目录同步失败</string>
+    <string name="catalog_installed">已安装</string>
+    <string name="catalog_install">下载</string>
+    <string name="dl_state_queued">等待开始…</string>
+    <string name="dl_state_installing">安装中…</string>
+    <string name="dl_state_downloading_fmt">正在下载 · %1$s/s · 剩余 %2$s</string>
+    <string name="dl_state_paused">已暂停 · 点按继续</string>
+    <string name="dl_state_verifying">校验完整性中…</string>
+    <string name="dl_state_wait_retry">已停止 · 等待重试</string>
+    <string name="dl_state_failed_fmt">失败 · %s</string>
+    <string name="storage_title">设备存储</string>
+    <string name="storage_text_fmt">已用 %1$s / 共 %2$s · 可用 %3$s</string>
+    <string name="empty_dl_title">暂无内容</string>
+    <string name="empty_dl_sub">点击上方「重试」同步模型目录，或去市场挑选模型</string>
+    <string name="action_goto_market">去市场看看</string>
+    <string name="snackbar_queued">已加入下载队列（模拟）</string>
+    <string name="snackbar_queued_real">已加入下载队列</string>
+    <string name="snackbar_view">查看</string>
+    <string name="toast_deleted">模型文件已删除（模拟）</string>
+    <string name="toast_deleted_real">模型文件已删除</string>
+    <string name="dialog_delete_model_title">删除该模型？</string>
+    <string name="dialog_delete_model_msg">将删除已安装的模型文件，需要时可从模型目录重新下载。</string>
+    <string name="dialog_delete_model_ok">删除</string>
+    <string name="installed_meta_fmt">%1$s · 安装于 %2$s</string>
+
+    <!-- 聊天 -->
+    <string name="chat_input_hint">发送消息给本地模型…</string>
+    <string name="chat_empty_title">开始本地对话</string>
+    <string name="chat_empty_sub">所有计算都在这台手机上完成，对话内容不会离开你的设备。</string>
+    <string name="chat_ready">已就绪</string>
+    <string name="chat_generating">生成中…</string>
+    <string name="chat_no_model">未安装模型 · 请先在市场下载</string>
+    <string name="chat_mode_real">本地推理</string>
+    <string name="chat_mode_demo">演示模式</string>
+    <string name="picker_title">切换模型</string>
+    <string name="picker_empty">还没有已安装的模型，先去市场下载一个吧</string>
+    <string name="toast_copied">已复制到剪贴板</string>
+    <string name="menu_copy">复制</string>
+    <string name="menu_retry">重新生成</string>
+    <string name="menu_delete_msg">删除该消息</string>
+
+    <!-- 会话历史 -->
+    <string name="history_title">会话历史</string>
+    <string name="session_meta_fmt">%1$s · %2$d 条消息</string>
+    <string name="empty_history_title">还没有会话记录</string>
+    <string name="empty_history_sub">与模型的每次对话都会自动保存在这里，仅存本机。</string>
+    <string name="dialog_clear_sessions_title">清空全部会话？</string>
+    <string name="dialog_clear_sessions_msg">将删除保存在本机的所有对话记录，此操作不可恢复。</string>
+    <string name="toast_sessions_cleared">会话已清空</string>
+
+    <!-- 诊断 -->
+    <string name="diag_title">设备诊断</string>
+    <string name="diag_device_name">Pixel 8 Pro（参考档）</string>
+    <string name="diag_device_tier">旗舰档 · 演示数据</string>
+    <string name="diag_soc">处理器</string>
+    <string name="diag_ram">内存</string>
+    <string name="diag_os">系统</string>
+    <string name="diag_abi">架构</string>
+    <string name="diag_storage">存储</string>
+    <string name="diag_page">内存页</string>
+    <string name="chip_thermal_ok">温控正常</string>
+    <string name="chip_battery_fmt">电量 %d%% · 未充电</string>
+    <string name="chip_backend">CPU · NEON</string>
+    <string name="bench_title">性能基准（本机短测）</string>
+    <string name="bench_note">协议：输入 512 / 输出 128 token · P50 · 温度正常</string>
+    <string name="compat_overview_title">兼容性总览</string>
+    <string name="unsupported_reason_fmt">· %1$s：%2$s</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_ver_fmt">版本 %s · 本页数据均为演示用途</string>
+    <string name="group_mode">运行模式</string>
+    <string name="mode_auto">自动（推荐）</string>
+    <string name="mode_auto_desc">按设备状态动态平衡速度与功耗</string>
+    <string name="mode_balanced">均衡</string>
+    <string name="mode_balanced_desc">固定中等线程数与上下文长度，表现稳定</string>
+    <string name="mode_saver">省电</string>
+    <string name="mode_saver_desc">限制线程并降低输出速度，减少发热</string>
+    <string name="group_inference">推理行为</string>
+    <string name="sw_keep_screen">生成时保持屏幕常亮</string>
+    <string name="sw_keep_screen_sub">长回复时避免中途熄屏打断阅读</string>
+    <string name="sw_bg_gen">退后台继续生成</string>
+    <string name="sw_bg_gen_sub">受系统限制后台可能被暂停，不承诺不中断</string>
+    <string name="group_storage">存储与数据</string>
+    <string name="row_clear_cache">清理模型缓存</string>
+    <string name="row_clear_cache_val_fmt">当前缓存约 %s</string>
+    <string name="row_clear_sessions">清空全部会话</string>
+    <string name="group_privacy">隐私</string>
+    <string name="sw_metrics">匿名性能上报</string>
+    <string name="sw_metrics_sub">默认关闭；即使开启也不含任何对话内容</string>
+    <string name="group_about">关于</string>
+    <string name="row_license">开源许可证</string>
+    <string name="row_license_sub">Apache-2.0 / MIT 等，详见许可清单</string>
+    <string name="license_dialog_title">开源许可证</string>
+    <string name="cache_cleaned_fmt">已清理 %s 缓存（模拟）</string>
+</resources>

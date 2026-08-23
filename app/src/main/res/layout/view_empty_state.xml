@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:parentTag="LinearLayout"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <FrameLayout
+        android:id="@+id/es_icon_box"
+        android:layout_width="64dp"
+        android:layout_height="64dp">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_soft_box" />
+
+        <ImageView
+            android:id="@+id/es_icon"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            app:tint="@color/text_tertiary" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/es_title"
+        style="@style/Text.App.Section"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp" />
+
+    <TextView
+        android:id="@+id/es_subtitle"
+        style="@style/Text.App.BodySec"
+        android:layout_width="240dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="6dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/es_action"
+        style="@style/Widget.App.Button.Outline"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:minHeight="0dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:textSize="13sp"
+        android:layout_marginTop="16dp"
+        android:visibility="gone" />
+</merge>
