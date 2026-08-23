@@ -528,3 +528,18 @@
   - SmolLM-135M 为 0.14B 验收模型，输出质量有限；市场正式模型的上架与真实权重分发仍走 P2 供应链（P4 接通）。
   - 模拟器 x86_64 性能波动大（256 token 生成 24s~90s+），真机性能基线属 P6。
 - 下一阶段依赖：P4 可以开始（接通市场/下载/安装/聊天真实闭环）；本轮没有执行 P4。
+
+### 2026-08-23 22:28 | S004 | DONE
+
+- 目标：完成 S004 剩余交付——三档（旗舰/中端/入门）模拟设备画像 + 模拟 Benchmark 数据 Fixture，用于前期自动化测试；文档明确真实设备采集在候选 APK 产出后执行。
+- 依赖：S002 DONE（构建基线）；S004 前半步（分档标准 + 回填流程）已于 2026-08-23 07:52 交付（当时因无真机记 BLOCKED，且经用户授权推进 S005+）；本轮为无真机可完成的 Simulation 子集收尾。
+- 实际修改：
+  - `qa/device-matrix/simulated-devices.yaml`: 新建，三档模拟画像（sim-flagship-sd8gen3 / sim-midrange-d8200 / sim-entry-d700），字段与 S023 DeviceProfiler 对齐（SoC/核数/RAM/memoryClass/API/ABI/页大小/存储/NEON/Vulkan/温控/电量），全 `verification: SIMULATED`，无个人标识。
+  - `qa/fixtures/benchmark-results.json`: 新建，模拟 Benchmark（SmolLM-135M Q4_K_M 协议：64 入/128 出/temp 0.7/top_p 0.9/4 线程），三档各 3 样本 + P50/P95 聚合（TTFT/TPS/峰值 RSS/温度/电量）。
+  - `docs/device-baseline.md`: 新增第 4.1 节"模拟 Fixture（SIMULATED）"与第 1 节状态修正，规则：模拟值不承诺性能、只增不删、真机回填后以 MEASURED 对照；真实设备采集在候选 APK 产出后（P6/S042 采集、S043/S044 验收）执行。
+- 验证：
+  - 命令：`python` YAML/JSON 解析 + 字段完整性断言
+  - 结果：`PASS`；simulated-devices.yaml 三档 device_id/tier/ram_gb/android_api/abi/page_size_kb/storage_free_gb 全在，verification=SIMULATED；benchmark-results.json 三档各 3 样本 + aggregates（p50Tps 30.5/15.8/7.4）可解析。
+  - 命令：`git status --short`（S004 前半步已在历史提交 87c5d31/...；本轮改动仅上述 3 文件 + 日志）
+- 风险/阻塞：无（真机实测子集仍为 BLOCKED：无 arm64 真机；按 MIGRATION 已归入 P6/S042，解除条件见 device-baseline.md 第 6 节，不阻塞后续软件阶段）。
+- 下一步依赖：`S005`（已完成，G1）与 `P4` 均不受本轮影响；本轮没有执行 P4。

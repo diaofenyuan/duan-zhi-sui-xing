@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "verification": "SIMULATED",
+  "updated": "2026-08-23",
+  "note": "模拟 Benchmark 结果，仅用于前期自动化测试与文档演示。每条样本都是虚构值，不来自任何真实设备。真机 Benchmark 协议与实测数据在候选 APK 产出后执行（P6 / S044，协议见 S010），届时以 MEASURED 数据覆盖。",
+  "protocol": {
+    "modelId": "smollm-135m-instruct",
+    "modelVersion": "2026.08.1",
+    "quantization": "Q4_K_M",
+    "contextLength": 2048,
+    "inputTokens": 64,
+    "outputTokens": 128,
+    "threads": 4,
+    "temperature": 0.7,
+    "topP": 0.9,
+    "backend": "cpu/neon",
+    "coldStart": true,
+    "sampleCount": 3
+  },
+  "devices": [
+    {
+      "deviceId": "sim-flagship-sd8gen3",
+      "tier": "flagship",
+      "verification": "SIMULATED",
+      "samples": [
+        { "run": 1, "ttftMs": 300, "tokensPerS": 30.5, "peakRssMb": 210, "temperatureC": 36.5, "batteryPercent": 80, "charging": false },
+        { "run": 2, "ttftMs": 320, "tokensPerS": 29.1, "peakRssMb": 215, "temperatureC": 37.0, "batteryPercent": 79, "charging": false },
+        { "run": 3, "ttftMs": 290, "tokensPerS": 31.4, "peakRssMb": 205, "temperatureC": 36.2, "batteryPercent": 78, "charging": false }
+      ],
+      "aggregates": {
+        "p50TtftMs": 300, "p95TtftMs": 320,
+        "p50Tps": 30.5, "p95Tps": 29.1,
+        "p50PeakRssMb": 210, "maxPeakRssMb": 215
+      }
+    },
+    {
+      "deviceId": "sim-midrange-d8200",
+      "tier": "midrange",
+      "verification": "SIMULATED",
+      "samples": [
+        { "run": 1, "ttftMs": 700, "tokensPerS": 15.8, "peakRssMb": 205, "temperatureC": 38.0, "batteryPercent": 63, "charging": false },
+        { "run": 2, "ttftMs": 740, "tokensPerS": 14.9, "peakRssMb": 210, "temperatureC": 38.5, "batteryPercent": 62, "charging": false },
+        { "run": 3, "ttftMs": 680, "tokensPerS": 16.2, "peakRssMb": 200, "temperatureC": 37.8, "batteryPercent": 61, "charging": false }
+      ],
+      "aggregates": {
+        "p50TtftMs": 700, "p95TtftMs": 740,
+        "p50Tps": 15.8, "p95Tps": 14.9,
+        "p50PeakRssMb": 205, "maxPeakRssMb": 210
+      }
+    },
+    {
+      "deviceId": "sim-entry-d700",
+      "tier": "entry",
+      "verification": "SIMULATED",
+      "samples": [
+        { "run": 1, "ttftMs": 1500, "tokensPerS": 7.4, "peakRssMb": 195, "temperatureC": 41.0, "batteryPercent": 39, "charging": false },
+        { "run": 2, "ttftMs": 1620, "tokensPerS": 6.9, "peakRssMb": 200, "temperatureC": 41.8, "batteryPercent": 38, "charging": false },
+        { "run": 3, "ttftMs": 1480, "tokensPerS": 7.7, "peakRssMb": 192, "temperatureC": 40.6, "batteryPercent": 37, "charging": false }
+      ],
+      "aggregates": {
+        "p50TtftMs": 1500, "p95TtftMs": 1620,
+        "p50Tps": 7.4, "p95Tps": 6.9,
+        "p50PeakRssMb": 195, "maxPeakRssMb": 200
+      }
+    }
+  ]
+}

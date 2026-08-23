@@ -1,0 +1,79 @@
+# =============================================================================
+# 模拟设备画像 Fixture（S004）
+#
+# verification: SIMULATED —— 全部数值为虚构演示值，仅用于：
+#   1. 前期自动化测试（S025 CompatibilityEngine 规则引擎、UI 测试）；
+#   2. 诊断页/详情页适配信息展示（P4 联调）；
+#   3. Benchmark 分档对照与内存预算分档假设（S024，实测后覆盖）。
+#
+# 真实设备数据采集在候选 APK 产出后执行（P6 / S042），届时改用
+# docs/device-baseline.md 第 5 节回填流程写入 qa/device-matrix/devices.yaml，
+# 并以 verification: MEASURED 覆盖本文件的模拟假设。本文件只增不删。
+#
+# 字段与 S023 DeviceProfiler 输出对齐（Android API、ABI、RAM、memoryClass、
+# 可用存储、CPU/NEON、热状态、电量）；不包含任何序列号/IMEI/账号等
+# 个人信息。
+# =============================================================================
+
+schema_version: 1
+updated: '2026-08-23'
+verification: SIMULATED
+hard_constraints: {}            # 硬约束以 devices.yaml 为准，此处不重复
+
+devices:
+  - device_id: sim-flagship-sd8gen3
+    tier: flagship
+    verification: SIMULATED
+    soc: Qualcomm Snapdragon 8 Gen 3
+    cores: 8
+    ram_gb: 12
+    memory_class_mb: 512
+    android_version: '14'
+    android_api: 34
+    abi: arm64-v8a
+    page_size_kb: 4
+    storage_free_gb: 95
+    has_neon: true
+    vulkan_available: true     # 模拟：支持 Vulkan（是否有后端收益需 P6 真机核准）
+    thermal_status: NORMAL
+    battery_percent: 82
+    charging: false
+    back_pressure: low
+
+  - device_id: sim-midrange-d8200
+    tier: midrange
+    verification: SIMULATED
+    soc: MediaTek Dimensity 8200
+    cores: 8
+    ram_gb: 8
+    memory_class_mb: 384
+    android_version: '13'
+    android_api: 33
+    abi: arm64-v8a
+    page_size_kb: 4
+    storage_free_gb: 58
+    has_neon: true
+    vulkan_available: false
+    thermal_status: NORMAL
+    battery_percent: 65
+    charging: false
+    back_pressure: medium
+
+  - device_id: sim-entry-d700
+    tier: entry
+    verification: SIMULATED
+    soc: MediaTek Dimensity 700
+    cores: 8
+    ram_gb: 6
+    memory_class_mb: 256
+    android_version: '12'
+    android_api: 32
+    abi: arm64-v8a
+    page_size_kb: 4
+    storage_free_gb: 32
+    has_neon: true
+    vulkan_available: false
+    thermal_status: NORMAL
+    battery_percent: 41
+    charging: false
+    back_pressure: high

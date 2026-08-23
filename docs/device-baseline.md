@@ -1,15 +1,17 @@
-# 设备基线与分档标准（S004 改造版）
+# 设备基线与分档标准（S004）
 
-> 状态：**无真机改造版**（2026-08-23，经项目所有者授权）。原步骤卡要求登记三台真实设备并使 G0 门禁可复现；因当前无可用的真实 Android 设备，本步交付"三档分档标准 + 回填流程"，真机实测记 `BLOCKED`。机器可读数据源：`qa/device-matrix/devices.yaml`。
+> 状态：**分档标准 + 模拟 Fixture 已交付；真机实测挂起**（2026-08-23，经项目所有者授权）。项目当前无可用的真实 Android 设备，本步交付"三档分档标准 + 回填流程 + 模拟设备/模拟 Benchmark Fixture"；真机实测记 `BLOCKED`，按新协议归入 P6/S042 前置项，不阻塞软件阶段。
+> 机器可读数据源：`qa/device-matrix/devices.yaml`（分档标准硬约束）、`qa/device-matrix/simulated-devices.yaml`（模拟画像）、`qa/fixtures/benchmark-results.json`（模拟性能）。
 
 ## 1. 范围变更声明
 
 | 项 | 原步骤卡 | 本轮实际交付 |
 | --- | --- | --- |
-| 设备来源 | 三台真实设备 | 公开规格参考档位（`REFERENCE_UNVERIFIED`） |
-| 动作 | 只填写设备基线 | 同左 + 明确回填流程与硬约束 |
-| 验证 | YAML 可解析、字段完整、无个人信息 | 同左 |
+| 设备来源 | 三台真实设备 | 公开规格参考档位（`REFERENCE_UNVERIFIED`）+ 虚拟模拟画像（`SIMULATED`） |
+| 动作 | 只填写设备基线 | 同左 + 三档模拟画像 + 模拟 Benchmark + 回填流程与硬约束 |
+| 验证 | YAML 可解析、字段完整、无个人信息 | 同左，模拟 YAML/JSON 均可解析 |
 | 未完成部分 | —— | 真机实测条目（`MEASURED`），解除条件见第 6 节 |
+| 模拟 Fixture | —— | `qa/device-matrix/simulated-devices.yaml`、`qa/fixtures/benchmark-results.json`（4.1 节） |
 
 风险：在真机回填前，一切基于本表的性能假设（内存预算系数、速度预期、温控行为）都是**未校准值**；不得写入任何对外承诺。
 
@@ -50,6 +52,21 @@ S025 CompatibilityEngine  硬约束过滤(第 2 节) -> 短 Benchmark -> 输出 
 ```
 
 即用户设备无需人工查表：App 自身采集画像后按硬约束 + 规则引擎自动打分匹配。本表的硬约束阈值（`hard_constraints`）就是规则引擎的第一道过滤器。
+
+## 4.1 模拟 Fixture（SIMULATED）
+
+前置自动化测试（S025 规则引擎、UI 测试、文档演示）使用虚构模拟数据，`verification` 全为 `SIMULATED`：
+
+| 文件 | 内容 | 用途 |
+| --- | --- | --- |
+| `qa/device-matrix/simulated-devices.yaml` | 三档模拟画像（SoC/RAM/memoryClass/API/ABI/页大小/存储/NEON/Vulkan/热状态/电量），字段与 S023 DeviceProfiler 对齐 | 规则引擎与诊断页测试输入 |
+| `qa/fixtures/benchmark-results.json` | 三档各 3 条模拟样本 + P50/P95 聚合（TTFT/TPS/峰值 RSS/温度/电量），协议见 S010 | Benchmark 分档展示与兼容性打分输入 |
+
+边界规则：
+
+- 模拟值不得写入任何对外性能承诺，仅作测试/演示用途。
+- 模拟设备条目只增不删；真机回填后以 `MEASURED` 条目为准（一致字段可机器比对）。
+- 真实设备采集在**候选 APK 产出后**执行（P6/S042 采集、S043/S044 端到端与性能验收），此前不以真机结果阻塞软件步骤。
 
 ## 5. 回填流程
 
