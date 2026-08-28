@@ -21,7 +21,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_back"
             app:tint="@color/text_primary"
-            android:contentDescription="@string/action_close" />
+            android:contentDescription="@string/action_back" />
 
         <TextView
             style="@style/Text.App.Section"

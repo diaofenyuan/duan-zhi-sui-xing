@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:layout_marginStart="@dimen/pad_screen"
     android:layout_marginEnd="@dimen/pad_screen"
-    android:layout_marginBottom="@dimen/gap_sm">
+    android:layout_marginBottom="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"

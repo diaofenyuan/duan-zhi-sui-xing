@@ -123,7 +123,19 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
     public void onResume() {
         super.onResume();
         consumePendingNavigation();
+        ensureModelSelected();
         refreshHeader();
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        // Tab 切换走 show/hide，不触发 onResume；重新可见时需刷新模型状态
+        if (!hidden) {
+            consumePendingNavigation();
+            ensureModelSelected();
+            refreshHeader();
+        }
     }
 
     @Override
@@ -243,21 +255,39 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
     }
 
     private void setCurrentModel(String modelId) {
+        applyModel(modelId, true);
+    }
+
+    /** 从未选过模型时自动选中第一个已安装模型，避免已安装却提示“未安装模型”。 */
+    private void ensureModelSelected() {
+        if (currentModelId != null && !currentModelId.isEmpty()) {
+            return;
+        }
+        List<ModelInfo> installed = installedModelInfos();
+        if (installed.isEmpty()) {
+            return;
+        }
+        applyModel(installed.get(0).id, false);
+    }
+
+    private void applyModel(String modelId, boolean announce) {
         currentModelId = modelId;
         prefs().edit().putString(KEY_MODEL, modelId).apply();
         engine.release();
         engine = ChatEngineProvider.create(requireContext(), modelId);
         refreshHeader();
-        ModelInfo model = installedModelInfo(modelId);
-        if (model != null) {
-            Snackbar.make(requireView(), model.name, Snackbar.LENGTH_SHORT).show();
+        if (announce) {
+            ModelInfo model = installedModelInfo(modelId);
+            if (model != null) {
+                Snackbar.make(requireView(), model.name, Snackbar.LENGTH_SHORT).show();
+            }
         }
     }
 
     private void refreshHeader() {
         if (currentModelId == null || currentModelId.isEmpty()) {
             modelTitle.setText(R.string.chat_no_model);
-            statusDot.setBackgroundResource(R.drawable.bg_dot);
+            setStatusDot(R.color.status_warn);
             return;
         }
         ApprovedModels.Approved approved = resolveApproved();
@@ -274,7 +304,14 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
                 modelTitle.setText(model.name + " · " + label + " · " + state);
             }
         }
+        setStatusDot(resolveApproved() != null ? R.color.status_success : R.color.status_warn);
+    }
+
+    /** 头部状态点：按语义着色（就绪绿 / 未安装琥珀）。 */
+    private void setStatusDot(int colorRes) {
         statusDot.setBackgroundResource(R.drawable.bg_dot);
+        statusDot.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(requireContext(), colorRes)));
     }
 
     /** 当前选中的批准模型（已安装且文件存在）；否则 null。 */

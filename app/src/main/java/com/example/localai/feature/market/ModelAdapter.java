@@ -53,10 +53,9 @@ public class ModelAdapter extends RecyclerView.Adapter<ModelAdapter.VH> {
 
         bindCompatBadge(h.badgeCompat, model.compat);
 
-        h.textMeta.setText(model.publisher + " · " + model.paramsLabel
-                + " · " + model.quant + " 量化");
+        h.textMeta.setText(model.publisher + " · " + model.paramsLabel);
         h.tagCtx.setText("上下文 " + model.contextLabel);
-        h.tagSize.setText(model.sizeLabel);
+        h.tagSize.setText(model.quant);
         h.textSize.setText(model.sizeLabel);
 
         h.itemView.setOnClickListener(v -> {

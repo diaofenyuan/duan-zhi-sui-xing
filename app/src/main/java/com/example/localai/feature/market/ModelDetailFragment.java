@@ -159,6 +159,11 @@ public class ModelDetailFragment extends Fragment {
         compatTitle.setTextColor(ContextCompat.getColor(requireContext(),
                 ModelAdapter.compatTextRes(result.level)));
         compatIcon.setBackgroundResource(ModelAdapter.compatBgRes(result.level));
+        boolean negative = ModelInfo.COMPAT_UNSUPPORTED.equals(result.level)
+                || ModelInfo.COMPAT_HIGH_LOAD.equals(result.level);
+        compatIcon.setImageResource(negative ? R.drawable.ic_warning : R.drawable.ic_check_circle);
+        compatIcon.setImageTintList(android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(requireContext(), ModelAdapter.compatTextRes(result.level))));
         String reason = result.reasons.isEmpty()
                 ? "硬约束满足，短基准测试通过，内存与温控余量充足（估算值）。"
                 : String.join("；", result.reasons);

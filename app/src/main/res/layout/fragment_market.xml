@@ -83,7 +83,8 @@
                 android:textColorHint="@color/text_tertiary"
                 android:maxLines="1"
                 android:inputType="text"
-                android:imeOptions="actionSearch" />
+                android:imeOptions="actionSearch"
+                android:importantForAutofill="no" />
         </LinearLayout>
     </FrameLayout>
 
@@ -115,28 +116,28 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="全部" />
+                    android:text="@string/filter_all" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_task_text"
                     style="@style/Widget.App.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="文本对话" />
+                    android:text="@string/filter_task_text" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_task_code"
                     style="@style/Widget.App.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="代码助手" />
+                    android:text="@string/filter_task_code" />
             </com.google.android.material.chip.ChipGroup>
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chip_lang"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="-6dp"
+                android:layout_marginTop="2dp"
                 app:singleSelection="true"
                 app:selectionRequired="true"
                 app:singleLine="true">
@@ -147,35 +148,35 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="全部语言" />
+                    android:text="@string/filter_lang_all" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_lang_zh"
                     style="@style/Widget.App.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="中文" />
+                    android:text="@string/filter_lang_zh" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_lang_en"
                     style="@style/Widget.App.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="英文" />
+                    android:text="@string/filter_lang_en" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_lang_multi"
                     style="@style/Widget.App.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="多语言" />
+                    android:text="@string/filter_lang_multi" />
             </com.google.android.material.chip.ChipGroup>
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chip_size"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="-6dp"
+                android:layout_marginTop="2dp"
                 app:singleSelection="true"
                 app:selectionRequired="true"
                 app:singleLine="true">
@@ -186,28 +187,28 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="全部规格" />
+                    android:text="@string/filter_size_all" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_size_le2"
                     style="@style/Widget.App.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="≤ 2B" />
+                    android:text="@string/filter_size_le2" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_size_mid"
                     style="@style/Widget.App.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="3~8B" />
+                    android:text="@string/filter_size_mid" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_size_gt8"
                     style="@style/Widget.App.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="&gt; 8B" />
+                    android:text="@string/filter_size_gt8" />
             </com.google.android.material.chip.ChipGroup>
         </LinearLayout>
     </HorizontalScrollView>
@@ -241,7 +242,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_rounded_badge"
-                android:backgroundTint="#33FFFFFF"
+                android:backgroundTint="@color/hero_badge"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
                 android:paddingTop="3dp"
@@ -266,7 +267,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:maxLines="1"
+                android:maxLines="2"
                 android:textColor="@color/hero_sub_text"
                 android:textSize="12sp" />
 

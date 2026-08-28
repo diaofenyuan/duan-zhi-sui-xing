@@ -50,6 +50,7 @@ public class MarketFragment extends Fragment {
 
     private View emptyView;
     private View progressView;
+    private View heroCard;
     private RecyclerView listView;
     private android.widget.TextView countView;
     private final List<ModelInfo> all = new ArrayList<>();
@@ -74,6 +75,7 @@ public class MarketFragment extends Fragment {
 
         emptyView = view.findViewById(R.id.empty);
         progressView = view.findViewById(R.id.progress);
+        heroCard = view.findViewById(R.id.card_hero);
         listView = view.findViewById(R.id.list);
         countView = view.findViewById(R.id.text_count);
 
@@ -216,6 +218,7 @@ public class MarketFragment extends Fragment {
             all.clear();
             listView.setVisibility(View.GONE);
             emptyView.setVisibility(View.GONE);
+            heroCard.setVisibility(View.GONE);
             progressView.setVisibility(View.VISIBLE);
             return;
         }
@@ -224,6 +227,7 @@ public class MarketFragment extends Fragment {
         if (view.isError()) {
             all.clear();
             listView.setVisibility(View.GONE);
+            heroCard.setVisibility(View.GONE);
             emptyView.setVisibility(View.VISIBLE);
             ((EmptyStateView) emptyView).setMessages(
                     "目录加载失败",
@@ -234,17 +238,14 @@ public class MarketFragment extends Fragment {
 
         all.clear();
         all.addAll(MarketModels.map(view, deviceSnapshot()));
-        View heroCard = getView() == null ? null : getView().findViewById(R.id.card_hero);
-        if (heroCard != null) {
-            heroCard.setVisibility(all.isEmpty() ? View.GONE : View.VISIBLE);
-            if (!all.isEmpty()) {
-                ModelInfo hero = all.get(0);
-                TextView heroTitle = heroCard.findViewById(R.id.hero_title);
-                heroTitle.setText(hero.name);
-                TextView heroDesc = heroCard.findViewById(R.id.hero_desc);
-                heroDesc.setText(hero.paramsLabel + " 参数 · 上下文 " + hero.contextLabel
-                        + " · " + ModelAdapter.compatLabel(hero.compat));
-            }
+        heroCard.setVisibility(all.isEmpty() ? View.GONE : View.VISIBLE);
+        if (!all.isEmpty()) {
+            ModelInfo hero = all.get(0);
+            TextView heroTitle = heroCard.findViewById(R.id.hero_title);
+            heroTitle.setText(hero.name);
+            TextView heroDesc = heroCard.findViewById(R.id.hero_desc);
+            heroDesc.setText(hero.paramsLabel + " 参数 · 上下文 " + hero.contextLabel
+                    + " · " + ModelAdapter.compatLabel(hero.compat));
         }
         applyFilter();
     }
@@ -255,7 +256,7 @@ public class MarketFragment extends Fragment {
         }
         List<ModelInfo> result = Filters.apply(all, query, taskFilter, langFilter, sizeFilter);
         adapter.submit(result);
-        countView.setText(getString(R.string.market_count_fmt, all.size()));
+        countView.setText(getString(R.string.market_count_fmt, result.size()));
 
         boolean empty = result.isEmpty();
         emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);

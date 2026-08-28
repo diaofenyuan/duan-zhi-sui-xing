@@ -14,12 +14,26 @@
     <string name="action_cancel">取消</string>
     <string name="action_delete">删除</string>
     <string name="action_retry">重试</string>
+    <string name="action_pause">暂停</string>
+    <string name="action_resume">继续</string>
     <string name="action_close">关闭</string>    
+    <string name="action_back">返回</string>
     <string name="action_send">发送消息</string>
 
     <!-- 市场 -->
     <string name="market_subtitle">本地大模型 · 完全离线运行</string>
     <string name="market_search_hint">搜索模型、任务或厂商</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_task_text">文本对话</string>
+    <string name="filter_task_code">代码助手</string>
+    <string name="filter_lang_all">全部语言</string>
+    <string name="filter_lang_zh">中文</string>
+    <string name="filter_lang_en">英文</string>
+    <string name="filter_lang_multi">多语言</string>
+    <string name="filter_size_all">全部规格</string>
+    <string name="filter_size_le2">≤ 2B</string>
+    <string name="filter_size_mid">3~8B</string>
+    <string name="filter_size_gt8">&gt; 8B</string>
     <string name="section_recommended">推荐模型</string>
     <string name="market_count_fmt">共 %d 个模型</string>
     <string name="empty_market_title">没有符合条件的模型</string>

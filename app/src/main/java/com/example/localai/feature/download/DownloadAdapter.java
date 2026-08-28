@@ -73,6 +73,7 @@ public class DownloadAdapter extends RecyclerView.Adapter<DownloadAdapter.VH> {
             h.iconState.setImageTintList(colorList(h, R.color.status_danger));
             h.btnPrimary.setImageResource(R.drawable.ic_refresh);
             h.btnPrimary.setImageTintList(colorList(h, R.color.md_primary));
+            h.btnPrimary.setContentDescription(getString(h, R.string.action_retry));
             h.btnPrimary.setOnClickListener(v -> actions.onRetry(task));
             h.textState.setText(R.string.dl_state_wait_retry);
             h.textPercent.setTextColor(color(h, R.color.status_danger));
@@ -120,6 +121,8 @@ public class DownloadAdapter extends RecyclerView.Adapter<DownloadAdapter.VH> {
                 h.btnPrimary.setAlpha(1f);
                 break;
         }
+        h.btnPrimary.setContentDescription(getString(h,
+                DownloadState.PAUSED.equals(state) ? R.string.action_resume : R.string.action_pause));
         h.btnPrimary.setOnClickListener(v -> {
             if (DownloadState.PAUSED.equals(task.state)) {
                 actions.onPauseResume(task); // resume

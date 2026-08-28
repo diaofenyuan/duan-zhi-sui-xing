@@ -41,6 +41,8 @@
     <color name="hero_start">#4338CA</color>
     <color name="hero_end">#6D28D9</color>
     <color name="hero_sub_text">#CDC7FF</color>
+    <color name="hero_badge">#33FFFFFF</color>
+    <color name="hero_badge_soft">#26FFFFFF</color>
 
     <!-- Launcher -->
     <color name="launcher_bg">#3730A3</color>

@@ -121,8 +121,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="6dp"
+                android:background="?attr/selectableItemBackground"
                 android:text="@string/action_retry"
-                android:textColor="@color/md_primary" />
+                android:textColor="@color/md_primary"
+                android:contentDescription="@string/action_retry" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView

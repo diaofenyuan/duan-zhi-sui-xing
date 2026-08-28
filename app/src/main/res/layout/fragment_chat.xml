@@ -88,7 +88,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@drawable/bg_dot" />
+                    android:background="@drawable/bg_soft_box" />
 
                 <ImageView
                     android:layout_width="34dp"
@@ -107,8 +107,9 @@
 
             <TextView
                 style="@style/Text.App.BodySec"
-                android:layout_width="230dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:maxWidth="260dp"
                 android:gravity="center"
                 android:layout_marginTop="6dp"
                 android:text="@string/chat_empty_sub" />
@@ -147,7 +148,8 @@
                 android:hint="@string/chat_input_hint"
                 android:textColorHint="@color/text_tertiary"
                 android:inputType="textMultiLine|textCapSentences"
-                android:imeOptions="actionNone" />
+                android:imeOptions="actionNone"
+                android:importantForAutofill="no" />
 
             <FrameLayout
                 android:layout_width="44dp"

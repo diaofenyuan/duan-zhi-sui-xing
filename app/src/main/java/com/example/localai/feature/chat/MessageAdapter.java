@@ -1,5 +1,6 @@
 package com.example.localai.feature.chat;
 
+import android.animation.ObjectAnimator;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,9 +67,7 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             case TYPE_BOT:
                 return new TextVH(inflater.inflate(R.layout.item_message_assistant, parent, false));
             default:
-                return new RecyclerView.ViewHolder(
-                        inflater.inflate(R.layout.item_typing, parent, false)) {
-                };
+                return new TypingVH(inflater.inflate(R.layout.item_typing, parent, false));
         }
     }
 
@@ -85,7 +84,18 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             });
         } else {
             holder.itemView.setOnLongClickListener(null);
+            if (holder instanceof TypingVH) {
+                ((TypingVH) holder).start();
+            }
         }
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+        if (holder instanceof TypingVH) {
+            ((TypingVH) holder).stop();
+        }
+        super.onViewRecycled(holder);
     }
 
     @Override
@@ -107,6 +117,40 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         TextVH(@NonNull View itemView) {
             super(itemView);
             text = itemView.findViewById(R.id.text);
+        }
+    }
+
+    /** “正在思考”占位：三个点错峰呼吸闪烁。 */
+    static class TypingVH extends RecyclerView.ViewHolder {
+
+        private final ObjectAnimator[] anims = new ObjectAnimator[3];
+
+        TypingVH(@NonNull View itemView) {
+            super(itemView);
+            int[] ids = {R.id.dot1, R.id.dot2, R.id.dot3};
+            for (int i = 0; i < ids.length; i++) {
+                View dot = itemView.findViewById(ids[i]);
+                ObjectAnimator a = ObjectAnimator.ofFloat(dot, View.ALPHA, 0.25f, 1f);
+                a.setDuration(550);
+                a.setRepeatCount(ObjectAnimator.INFINITE);
+                a.setRepeatMode(ObjectAnimator.REVERSE);
+                a.setStartDelay(i * 180L);
+                anims[i] = a;
+            }
+        }
+
+        void start() {
+            for (ObjectAnimator a : anims) {
+                if (!a.isStarted()) {
+                    a.start();
+                }
+            }
+        }
+
+        void stop() {
+            for (ObjectAnimator a : anims) {
+                a.cancel();
+            }
         }
     }
 }
