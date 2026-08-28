@@ -35,15 +35,16 @@ public final class FixtureServer {
             System.out.println(h);
             return;
         }
-        if (args.length == 4 && "serve".equals(args[0])) {
-            serve(Integer.parseInt(args[1]), Paths.get(args[2]), args[3]);
+        if (args.length >= 4 && "serve".equals(args[0])) {
+            String mediaDir = args.length >= 5 ? args[4] : null;
+            serve(Integer.parseInt(args[1]), Paths.get(args[2]), args[3], mediaDir);
             return;
         }
-        System.err.println("usage: serve <port> <fixturesDir> <generatedAt> | hash ...");
+        System.err.println("usage: serve <port> <fixturesDir> <generatedAt> [mediaDir] | hash ...");
         System.exit(2);
     }
 
-    static void serve(int port, Path fixturesDir, String generatedAt) throws IOException {
+    static void serve(int port, Path fixturesDir, String generatedAt, String mediaDir) throws IOException {
         Map<String, byte[]> statics = new HashMap<>();
         load(statics, fixturesDir, "/v1/catalog.json", "catalog.json");
         load(statics, fixturesDir, "/v1/catalog.sig", "catalog.sig");
@@ -57,11 +58,27 @@ public final class FixtureServer {
                 });
             }
         }
+        Map<String, byte[]> reals = new HashMap<>();
+        if (mediaDir != null) {
+            // media/{modelId}/{version}/{fileName} -> /v1/models/{modelId}/{version}/{fileName}
+            Path root = Paths.get(mediaDir);
+            if (Files.isDirectory(root)) {
+                try (var walk = Files.walk(root)) {
+                    walk.filter(Files::isRegularFile).forEach(file -> {
+                        String rel = root.relativize(file).toString().replace('\\', '/');
+                        reals.put("/v1/models/" + rel, readAll(file));
+                    });
+                }
+                System.out.println("media files loaded: " + reals.size());
+            } else {
+                System.out.println("mediaDir not found, real files unavailable: " + mediaDir);
+            }
+        }
         Map<String, byte[]> dynamic = new HashMap<>();
 
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
         server.setExecutor(Executors.newCachedThreadPool());
-        server.createContext("/", exchange -> handle(exchange, statics, dynamic));
+        server.createContext("/", exchange -> handle(exchange, statics, reals, dynamic));
         server.start();
         System.out.println("FixtureServer listening on 0.0.0.0:" + port + " fixtures=" + fixturesDir
                 + " generatedAt=" + generatedAt + " staticRoutes=" + statics.size());
@@ -83,7 +100,8 @@ public final class FixtureServer {
         statics.put(route, Files.readAllBytes(p));
     }
 
-    static void handle(HttpExchange ex, Map<String, byte[]> statics, Map<String, byte[]> dynamic)
+    static void handle(HttpExchange ex, Map<String, byte[]> statics,
+                       Map<String, byte[]> reals, Map<String, byte[]> dynamic)
             throws IOException {
         try {
             String path = ex.getRequestURI().getPath();
@@ -91,8 +109,16 @@ public final class FixtureServer {
                 respond(ex, 405, "text/plain", "method not allowed".getBytes(StandardCharsets.UTF_8));
                 return;
             }
-            byte[] body = statics.get(path);
+            byte[] body = reals.get(path);
             if (body != null) {
+                // 真实 GGUF 权重文件（media 目录，不入 git；未提供时回退演示载荷）
+                System.out.println("[reals] " + path);
+                serveBytes(ex, path, body, "application/octet-stream");
+                return;
+            }
+            body = statics.get(path);
+            if (body != null) {
+                System.out.println("[statics] " + path);
                 serveBytes(ex, path, body, "application/json");
                 return;
             }
@@ -111,9 +137,11 @@ public final class FixtureServer {
                 }
             }
             if (generated == null) {
+                System.out.println("[404] " + path);
                 respond(ex, 404, "text/plain", "not found".getBytes(StandardCharsets.UTF_8));
                 return;
             }
+            System.out.println("[dynamic] " + path);
             serveBytes(ex, path, generated, "application/octet-stream");
         } finally {
             ex.close();

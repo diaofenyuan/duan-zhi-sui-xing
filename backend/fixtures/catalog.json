@@ -2,13 +2,14 @@
   "schemaVersion": 1,
   "generatedAt": "2026-08-23T03:48:00Z",
   "models": [
-    { "modelId": "qwen3-4b", "version": "2026.08.1", "displayName": "Qwen3-4B-Instruct", "description": "Dev fixture payload (not real weights)." },
-    { "modelId": "llama3.2-3b", "version": "2026.08.1", "displayName": "Llama-3.2-3B-Instruct", "description": "Dev fixture payload (not real weights)." },
-    { "modelId": "ds-r1-1.5b", "version": "2026.08.1", "displayName": "DeepSeek-R1-Distill-1.5B", "description": "Dev fixture payload (not real weights)." },
-    { "modelId": "qwen-coder-1.5b", "version": "2026.08.1", "displayName": "Qwen2.5-Coder-1.5B-Instruct", "description": "Dev fixture payload (not real weights)." },
-    { "modelId": "gemma-3-1b", "version": "2026.08.1", "displayName": "Gemma-3-1B-IT", "description": "Dev fixture payload (not real weights)." },
-    { "modelId": "phi-3.5-mini", "version": "2026.08.1", "displayName": "Phi-3.5-mini-instruct", "description": "Dev fixture payload (not real weights)." },
-    { "modelId": "yi-1.5-9b", "version": "2026.08.1", "displayName": "Yi-1.5-9B-Chat", "description": "Dev fixture payload (not real weights)." },
-    { "modelId": "smollm2-360m", "version": "2026.08.1", "displayName": "SmolLM2-360M-Instruct", "description": "Dev fixture payload (not real weights)." }
+    { "modelId": "qwen3-4b", "version": "2026.08.1", "displayName": "Qwen3-4B-Instruct", "description": "Dev fixture payload (not real weights) for catalog/download integration testing." },
+    { "modelId": "llama3.2-3b", "version": "2026.08.1", "displayName": "Llama-3.2-3B-Instruct", "description": "Dev fixture payload (not real weights) for catalog/download integration testing." },
+    { "modelId": "ds-r1-1.5b", "version": "2026.08.1", "displayName": "DeepSeek-R1-Distill-1.5B", "description": "Dev fixture payload (not real weights) for catalog/download integration testing." },
+    { "modelId": "qwen-coder-1.5b", "version": "2026.08.1", "displayName": "Qwen2.5-Coder-1.5B-Instruct", "description": "Dev fixture payload (not real weights) for catalog/download integration testing." },
+    { "modelId": "gemma-3-1b", "version": "2026.08.1", "displayName": "Gemma-3-1B-IT", "description": "Dev fixture payload (not real weights) for catalog/download integration testing." },
+    { "modelId": "phi-3.5-mini", "version": "2026.08.1", "displayName": "Phi-3.5-mini-instruct", "description": "Dev fixture payload (not real weights) for catalog/download integration testing." },
+    { "modelId": "yi-1.5-9b", "version": "2026.08.1", "displayName": "Yi-1.5-9B-Chat", "description": "Dev fixture payload (not real weights) for catalog/download integration testing." },
+    { "modelId": "smollm2-360m", "version": "2026.08.1", "displayName": "SmolLM2-360M-Instruct", "description": "Dev fixture payload (not real weights) for catalog/download integration testing." },
+    { "modelId": "smollm-135m-instruct", "version": "2026.08.1", "displayName": "SmolLM-135M-Instruct", "description": "Approved evaluation model (real GGUF weights, Apache-2.0, HuggingFaceTB)." }
   ]
 }

@@ -15,17 +15,31 @@ import androidx.fragment.app.Fragment;
 
 import com.example.localai.MainActivity;
 import com.example.localai.R;
+import com.example.localai.core.compatibility.CompatibilityEngine;
+import com.example.localai.core.device.DeviceProfiler;
 import com.example.localai.data.ServiceLocator;
-import com.example.localai.mock.MockStore;
+import com.example.localai.feature.download.DownloadRepository;
 import com.example.localai.model.ModelInfo;
 import com.google.android.material.snackbar.Snackbar;
 
-/** 模型详情页：头图、实测数据、适配结论、元信息与示例指令。 */
+/** 模型详情页：真实目录数据（签名 Manifest）+ 兼容性结论 + 下载/开始对话 + 已批准/演示标识。 */
 public class ModelDetailFragment extends Fragment {
 
     private static final String ARG_MODEL_ID = "model_id";
 
-    private ModelInfo model;
+    private String modelId;
+    private DownloadRepository.CatalogItem currentItem;
+    private final DownloadRepository.Listener repositoryListener = new DownloadRepository.Listener() {
+        @Override
+        public void onDownloadsChanged() {
+            refreshFromRepository();
+        }
+
+        @Override
+        public void onCatalogChanged() {
+            refreshFromRepository();
+        }
+    };
 
     public static ModelDetailFragment newInstance(String modelId) {
         Bundle args = new Bundle();
@@ -44,68 +58,134 @@ public class ModelDetailFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        String id = getArguments() != null ? getArguments().getString(ARG_MODEL_ID) : null;
-        model = MockStore.modelById(id);
-        if (model == null) {
-            if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).getOnBackPressedDispatcher().onBackPressed();
-            }
-            return;
-        }
-
+        modelId = getArguments() != null ? getArguments().getString(ARG_MODEL_ID) : null;
         view.findViewById(R.id.btn_back).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity) {
                 ((MainActivity) getActivity()).getOnBackPressedDispatcher().onBackPressed();
             }
         });
 
+        DownloadRepository repository = ServiceLocator.downloads();
+        if (repository != null) {
+            repository.register(repositoryListener);
+        }
+        refreshFromRepository();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        DownloadRepository repository = ServiceLocator.downloads();
+        if (repository != null) {
+            repository.unregister(repositoryListener);
+        }
+    }
+
+    private void refreshFromRepository() {
+        DownloadRepository repository = ServiceLocator.downloads();
+        if (repository == null) {
+            showUnavailable(getView(), "下载服务未就绪");
+            return;
+        }
+        DownloadRepository.CatalogView view = repository.catalogView();
+        DownloadRepository.CatalogItem item = null;
+        if (view != null && view.models != null) {
+            for (DownloadRepository.CatalogItem candidate : view.models) {
+                if (candidate.modelId.equals(modelId)) {
+                    item = candidate;
+                    break;
+                }
+            }
+        }
+        if (item == null) {
+            showUnavailable(getView(), "目录尚未加载该模型（刷新后重试）");
+            return;
+        }
+        currentItem = item;
+        bind(item);
+    }
+
+    private void showUnavailable(View view, String message) {
+        if (view == null || !isAdded()) {
+            return;
+        }
+        TextView compatReason = view.findViewById(R.id.compat_reason);
+        compatReason.setText(message);
+    }
+
+    private void bind(DownloadRepository.CatalogItem item) {
+        if (getView() == null || !isAdded()) {
+            return;
+        }
+        View view = getView();
+
         // 头图
+        boolean codeTask = item.tasks != null && item.tasks.contains(ModelInfo.TASK_CODE);
         TextView tag = view.findViewById(R.id.hero_tag);
-        tag.setText(ModelInfo.TASK_CODE.equals(model.task) ? "代码助手" : "文本对话");
-        ((TextView) view.findViewById(R.id.hero_name)).setText(model.name);
-        ((TextView) view.findViewById(R.id.hero_publisher))
-                .setText(model.publisher + " · " + model.updated + " 更新");
-        ((TextView) view.findViewById(R.id.hero_param)).setText(model.paramsLabel + " 参数");
-        ((TextView) view.findViewById(R.id.hero_quant)).setText(model.quant);
-        ((TextView) view.findViewById(R.id.hero_ctx)).setText("上下文 " + model.contextLabel);
+        tag.setText(codeTask ? "代码助手" : "文本对话");
+        TextView status = view.findViewById(R.id.hero_status);
+        status.setText(item.isApproved() ? "已批准权重" : "演示载荷");
+        status.setVisibility(View.VISIBLE);
+        int statusBg = item.isApproved() ? R.color.status_success_container : R.color.status_warn_container;
+        int statusText = item.isApproved() ? R.color.status_success : R.color.status_warn;
+        status.setBackgroundResource(statusBg);
+        status.setTextColor(ContextCompat.getColor(requireContext(), statusText));
 
-        // 三格数据
-        ((TextView) view.findViewById(R.id.val_size)).setText(model.sizeLabel);
-        ((TextView) view.findViewById(R.id.val_speed)).setText(
-                getString(R.string.speed_fmt, model.tps > 0 ? String.valueOf(model.tps) : "—"));
-        ((TextView) view.findViewById(R.id.val_ttft)).setText(
-                getString(R.string.ttft_fmt, model.ttftMs));
+        ((TextView) view.findViewById(R.id.hero_name)).setText(item.displayName);
+        ((TextView) view.findViewById(R.id.hero_publisher)).setText(
+                (item.publisher == null ? "" : item.publisher) + " · " + item.updatedAt + " 更新");
+        ((TextView) view.findViewById(R.id.hero_param))
+                .setText(MarketModels.paramsLabel(item.parameterCount) + " 参数");
+        ((TextView) view.findViewById(R.id.hero_quant)).setText(item.quantization);
+        ((TextView) view.findViewById(R.id.hero_ctx))
+                .setText("上下文 " + MarketModels.contextLabel(item.contextLength));
 
-        // 适配结论
+        // 三格数据（性能未实测：显示待真机基线）
+        ((TextView) view.findViewById(R.id.val_size)).setText(MarketModels.sizeLabel(item.sizeBytes));
+        ((TextView) view.findViewById(R.id.val_speed)).setText("待测");
+        ((TextView) view.findViewById(R.id.val_ttft)).setText("待测");
+
+        // 适配结论（CompatibilityEngine，估算）
+        CompatibilityEngine.ModelConstraints constraints = new CompatibilityEngine.ModelConstraints(
+                item.minAndroidApi, item.abis, item.sizeBytes, item.contextLength, item.parameterCount);
+        CompatibilityEngine.DeviceSnapshot snapshot = deviceSnapshot();
+        CompatibilityEngine.Result result = CompatibilityEngine.evaluate(snapshot, constraints);
+
         TextView compatTitle = view.findViewById(R.id.compat_title);
         TextView compatReason = view.findViewById(R.id.compat_reason);
         android.widget.ImageView compatIcon = view.findViewById(R.id.compat_icon);
-        compatTitle.setText(ModelAdapter.compatLabel(model.compat)
-                + (ModelInfo.COMPAT_RECOMMENDED.equals(model.compat) ? " · 本机可流畅运行" : ""));
-        int bgRes = ModelAdapter.compatBgRes(model.compat);
-        int textRes = ModelAdapter.compatTextRes(model.compat);
-        compatTitle.setTextColor(ContextCompat.getColor(requireContext(), textRes));
-        compatIcon.setBackgroundResource(bgRes);
-        String reason = model.compatReason == null || model.compatReason.isEmpty()
-                ? "硬约束满足，短基准测试通过，内存与温控余量充足。"
-                : model.compatReason;
+        compatTitle.setText(ModelAdapter.compatLabel(result.level)
+                + (result.isRecommended() ? " · 本机可流畅运行" : ""));
+        compatTitle.setTextColor(ContextCompat.getColor(requireContext(),
+                ModelAdapter.compatTextRes(result.level)));
+        compatIcon.setBackgroundResource(ModelAdapter.compatBgRes(result.level));
+        String reason = result.reasons.isEmpty()
+                ? "硬约束满足，短基准测试通过，内存与温控余量充足（估算值）。"
+                : String.join("；", result.reasons);
         compatReason.setText(reason);
 
         // 简介
-        ((TextView) view.findViewById(R.id.text_desc)).setText(model.desc);
+        ((TextView) view.findViewById(R.id.text_desc)).setText(item.description);
 
-        // 详细信息（程序化行）
+        // 详细信息
         LinearLayout meta = view.findViewById(R.id.meta_container);
-        addMetaRow(meta, getString(R.string.meta_license), model.license, true);
-        addMetaRow(meta, getString(R.string.meta_quant), model.quant + " · GGUF", false);
-        addMetaRow(meta, getString(R.string.meta_template), "ChatML", false);
-        addMetaRow(meta, getString(R.string.meta_source), "huggingface.co/" + model.publisher, false);
-        addMetaRow(meta, getString(R.string.meta_updated), model.updated, false);
+        meta.removeAllViews();
+        addMetaRow(meta, getString(R.string.meta_license), item.licenseSpdx, true);
+        addMetaRow(meta, getString(R.string.meta_quant),
+                item.quantization + " · GGUF", false);
+        addMetaRow(meta, getString(R.string.meta_template),
+                item.chatTemplate == null ? "chatml" : item.chatTemplate, false);
+        addMetaRow(meta, getString(R.string.meta_source),
+                item.sourceUrl == null ? "" : item.sourceUrl, false);
+        addMetaRow(meta, getString(R.string.meta_updated), item.updatedAt, false);
 
-        // 示例指令 → 预填到聊天输入框
+        // 示例指令 → 带模型打开聊天并预填
         View.OnClickListener toChat = v -> {
-            MockStore.pendingPrefill = ((TextView) v).getText().toString();
-            openTab(R.id.nav_chat);
+            if (getActivity() instanceof MainActivity) {
+                MainActivity activity = (MainActivity) getActivity();
+                activity.setChatPrefill(((TextView) v).getText().toString());
+                activity.openChatWithModel(item.modelId);
+            }
         };
         view.findViewById(R.id.sample_1).setOnClickListener(toChat);
         view.findViewById(R.id.sample_2).setOnClickListener(toChat);
@@ -115,26 +195,33 @@ public class ModelDetailFragment extends Fragment {
         TextView note = view.findViewById(R.id.btn_note);
         com.google.android.material.button.MaterialButton action =
                 view.findViewById(R.id.btn_action);
-        if (model.installed) {
+        action.setEnabled(true);
+        action.setAlpha(1f);
+        if (item.installed) {
             action.setText(R.string.btn_open_chat);
-            note.setText("已安装 · 点击开始对话");
-            action.setOnClickListener(v -> openTab(R.id.nav_chat));
-        } else if (ModelInfo.COMPAT_UNSUPPORTED.equals(model.compat)) {
+            note.setText(item.isApproved()
+                    ? "已安装 · 点击开始本地对话"
+                    : "已安装 · 演示载荷，对话为演示模式");
+            action.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).openChatWithModel(item.modelId);
+                }
+            });
+        } else if (result.isUnsupported()) {
             action.setText(R.string.btn_unsupported);
             action.setEnabled(false);
             action.setAlpha(0.5f);
-            note.setText(model.compatReason);
+            note.setText(reason);
         } else {
-            action.setText(getString(R.string.btn_download_fmt, model.sizeLabel));
+            action.setText(getString(R.string.btn_download_fmt, MarketModels.sizeLabel(item.sizeBytes)));
             note.setText(getString(R.string.download_note_fmt));
             action.setOnClickListener(v -> {
-                // P2：接入真实下载链路（签名验证 -> Range 下载 -> SHA-256/GGUF 校验 -> 原子安装）。
-                // 模型必须存在于签名目录中才会被接受，否则给出可见原因。
-                if (ServiceLocator.downloads() == null) {
-                    Snackbar.make(view, "下载服务未就绪", Snackbar.LENGTH_SHORT).show();
+                DownloadRepository repository = ServiceLocator.downloads();
+                if (repository == null) {
+                    Snackbar.make(getView(), "下载服务未就绪", Snackbar.LENGTH_SHORT).show();
                     return;
                 }
-                ServiceLocator.downloads().enqueue(model.id, (ok, message) -> {
+                repository.enqueue(item.modelId, (ok, message) -> {
                     if (!isAdded() || getView() == null) {
                         return;
                     }
@@ -146,6 +233,15 @@ public class ModelDetailFragment extends Fragment {
                 });
             });
         }
+    }
+
+    private CompatibilityEngine.DeviceSnapshot deviceSnapshot() {
+        DeviceProfiler.Profile p = DeviceProfiler.collect(requireContext());
+        return new CompatibilityEngine.DeviceSnapshot(
+                p.sdkInt,
+                p.abis.isEmpty() ? "" : p.abis.get(0),
+                p.storageFreeMb * 1024 * 1024,
+                p.ramTotalMb * 1024 * 1024);
     }
 
     private void addMetaRow(LinearLayout parent, String label, String value, boolean first) {
@@ -164,10 +260,8 @@ public class ModelDetailFragment extends Fragment {
 
         TextView valueView = new TextView(requireContext());
         valueView.setTextSize(13.5f);
-        valueView.setTextColor(ContextCompat.getColor(requireContext(),
-                label.equals("许可证") ? R.color.md_primary : R.color.text_primary));
-        valueView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD,
-                label.equals("许可证") ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        valueView.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
+        valueView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         valueView.setText(value);
         valueView.setMaxLines(1);
         valueView.setEllipsize(android.text.TextUtils.TruncateAt.END);

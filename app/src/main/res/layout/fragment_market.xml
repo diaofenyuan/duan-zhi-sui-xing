@@ -252,21 +252,21 @@
                 android:textColor="@color/text_on_brand" />
 
             <TextView
+                android:id="@+id/hero_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="@string/hero_title"
                 android:textColor="@color/text_on_brand"
                 android:textSize="19sp"
                 android:fontFamily="sans-serif-medium"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/hero_desc"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:maxLines="1"
-                android:text="@string/hero_desc"
                 android:textColor="@color/hero_sub_text"
                 android:textSize="12sp" />
 

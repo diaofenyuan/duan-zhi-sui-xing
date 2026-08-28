@@ -36,6 +36,15 @@ public class ModelInfo {
     public final int gradIndex;
     public boolean installed;
 
+    /** P4 起由真实目录映射填充（可为 null）。 */
+    public String weightStatus;   // "approved" | "demo"
+    public boolean isDemo;
+    public String sourceUrl;
+    public String licenseUrl;
+    public String chatTemplate;
+    public int minAndroidApi;
+    public int estimatedPeakMb;
+
     public ModelInfo(String id, String name, String publisher, String paramsLabel, double paramsB,
                      String quant, String sizeLabel, long sizeBytes, String contextLabel,
                      String task, List<String> langs, String license, String desc,

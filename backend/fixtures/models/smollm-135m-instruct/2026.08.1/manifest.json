@@ -1,0 +1,22 @@
+{
+  "modelId": "smollm-135m-instruct",
+  "version": "2026.08.1",
+  "displayName": "SmolLM-135M-Instruct",
+  "source": { "publisher": "HuggingFaceTB", "url": "https://huggingface.co/HuggingFaceTB" },
+  "license": { "spdx": "Apache-2.0", "url": "https://huggingface.co/HuggingFaceTB" },
+  "format": "gguf",
+  "architecture": "llama",
+  "parameterCount": 135000000,
+  "quantization": "Q4_K_M",
+  "contextLength": 2048,
+  "description": "Approved evaluation model (real GGUF weights, Apache-2.0, HuggingFaceTB).",
+  "tasks": ["text"],
+  "languages": ["\u82f1\u6587"],
+  "weightStatus": "approved",
+  "chatTemplate": "chatml",
+  "updatedAt": "2026-08-23",
+  "files": [
+    { "name": "SmolLM-135M-Instruct-Q4_K_M.gguf", "sizeBytes": 105453984, "sha256": "30a78b6b6b6130a32a704f32ad589e69790ac4e2772bf43dbd2ebdbe0b52788a", "urls": ["/v1/models/smollm-135m-instruct/2026.08.1/SmolLM-135M-Instruct-Q4_K_M.gguf"] }
+  ],
+  "runtime": { "minAndroidApi": 26, "abis": ["arm64-v8a"], "backends": ["cpu"] }
+}

@@ -41,7 +41,9 @@ public final class RealChatEngine implements ChatEngine {
     @Override
     public synchronized void start(List<ChatMessage> history, StreamListener listener) {
         this.listener = listener;
-        String prompt = buildPrompt(history);
+        ChatHistoryTrimmer.Trimmed trimmed =
+                ChatHistoryTrimmer.truncate(history, approved.contextLength);
+        String prompt = buildPrompt(trimmed.kept);
         InferenceRequest request = ApprovedModels.requestFor(
                 appContext, approved, "chat-" + System.nanoTime());
         running = true;

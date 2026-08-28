@@ -10,6 +10,11 @@
   "quantization": "Q4_K_M",
   "contextLength": 131072,
   "description": "Dev fixture payload (not real weights) for catalog/download integration testing.",
+  "tasks": ["text"],
+  "languages": ["\u82f1\u6587"],
+  "weightStatus": "demo",
+  "chatTemplate": "chatml",
+  "updatedAt": "2026-08-23",
   "files": [
     { "name": "model-q4_k_m.gguf", "sizeBytes": 5242880, "sha256": "5258e6e420bafd950a3452197c68172a5bd431f06b685a8bef6b74042c5b6b7d", "urls": ["/v1/models/llama3.2-3b/2026.08.1/model-q4_k_m.gguf"] }
   ],

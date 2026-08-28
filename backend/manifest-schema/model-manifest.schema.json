@@ -116,6 +116,32 @@
     "description": {
       "type": "string",
       "maxLength": 512
+    },
+    "tasks": {
+      "type": "array",
+      "description": "用途分类（P4 市场筛选）；缺省视为 text。",
+      "items": {
+        "type": "string",
+        "enum": ["text", "code"]
+      }
+    },
+    "languages": {
+      "type": "array",
+      "description": "主要语言（P4 市场筛选）；缺省视为 英文。",
+      "items": { "type": "string" }
+    },
+    "weightStatus": {
+      "type": "string",
+      "enum": ["approved", "demo"],
+      "description": "approved：签名目录分发的正式权重（真实 GGUF）；demo：开发演示载荷（合成字节，不可推理）。缺省视为 demo。"
+    },
+    "chatTemplate": {
+      "type": "string",
+      "description": "Chat 模板标识（如 chatml）；缺省视为 chatml。"
+    },
+    "updatedAt": {
+      "type": "string",
+      "description": "目录更新时间（ISO-8601 或展示友好字符串）。"
     }
   }
 }

@@ -1,1 +1,1 @@
-{"algorithm":"Ed25519","keyId":"release-2026-01-dev","value":"i+Ebx17v4r5mNFD2Qb32sNpix4XXuab7Vts6tJc6v59Jkr9ZiO7A1ifO0nF2FS1KCDYJHW2L3KkvUakN7iuNAw=="}
+{"algorithm":"Ed25519","keyId":"release-2026-01-dev","value":"Bpe1ZFFdvcWWB4fHxR5AYqyb4BWBkG6pcA8mpHx87rV8SXNzqvSPzGhnoZSMrWmKYXIN+VwEHNZXLODwU8ZoBA=="}

@@ -1,5 +1,6 @@
 package com.example.localai.feature.chat;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -20,17 +21,23 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.localai.MainActivity;
 import com.example.localai.R;
 import com.example.localai.core.inference.ApprovedModels;
-import com.example.localai.mock.MockStore;
+import com.example.localai.data.ServiceLocator;
+import com.example.localai.data.room.ModelEntity;
 import com.example.localai.model.ChatMessage;
-import com.example.localai.model.ChatSession;
 import com.example.localai.model.ModelInfo;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/** 本地对话页：流式输出（演示/真实推理双引擎）、停止、复制/重试/删除、模型切换与会话保存。 */
+/**
+ * 本地对话页：流式输出（演示/真实推理双引擎）、停止、复制/重试/删除、
+ * 模型切换（真实已安装模型）与会话持久化（Room：新建/自动保存/恢复）。
+ */
 public class ChatFragment extends Fragment implements ChatEngine.StreamListener {
+
+    private static final String PREFS = "localai_chat";
+    private static final String KEY_MODEL = "current_model";
 
     private MessageAdapter adapter;
     private ChatEngine engine;
@@ -46,6 +53,11 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
     private int botPosition = -1;
     private boolean generating = false;
 
+    /** 当前会话 id（<=0 表示尚未持久化的新会话）。 */
+    private long conversationId = 0;
+    private String currentModelId = "";
+    private boolean pendingModelSwitch = false;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -55,7 +67,8 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        engine = ChatEngineProvider.create(requireContext(), MockStore.currentModelId);
+        currentModelId = prefs().getString(KEY_MODEL, "");
+        engine = ChatEngineProvider.create(requireContext(), currentModelId);
         adapter = new MessageAdapter(this::showMessageMenu);
 
         messagesView = view.findViewById(R.id.messages);
@@ -99,6 +112,7 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
                 ((MainActivity) getActivity()).push(new HistoryFragment());
             }
         });
+        view.findViewById(R.id.btn_new).setOnClickListener(v -> startNewConversation());
         view.findViewById(R.id.btn_switch).setOnClickListener(this::showModelPicker);
 
         refreshHeader();
@@ -121,61 +135,151 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
     }
 
     private void consumePendingNavigation() {
-        if (MockStore.pendingSession != null) {
-            adapter.submit(new ArrayList<>(MockStore.pendingSession.messages));
-            MockStore.pendingSession = null;
+        if (getActivity() instanceof MainActivity) {
+            MainActivity activity = (MainActivity) getActivity();
+            long pendingConversation = activity.consumePendingConversation();
+            if (pendingConversation > 0) {
+                loadConversation(pendingConversation);
+            }
+            String pendingModel = activity.consumePendingChatModel();
+            if (pendingModel != null && !pendingModel.equals(currentModelId)) {
+                setCurrentModel(pendingModel);
+            }
+            String prefill = activity.consumeChatPrefill();
+            if (prefill != null) {
+                // 详情页示例指令：如果是新会话，预填输入框
+                if (adapter.items().isEmpty()) {
+                    inputView.setText(prefill);
+                    inputView.setSelection(inputView.getText().length());
+                    refreshSendState(false);
+                }
+            }
+        }
+    }
+
+    private void loadConversation(long id) {
+        ChatRepository repository = ServiceLocator.chat();
+        if (repository == null) {
+            return;
+        }
+        repository.loadMessages(id, (messages, error) -> {
+            if (!isAdded()) {
+                return;
+            }
+            adapter.submit(new ArrayList<>());
+            if (messages != null) {
+                for (ChatMessage m : messages) {
+                    adapter.items().add(m);
+                }
+                adapter.notifyDataSetChanged();
+            }
+            conversationId = id;
             updateEmptyState();
-        }
-        if (!TextUtils.isEmpty(MockStore.pendingPrefill)) {
-            inputView.setText(MockStore.pendingPrefill);
-            inputView.setSelection(inputView.getText().length());
-            MockStore.pendingPrefill = null;
-            refreshSendState(false);
-        }
+            refreshHeader();
+        });
+    }
+
+    private void startNewConversation() {
+        adapter.submit(new ArrayList<>());
+        conversationId = 0;
+        updateEmptyState();
     }
 
     private void showModelPicker(View anchor) {
-        List<ModelInfo> installed = new ArrayList<>(MockStore.installedModels());
-        for (ModelInfo approved : ApprovedModels.installedAsModelInfos(requireContext())) {
-            if (MockStore.modelById(approved.id) == null) {
-                installed.add(approved);
-            }
+        List<ModelInfo> installed = installedModelInfos();
+        ModelInfo current = installedModelInfo(currentModelId);
+        if (current == null && !installed.isEmpty()) {
+            current = installed.get(0);
         }
-        ModelInfo current = MockStore.currentModel();
         new ModelPickerSheet(installed,
                 current == null ? "" : current.id,
-                model -> {
-                    MockStore.currentModelId = model.id;
-                    engine.release();
-                    engine = ChatEngineProvider.create(requireContext(), model.id);
-                    refreshHeader();
-                    Snackbar.make(requireView(), model.name, Snackbar.LENGTH_SHORT).show();
-                }).show(getParentFragmentManager(), "picker");
+                model -> setCurrentModel(model.id)).show(getParentFragmentManager(), "picker");
+    }
+
+    /** 真实已安装模型：Room installed_models ∪ 批准模型文件存在。 */
+    private List<ModelInfo> installedModelInfos() {
+        List<ModelInfo> result = new ArrayList<>();
+        List<ModelEntity> installed = ServiceLocator.downloads() == null
+                ? new ArrayList<ModelEntity>() : ServiceLocator.downloads().installed();
+        for (ModelEntity entity : installed) {
+            result.add(entityToInfo(entity));
+        }
+        if (ApprovedModels.isInstalled(requireContext(), ApprovedModels.SMOLLM_135M.modelId)) {
+            boolean present = false;
+            for (ModelInfo m : result) {
+                if (m.id.equals(ApprovedModels.SMOLLM_135M.modelId)) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present) {
+                result.add(approvedToInfo());
+            }
+        }
+        return result;
+    }
+
+    private ModelInfo installedModelInfo(String modelId) {
+        for (ModelInfo m : installedModelInfos()) {
+            if (m.id.equals(modelId)) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    private ModelInfo entityToInfo(ModelEntity entity) {
+        return new ModelInfo(
+                entity.modelId, entity.displayName == null ? entity.modelId : entity.displayName,
+                entity.publisher == null ? "" : entity.publisher,
+                "0.1B", 0.1, entity.quantization == null ? "" : entity.quantization,
+                "0 MB", entity.sizeBytes, "1K", ModelInfo.TASK_TEXT,
+                ModelInfo.langs("英文"), entity.licenseSpdx == null ? "" : entity.licenseSpdx,
+                "", ModelInfo.COMPAT_RECOMMENDED, "", 0, 0, 0, "", 0, true);
+    }
+
+    private ModelInfo approvedToInfo() {
+        return ApprovedModels.installedAsModelInfos(requireContext()).get(0);
+    }
+
+    private void setCurrentModel(String modelId) {
+        currentModelId = modelId;
+        prefs().edit().putString(KEY_MODEL, modelId).apply();
+        engine.release();
+        engine = ChatEngineProvider.create(requireContext(), modelId);
+        refreshHeader();
+        ModelInfo model = installedModelInfo(modelId);
+        if (model != null) {
+            Snackbar.make(requireView(), model.name, Snackbar.LENGTH_SHORT).show();
+        }
     }
 
     private void refreshHeader() {
-        ApprovedModels.Approved approved = resolveApproved();
-        if (approved != null) {
-            String state = generating ? getString(R.string.chat_generating)
-                    : getString(R.string.chat_ready);
-            modelTitle.setText(approved.displayName + " · " + engine.modeLabel() + " · " + state);
-            statusDot.setBackgroundResource(R.drawable.bg_dot);
-            return;
-        }
-        ModelInfo model = MockStore.currentModel();
-        if (model == null) {
+        if (currentModelId == null || currentModelId.isEmpty()) {
             modelTitle.setText(R.string.chat_no_model);
             statusDot.setBackgroundResource(R.drawable.bg_dot);
             return;
         }
+        ApprovedModels.Approved approved = resolveApproved();
         String state = generating ? getString(R.string.chat_generating)
                 : getString(R.string.chat_ready);
-        modelTitle.setText(model.name + " · " + engine.modeLabel() + " · " + state);
+        String label = engine == null ? "" : engine.modeLabel();
+        if (approved != null) {
+            modelTitle.setText(approved.displayName + " · " + label + " · " + state);
+        } else {
+            ModelInfo model = installedModelInfo(currentModelId);
+            if (model == null) {
+                modelTitle.setText(R.string.chat_no_model);
+            } else {
+                modelTitle.setText(model.name + " · " + label + " · " + state);
+            }
+        }
+        statusDot.setBackgroundResource(R.drawable.bg_dot);
     }
 
     /** 当前选中的批准模型（已安装且文件存在）；否则 null。 */
     private ApprovedModels.Approved resolveApproved() {
-        ApprovedModels.Approved approved = ApprovedModels.byId(MockStore.currentModelId);
+        ApprovedModels.Approved approved = ApprovedModels.byId(currentModelId);
         if (approved != null && ApprovedModels.isInstalled(requireContext(), approved.modelId)) {
             return approved;
         }
@@ -194,7 +298,7 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
         if (text.isEmpty()) {
             return;
         }
-        if (resolveApproved() == null && MockStore.currentModel() == null) {
+        if (currentModelId == null || currentModelId.isEmpty()) {
             Snackbar.make(messagesView, R.string.picker_empty, Snackbar.LENGTH_SHORT).show();
             return;
         }
@@ -263,7 +367,7 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
         generating = false;
         refreshSendState(inputView.getText().toString().trim().isEmpty());
         refreshHeader();
-        saveCurrentConversation();
+        persistConversation();
     }
 
     @Override
@@ -281,53 +385,41 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
         generating = false;
         refreshSendState(inputView.getText().toString().trim().isEmpty());
         refreshHeader();
-        saveCurrentConversation();
+        persistConversation();
     }
 
-    private void saveCurrentConversation() {
-        String modelName;
-        ApprovedModels.Approved approved = resolveApproved();
-        if (approved != null) {
-            modelName = approved.displayName;
-        } else {
-            ModelInfo model = MockStore.currentModel();
-            if (model == null) {
-                return;
-            }
-            modelName = model.name;
+    /** 全量覆盖保存会话（新会话自动创建并回填 id）。 */
+    private void persistConversation() {
+        ChatRepository repository = ServiceLocator.chat();
+        if (repository == null) {
+            return;
         }
-        ChatSession session = findOrCreateSession(modelName);
-        session.messages.clear();
+        repository.saveConversation(conversationId, currentModelId, deriveTitle(), historySnapshot(),
+                new ChatRepository.ConversationSavedCallback() {
+                    @Override
+                    public void onSaved(long id) {
+                        conversationId = id;
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        Snackbar.make(requireView(),
+                                "会话保存失败：" + message, Snackbar.LENGTH_SHORT).show();
+                    }
+                });
+        repository.refresh();
+    }
+
+    private String deriveTitle() {
         for (Object o : adapter.items()) {
             if (o instanceof ChatMessage) {
-                session.messages.add((ChatMessage) o);
-            }
-        }
-        if (!session.messages.isEmpty()) {
-            ChatMessage first = session.messages.get(0);
-            session.title = first.text.length() > 24
-                    ? first.text.substring(0, 24) : first.text;
-            session.timeLabel = "刚刚";
-        }
-    }
-
-    private ChatSession findOrCreateSession(String modelName) {
-        if (!adapter.items().isEmpty()) {
-            Object firstObj = adapter.items().get(0);
-            if (firstObj instanceof ChatMessage) {
-                String firstText = ((ChatMessage) firstObj).text;
-                for (ChatSession s : MockStore.SESSIONS) {
-                    if (!s.messages.isEmpty()
-                            && s.messages.get(0).text.equals(firstText)) {
-                        return s;
-                    }
+                String text = ((ChatMessage) o).text;
+                if (text != null && !text.isEmpty()) {
+                    return text.length() > 24 ? text.substring(0, 24) : text;
                 }
             }
         }
-        ChatSession created = new ChatSession(
-                MockStore.nextSessionId(), modelName, modelName, "刚刚");
-        MockStore.SESSIONS.add(0, created);
-        return created;
+        return "";
     }
 
     private void showMessageMenu(ChatMessage message, int position) {
@@ -343,6 +435,7 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
                 adapter.items().remove(position);
                 adapter.notifyDataSetChanged();
                 updateEmptyState();
+                persistConversation();
             } else if (id == R.id.action_retry) {
                 retryFrom(message, position);
             }
@@ -376,5 +469,9 @@ public class ChatFragment extends Fragment implements ChatEngine.StreamListener 
     private void scrollToBottom() {
         messagesView.post(() -> messagesView.smoothScrollToPosition(
                 Math.max(0, adapter.getItemCount() - 1)));
+    }
+
+    private android.content.SharedPreferences prefs() {
+        return requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 }

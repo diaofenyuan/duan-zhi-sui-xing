@@ -32,6 +32,15 @@
             android:ellipsize="end" />
 
         <ImageButton
+            android:id="@+id/btn_new"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_add"
+            app:tint="@color/text_secondary"
+            android:contentDescription="@string/action_new_conversation" />
+
+        <ImageButton
             android:id="@+id/btn_history"
             android:layout_width="42dp"
             android:layout_height="42dp"

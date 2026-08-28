@@ -10,6 +10,11 @@
   "quantization": "Q4_K_M",
   "contextLength": 32768,
   "description": "Dev fixture payload (not real weights) for catalog/download integration testing.",
+  "tasks": ["text"],
+  "languages": ["\u4e2d\u6587","\u591a\u8bed\u8a00"],
+  "weightStatus": "demo",
+  "chatTemplate": "chatml",
+  "updatedAt": "2026-08-23",
   "files": [
     { "name": "model-q4_k_m.gguf", "sizeBytes": 6291456, "sha256": "52f2c773a6ceae9a0d301df61d4fcafc5c8cc43b84a505dfc619a99afdc6b535", "urls": ["/v1/models/qwen3-4b/2026.08.1/model-q4_k_m.gguf"] }
   ],

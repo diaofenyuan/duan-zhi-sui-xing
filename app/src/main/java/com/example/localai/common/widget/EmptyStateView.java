@@ -70,4 +70,16 @@ public class EmptyStateView extends LinearLayout {
             }
         });
     }
+
+    /** 动态文案（用于加载失败/错误态等运行时状态）。 */
+    public void setMessages(String title, String subtitle, String actionLabel) {
+        titleView.setText(title == null ? "" : title);
+        subtitleView.setText(subtitle == null ? "" : subtitle);
+        if (actionLabel == null || actionLabel.isEmpty()) {
+            actionButton.setVisibility(GONE);
+        } else {
+            actionButton.setVisibility(VISIBLE);
+            actionButton.setText(actionLabel);
+        }
+    }
 }

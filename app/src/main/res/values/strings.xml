@@ -39,6 +39,7 @@
     <string name="stat_size">模型大小</string>
     <string name="stat_speed">输出速度</string>
     <string name="stat_ttft">首字延迟</string>
+    <string name="stat_pending">待真机实测</string>
     <string name="speed_fmt">%s tok/s</string>
     <string name="ttft_fmt">%d ms</string>
     <string name="section_about">关于此模型</string>
@@ -99,6 +100,7 @@
     <string name="chat_mode_demo">演示模式</string>
     <string name="picker_title">切换模型</string>
     <string name="picker_empty">还没有已安装的模型，先去市场下载一个吧</string>
+    <string name="action_new_conversation">新建会话</string>
     <string name="toast_copied">已复制到剪贴板</string>
     <string name="menu_copy">复制</string>
     <string name="menu_retry">重新生成</string>
@@ -107,6 +109,7 @@
     <!-- 会话历史 -->
     <string name="history_title">会话历史</string>
     <string name="session_meta_fmt">%1$s · %2$d 条消息</string>
+    <string name="session_meta2_fmt">%1$s · %2$s</string>
     <string name="empty_history_title">还没有会话记录</string>
     <string name="empty_history_sub">与模型的每次对话都会自动保存在这里，仅存本机。</string>
     <string name="dialog_clear_sessions_title">清空全部会话？</string>
@@ -133,7 +136,7 @@
 
     <!-- 设置 -->
     <string name="settings_title">设置</string>
-    <string name="settings_ver_fmt">版本 %s · 本页数据均为演示用途</string>
+    <string name="settings_ver_fmt">版本 %s</string>
     <string name="group_mode">运行模式</string>
     <string name="mode_auto">自动（推荐）</string>
     <string name="mode_auto_desc">按设备状态动态平衡速度与功耗</string>

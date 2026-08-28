@@ -33,4 +33,29 @@ public final class Fmt {
         }
         return String.format(Locale.US, "%d:%02d", m, s);
     }
+
+    /** 会话时间标签：刚刚 / N 分钟前 / N 小时前 / 昨天 / 日期。 */
+    public static String timeLabel(long epochMillis, long nowMillis) {
+        if (epochMillis <= 0 || nowMillis <= 0) {
+            return "";
+        }
+        long diff = nowMillis - epochMillis;
+        long minute = 60_000L;
+        long hour = 60 * minute;
+        if (diff < minute) {
+            return "刚刚";
+        }
+        if (diff < hour) {
+            return (diff / minute) + " 分钟前";
+        }
+        if (diff < 24 * hour) {
+            return (diff / hour) + " 小时前";
+        }
+        if (diff < 48 * hour) {
+            return "昨天";
+        }
+        java.text.SimpleDateFormat sdf =
+                new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.CHINA);
+        return sdf.format(new java.util.Date(epochMillis));
+    }
 }

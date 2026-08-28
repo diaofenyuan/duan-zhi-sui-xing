@@ -14,8 +14,10 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.example.localai.BuildConfig;
 import com.example.localai.R;
-import com.example.localai.mock.MockStore;
+import com.example.localai.common.Fmt;
+import com.example.localai.data.ServiceLocator;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
@@ -42,7 +44,7 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         ((TextView) view.findViewById(R.id.text_version)).setText(
-                getString(R.string.settings_ver_fmt, "0.1.0-P1"));
+                getString(R.string.settings_ver_fmt, BuildConfig.VERSION_NAME));
 
         cardAuto = view.findViewById(R.id.mode_auto);
         cardBalanced = view.findViewById(R.id.mode_balanced);
@@ -85,16 +87,16 @@ public class SettingsFragment extends Fragment {
         swMetrics.setOnCheckedChangeListener((b, checked) ->
                 prefs().edit().putBoolean(KEY_METRICS, checked).apply());
 
-        // 存储与数据
+        // 存储与数据：真实已安装模型体积
         TextView cacheSize = view.findViewById(R.id.text_cache_size);
-        cacheSize.setText(getString(R.string.row_clear_cache_val_fmt, "1.2 GB"));
+        cacheSize.setText(getString(R.string.row_clear_cache_val_fmt, cacheLabel()));
         view.findViewById(R.id.row_clear_cache).setOnClickListener(v ->
                 new AlertDialog.Builder(requireContext())
                         .setTitle(R.string.row_clear_cache)
-                        .setMessage(getString(R.string.row_clear_cache_val_fmt, "1.2 GB"))
+                        .setMessage(getString(R.string.row_clear_cache_val_fmt, cacheLabel()))
                         .setPositiveButton(R.string.action_ok, (d, w) ->
                                 android.widget.Toast.makeText(requireContext(),
-                                        getString(R.string.cache_cleaned_fmt, "1.2 GB"),
+                                        getString(R.string.cache_cleaned_fmt, cacheLabel()),
                                         android.widget.Toast.LENGTH_SHORT).show())
                         .setNegativeButton(R.string.action_cancel, null)
                         .show());
@@ -104,7 +106,9 @@ public class SettingsFragment extends Fragment {
                         .setTitle(R.string.dialog_clear_sessions_title)
                         .setMessage(R.string.dialog_clear_sessions_msg)
                         .setPositiveButton(R.string.action_delete, (d, w) -> {
-                            MockStore.SESSIONS.clear();
+                            if (ServiceLocator.chat() != null) {
+                                ServiceLocator.chat().clearAll();
+                            }
                             android.widget.Toast.makeText(requireContext(),
                                     R.string.toast_sessions_cleared,
                                     android.widget.Toast.LENGTH_SHORT).show();
@@ -141,12 +145,21 @@ public class SettingsFragment extends Fragment {
                 selected ? R.color.md_primary : R.color.outline));
     }
 
+    /** 已安装模型真实体积（Room installed_models 汇总）。 */
+    private String cacheLabel() {
+        if (ServiceLocator.downloads() == null) {
+            return "0 MB";
+        }
+        return Fmt.humanBytes(ServiceLocator.downloads().installedBytes());
+    }
+
     private String licenseSummary() {
-        return "端智随行 P1 演示版\n\n"
-                + "· Material Components for Android — Apache-2.0\n"
-                + "· AndroidX（AppCompat / RecyclerView / Core）— Apache-2.0\n"
-                + "· llama.cpp / ggml — MIT（后续阶段接入）\n"
-                + "· OkHttp — Apache-2.0（后续阶段接入）\n"
+        return "端智随行 P4 版\n\n"
+                + "· Material Components — Apache-2.0\n"
+                + "· AndroidX（AppCompat / RecyclerView / Core / Room / Work）— Apache-2.0\n"
+                + "· llama.cpp / ggml — MIT\n"
+                + "· OkHttp — Apache-2.0\n"
+                + "· Gson — Apache-2.0\n"
                 + "· JUnit 4 — EPL-1.0（仅测试）\n\n"
                 + "完整清单见 docs/license-policy.md 与 NOTICE。";
     }

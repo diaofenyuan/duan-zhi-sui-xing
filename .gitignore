@@ -15,3 +15,7 @@ backend/build-tools/
 
 # æ‰¹å‡†æ¨¡å‹æƒé‡ï¼ˆä½“ç§¯å¤§ï¼Œä¸å…¥åº“ï¼›SHA-256 è§ qa/fixtures/approved-model.jsonï¼‰
 qa/fixtures/models/*.gguf
+
+# P4: ÕæÊµ GGUF È¨ÖØÃ½ÌåÄ¿Â¼£¨²»Èë¿â£©
+backend/fixtures/media/
+

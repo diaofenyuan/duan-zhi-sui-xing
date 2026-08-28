@@ -14,15 +14,15 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.localai.R;
-import com.example.localai.mock.MockStore;
-import com.example.localai.model.BenchEntry;
-import com.example.localai.model.DeviceProfile;
-import com.example.localai.model.ModelInfo;
+import com.example.localai.core.compatibility.CompatibilityEngine;
+import com.example.localai.core.device.DeviceProfiler;
+import com.example.localai.data.ServiceLocator;
+import com.example.localai.data.room.ModelEntity;
+import com.example.localai.feature.download.DownloadRepository;
 
-import java.util.List;
 import java.util.Locale;
 
-/** 设备诊断页：设备画像、实时状态、短测基准与兼容性总览（演示数据）。 */
+/** 设备诊断页：真实设备画像（DeviceProfiler）+ 兼容性估算总览（CompatibilityEngine）+ 已安装模型估算基准。 */
 public class DiagnosticsFragment extends Fragment {
 
     @Nullable
@@ -34,45 +34,64 @@ public class DiagnosticsFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        ((TextView) view.findViewById(R.id.spec_soc)).setText(DeviceProfile.SOC);
-        ((TextView) view.findViewById(R.id.spec_ram)).setText(DeviceProfile.RAM);
-        ((TextView) view.findViewById(R.id.spec_os)).setText(DeviceProfile.OS);
-        ((TextView) view.findViewById(R.id.spec_abi)).setText(DeviceProfile.ABI);
-        ((TextView) view.findViewById(R.id.spec_storage)).setText(DeviceProfile.STORAGE);
-        ((TextView) view.findViewById(R.id.spec_page)).setText(DeviceProfile.PAGE);
+        DeviceProfiler.Profile p = DeviceProfiler.collect(requireContext());
 
+        TextView deviceName = view.findViewById(R.id.diag_device_name);
+        if (deviceName != null) {
+            deviceName.setText(p.modelLabel());
+        }
+
+        ((TextView) view.findViewById(R.id.spec_soc)).setText(p.modelLabel());
+        ((TextView) view.findViewById(R.id.spec_ram)).setText(p.ramLabel() + " · 可用 "
+                + p.ramAvailMb + " MB");
+        ((TextView) view.findViewById(R.id.spec_os)).setText(
+                "Android " + p.androidVersion + " · API " + p.sdkInt);
+        ((TextView) view.findViewById(R.id.spec_abi)).setText(p.abiLabel());
+        ((TextView) view.findViewById(R.id.spec_storage)).setText(
+                "可用 " + p.storageLabel() + " · 内存档 "
+                + p.memoryClassMb + " MB");
+        ((TextView) view.findViewById(R.id.spec_page)).setText(
+                p.pageSizeKb > 0 ? p.pageSizeKb + " KB" : "未知");
+
+        ((TextView) view.findViewById(R.id.chip_thermal)).setText(thermalLabel(p.thermalStatusCode));
         ((TextView) view.findViewById(R.id.chip_battery)).setText(
-                getString(R.string.chip_battery_fmt, 86));
+                getString(R.string.chip_battery_fmt, p.batteryPercent < 0 ? 0 : p.batteryPercent));
 
+        // 估算基准：已安装模型（真实清单 + 峰值估算；实测数值 P6 真机采集）
         LinearLayout benchList = view.findViewById(R.id.bench_list);
-        List<BenchEntry> benches = MockStore.benchmarks();
-        double maxTps = 1.0;
-        for (BenchEntry b : benches) {
-            maxTps = Math.max(maxTps, b.tps);
-        }
-        for (BenchEntry b : benches) {
-            benchList.addView(buildBenchRow(b, maxTps));
+        benchList.removeAllViews();
+        CompatibilityEngine.DeviceSnapshot snapshot = snapshot(p);
+        DownloadRepository repository = ServiceLocator.downloads();
+        if (repository != null && !repository.installed().isEmpty()) {
+            for (ModelEntity entity : repository.installed()) {
+                benchList.addView(buildEstRow(entity, snapshot));
+            }
+        } else {
+            benchList.addView(buildReasonRow("暂无已安装模型。安装后此处显示估算结论，实测性能在真机阶段（P6）采集。"));
         }
 
-        // 兼容性图例
+        // 兼容性总览：目录模型分档统计（估算）
         int recommended = 0;
         int runnable = 0;
         int high = 0;
         int unsupported = 0;
-        for (ModelInfo m : MockStore.MODELS) {
-            switch (m.compat) {
-                case ModelInfo.COMPAT_RUNNABLE:
-                    runnable++;
-                    break;
-                case ModelInfo.COMPAT_HIGH_LOAD:
-                    high++;
-                    break;
-                case ModelInfo.COMPAT_UNSUPPORTED:
-                    unsupported++;
-                    break;
-                default:
-                    recommended++;
-                    break;
+        if (repository != null && repository.catalogView().isReady()) {
+            for (DownloadRepository.CatalogItem item : repository.catalogView().models) {
+                CompatibilityEngine.Result r = CompatibilityEngine.evaluate(snapshot, constraints(item));
+                switch (r.level) {
+                    case CompatibilityEngine.LEVEL_RUNNABLE:
+                        runnable++;
+                        break;
+                    case CompatibilityEngine.LEVEL_HIGH_LOAD:
+                        high++;
+                        break;
+                    case CompatibilityEngine.LEVEL_UNSUPPORTED:
+                        unsupported++;
+                        break;
+                    default:
+                        recommended++;
+                        break;
+                }
             }
         }
         setLegend(view, R.id.legend_recommended,
@@ -88,18 +107,116 @@ public class DiagnosticsFragment extends Fragment {
                 legend(getString(R.string.compat_unsupported), unsupported),
                 R.color.status_danger_container, R.color.status_danger);
 
-        // 不支持原因列表
+        // 原因列表（仅非推荐项，估算）
         LinearLayout reasonList = view.findViewById(R.id.reason_list);
+        reasonList.removeAllViews();
         boolean anyReason = false;
-        for (ModelInfo m : MockStore.MODELS) {
-            if (!m.compatReason.isEmpty()
-                    && !com.example.localai.model.ModelInfo.COMPAT_RECOMMENDED.equals(m.compat)) {
-                reasonList.addView(buildReasonRow(m.name + "：" + m.compatReason));
-                anyReason = true;
+        if (repository != null && repository.catalogView().isReady()) {
+            for (DownloadRepository.CatalogItem item : repository.catalogView().models) {
+                CompatibilityEngine.Result r = CompatibilityEngine.evaluate(snapshot, constraints(item));
+                if (!r.reasons.isEmpty() && !r.isRecommended()) {
+                    reasonList.addView(buildReasonRow(item.displayName + "：" + String.join("；", r.reasons)));
+                    anyReason = true;
+                }
             }
         }
-        if (!anyReason && benches.isEmpty()) {
-            reasonList.addView(buildReasonRow("暂无已安装模型，安装后可查看实测结论。"));
+        if (!anyReason) {
+            reasonList.addView(buildReasonRow("未加载目录或所有模型均为推荐档（估算）。"));
+        }
+    }
+
+    private CompatibilityEngine.DeviceSnapshot snapshot(DeviceProfiler.Profile p) {
+        return new CompatibilityEngine.DeviceSnapshot(
+                p.sdkInt,
+                p.abis.isEmpty() ? "" : p.abis.get(0),
+                p.storageFreeMb * 1024 * 1024,
+                p.ramTotalMb * 1024 * 1024);
+    }
+
+    private CompatibilityEngine.ModelConstraints constraints(DownloadRepository.CatalogItem item) {
+        return new CompatibilityEngine.ModelConstraints(
+                item.minAndroidApi, item.abis, item.sizeBytes,
+                item.contextLength, item.parameterCount);
+    }
+
+    private String thermalLabel(int status) {
+        switch (status) {
+            case -1:
+                return "温控状态未知";
+            case 0:
+                return "温控正常";
+            case 1:
+                return "轻度升温";
+            case 2:
+                return "中度升温";
+            case 3:
+                return "严重升温";
+            default:
+                return "过热降频中";
+        }
+    }
+
+    private View buildEstRow(ModelEntity entity, CompatibilityEngine.DeviceSnapshot snapshot) {
+        CompatibilityEngine.ModelConstraints constraints = new CompatibilityEngine.ModelConstraints(
+                26, null, entity.sizeBytes, 2048, Math.max(1, entity.parameterCount));
+        CompatibilityEngine.Result r = CompatibilityEngine.evaluate(snapshot, constraints);
+
+        LinearLayout row = new LinearLayout(requireContext());
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        int pad = dp(10);
+        row.setPadding(0, pad / 2, 0, pad / 2);
+
+        TextView name = new TextView(requireContext());
+        name.setTextSize(13);
+        name.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        name.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
+        name.setText(entity.displayName == null ? entity.modelId : entity.displayName);
+        name.setMaxLines(1);
+        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        row.addView(name, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView meta = new TextView(requireContext());
+        meta.setTextSize(11);
+        meta.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_tertiary));
+        meta.setText(String.format(Locale.US, "估算峰值 %d MB",
+                r.estimatedPeakBytes / (1024 * 1024)));
+        row.addView(meta, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView status = new TextView(requireContext());
+        status.setTextSize(12);
+        status.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        int textRes;
+        if (r.isRecommended()) {
+            textRes = R.color.status_success;
+        } else if (CompatibilityEngine.LEVEL_RUNNABLE.equals(r.level)) {
+            textRes = R.color.status_info;
+        } else if (CompatibilityEngine.LEVEL_HIGH_LOAD.equals(r.level)) {
+            textRes = R.color.status_warn;
+        } else {
+            textRes = R.color.status_danger;
+        }
+        status.setTextColor(ContextCompat.getColor(requireContext(), textRes));
+        status.setText(levelLabel(r.level));
+        LinearLayout.LayoutParams stp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        stp.leftMargin = dp(10);
+        row.addView(status, stp);
+        return row;
+    }
+
+    private String levelLabel(String level) {
+        switch (level) {
+            case CompatibilityEngine.LEVEL_RUNNABLE:
+                return "可运行";
+            case CompatibilityEngine.LEVEL_HIGH_LOAD:
+                return "高负载";
+            case CompatibilityEngine.LEVEL_UNSUPPORTED:
+                return "不支持";
+            default:
+                return "推荐";
         }
     }
 
@@ -112,60 +229,6 @@ public class DiagnosticsFragment extends Fragment {
         tv.setText(text);
         tv.setBackgroundResource(bgRes);
         tv.setTextColor(ContextCompat.getColor(requireContext(), textRes));
-    }
-
-    /** 基准行：名称 + 速度条；右侧 TPS 大数字与 TTFT/内存小字。 */
-    private View buildBenchRow(BenchEntry entry, double maxTps) {
-        LinearLayout row = new LinearLayout(requireContext());
-        row.setOrientation(LinearLayout.VERTICAL);
-        int pad = dp(10);
-        row.setPadding(0, pad / 2, 0, pad / 2);
-
-        LinearLayout top = new LinearLayout(requireContext());
-        top.setOrientation(LinearLayout.HORIZONTAL);
-        top.setGravity(Gravity.CENTER_VERTICAL);
-
-        TextView name = new TextView(requireContext());
-        name.setTextSize(13);
-        name.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        name.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
-        name.setMaxLines(1);
-        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        name.setText(entry.modelName);
-        top.addView(name, new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-
-        TextView tps = new TextView(requireContext());
-        tps.setTextSize(14);
-        tps.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        tps.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_primary));
-        tps.setText(String.format(Locale.US, "%.1f tok/s", entry.tps));
-        top.addView(tps, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        row.addView(top, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        TextView meta = new TextView(requireContext());
-        meta.setTextSize(11);
-        meta.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_tertiary));
-        meta.setText(String.format(Locale.US, "首字 %d ms · 峰值 %.1f GB 内存",
-                entry.ttftMs, entry.memGb));
-        meta.setPadding(0, dp(3), 0, 0);
-        row.addView(meta, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        com.google.android.material.progressindicator.LinearProgressIndicator bar =
-                new com.google.android.material.progressindicator.LinearProgressIndicator(requireContext());
-        bar.setProgress((int) Math.min(100, Math.round(entry.tps * 100.0 / maxTps)));
-        bar.setIndicatorColor(ContextCompat.getColor(requireContext(),
-                entry.tps >= 12 ? R.color.status_success : R.color.status_warn));
-        bar.setTrackCornerRadius(dp2());
-        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(4));
-        blp.topMargin = dp(6);
-        row.addView(bar, blp);
-        return row;
     }
 
     private View buildReasonRow(String text) {
@@ -181,9 +244,5 @@ public class DiagnosticsFragment extends Fragment {
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
-    }
-
-    private int dp2() {
-        return dp(2);
     }
 }

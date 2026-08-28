@@ -7,6 +7,7 @@ import com.example.localai.data.network.CatalogConfig;
 import com.example.localai.data.network.TrustedKeys;
 import com.example.localai.data.room.AppDatabase;
 import com.example.localai.data.storage.ModelStorageManager;
+import com.example.localai.feature.chat.ChatRepository;
 import com.example.localai.feature.download.DownloadCoordinator;
 import com.example.localai.feature.download.DownloadRepository;
 
@@ -25,6 +26,7 @@ public final class ServiceLocator {
     private final DownloadCoordinator downloadCoordinator;
     private final ExecutorService downloadWorker;
     private final ExecutorService controlWorker;
+    private final ChatRepository chatRepository;
 
     private ServiceLocator(Context appContext) {
         AppDatabase database = AppDatabase.build(appContext);
@@ -53,6 +55,7 @@ public final class ServiceLocator {
                 database.downloadDao(), database.modelDao(), storage,
                 catalogClient, downloadCoordinator);
         downloadCoordinator.attachListener(downloadRepository::onCoordinatorChanged);
+        chatRepository = new ChatRepository(database.conversationDao(), database.messageDao());
     }
 
     public static synchronized void init(Context appContext) {
@@ -64,6 +67,10 @@ public final class ServiceLocator {
 
     public static DownloadRepository downloads() {
         return instance == null ? null : instance.downloadRepository;
+    }
+
+    public static ChatRepository chat() {
+        return instance == null ? null : instance.chatRepository;
     }
 
     static DownloadCoordinator coordinator() {

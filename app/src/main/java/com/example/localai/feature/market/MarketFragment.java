@@ -1,12 +1,12 @@
 package com.example.localai.feature.market;
 
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,29 +16,44 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.localai.MainActivity;
 import com.example.localai.R;
+import com.example.localai.common.widget.EmptyStateView;
+import com.example.localai.core.compatibility.CompatibilityEngine;
+import com.example.localai.core.device.DeviceProfiler;
+import com.example.localai.data.ServiceLocator;
+import com.example.localai.feature.download.DownloadRepository;
 import com.example.localai.mock.Filters;
-import com.example.localai.mock.MockStore;
 import com.example.localai.model.ModelInfo;
 import com.google.android.material.chip.ChipGroup;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/** 市场首页：搜索、三维筛选、精选横幅、模型列表；全部基于模拟数据。 */
+/** 市场首页：搜索、三维筛选、精选横幅、模型列表；数据源为签名目录（真实），空/加载/错误态完整。 */
 public class MarketFragment extends Fragment {
 
     private ModelAdapter adapter;
-    private final Handler handler = new Handler();
+    private final DownloadRepository.Listener repositoryListener = new DownloadRepository.Listener() {
+        @Override
+        public void onDownloadsChanged() {
+        }
+
+        @Override
+        public void onCatalogChanged() {
+            refreshFromRepository();
+        }
+    };
 
     private String query = "";
     private String taskFilter = Filters.TASK_ALL;
     private String langFilter = Filters.LANG_ALL;
     private String sizeFilter = Filters.SIZE_ALL;
-    private boolean firstLoad = true;
 
     private View emptyView;
     private View progressView;
     private RecyclerView listView;
     private android.widget.TextView countView;
+    private final List<ModelInfo> all = new ArrayList<>();
+    private DownloadRepository repository;
 
     @Nullable
     @Override
@@ -49,6 +64,7 @@ public class MarketFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        repository = ServiceLocator.downloads();
         adapter = new ModelAdapter(model -> {
             if (getActivity() instanceof MainActivity) {
                 ((MainActivity) getActivity())
@@ -65,10 +81,13 @@ public class MarketFragment extends Fragment {
         listView.setAdapter(adapter);
         emptyView.setVisibility(View.GONE);
 
-        // 精选横幅
+        // 精选横幅：点击进入第一条目录模型（目录为空时隐藏）
         view.findViewById(R.id.card_hero).setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).push(ModelDetailFragment.newInstance("qwen3-4b"));
+                String heroId = heroModelId();
+                if (heroId != null) {
+                    ((MainActivity) getActivity()).push(ModelDetailFragment.newInstance(heroId));
+                }
             }
         });
 
@@ -148,48 +167,113 @@ public class MarketFragment extends Fragment {
             applyFilter();
         });
 
-        // 空态操作：清除筛选
-        ((com.example.localai.common.widget.EmptyStateView) emptyView)
-                .setOnActionClickListener(() -> {
-                    input.setText("");
-                    chipTask.check(R.id.chip_task_all);
-                    chipLang.check(R.id.chip_lang_all);
-                    chipSize.check(R.id.chip_size_all);
-                });
+        // 空态操作：清除筛选 / 目录错误时重试
+        ((EmptyStateView) emptyView).setOnActionClickListener(() -> {
+            if (repository != null && repository.catalogView().isError()) {
+                repository.refreshCatalog();
+                return;
+            }
+            input.setText("");
+            chipTask.check(R.id.chip_task_all);
+            chipLang.check(R.id.chip_lang_all);
+            chipSize.check(R.id.chip_size_all);
+        });
 
-        // 首次进入展示加载态（模拟）
-        if (firstLoad) {
-            firstLoad = false;
-            handler.postDelayed(() -> {
-                progressView.setVisibility(View.GONE);
-                applyFilter();
-            }, 500);
+        if (repository != null) {
+            repository.register(repositoryListener);
+            refreshFromRepository();
         }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        applyFilter();
+        refreshFromRepository();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        handler.removeCallbacksAndMessages(null);
+        if (repository != null) {
+            repository.unregister(repositoryListener);
+        }
+    }
+
+    private String heroModelId() {
+        for (ModelInfo m : all) {
+            return m.id;
+        }
+        return null;
+    }
+
+    /** 从仓库目录视图刷新：LOADING/ERROR/READY 三态。 */
+    private void refreshFromRepository() {
+        if (adapter == null || getContext() == null || repository == null) {
+            return;
+        }
+        DownloadRepository.CatalogView view = repository.catalogView();
+        if (view.isLoading()) {
+            all.clear();
+            listView.setVisibility(View.GONE);
+            emptyView.setVisibility(View.GONE);
+            progressView.setVisibility(View.VISIBLE);
+            return;
+        }
+        progressView.setVisibility(View.GONE);
+
+        if (view.isError()) {
+            all.clear();
+            listView.setVisibility(View.GONE);
+            emptyView.setVisibility(View.VISIBLE);
+            ((EmptyStateView) emptyView).setMessages(
+                    "目录加载失败",
+                    view.error == null ? "请检查网络后重试" : view.error,
+                    "重试");
+            return;
+        }
+
+        all.clear();
+        all.addAll(MarketModels.map(view, deviceSnapshot()));
+        View heroCard = getView() == null ? null : getView().findViewById(R.id.card_hero);
+        if (heroCard != null) {
+            heroCard.setVisibility(all.isEmpty() ? View.GONE : View.VISIBLE);
+            if (!all.isEmpty()) {
+                ModelInfo hero = all.get(0);
+                TextView heroTitle = heroCard.findViewById(R.id.hero_title);
+                heroTitle.setText(hero.name);
+                TextView heroDesc = heroCard.findViewById(R.id.hero_desc);
+                heroDesc.setText(hero.paramsLabel + " 参数 · 上下文 " + hero.contextLabel
+                        + " · " + ModelAdapter.compatLabel(hero.compat));
+            }
+        }
+        applyFilter();
     }
 
     private void applyFilter() {
         if (adapter == null || getContext() == null) {
             return;
         }
-        List<ModelInfo> result = Filters.apply(
-                MockStore.MODELS, query, taskFilter, langFilter, sizeFilter);
+        List<ModelInfo> result = Filters.apply(all, query, taskFilter, langFilter, sizeFilter);
         adapter.submit(result);
-        countView.setText(getString(R.string.market_count_fmt, MockStore.MODELS.size()));
+        countView.setText(getString(R.string.market_count_fmt, all.size()));
 
         boolean empty = result.isEmpty();
         emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
         listView.setVisibility(empty ? View.GONE : View.VISIBLE);
+        if (empty && !all.isEmpty()) {
+            ((EmptyStateView) emptyView).setMessages(
+                    "没有匹配的模型",
+                    "清除筛选后查看全部 " + all.size() + " 个模型",
+                    "清除筛选");
+        }
+    }
+
+    private CompatibilityEngine.DeviceSnapshot deviceSnapshot() {
+        DeviceProfiler.Profile p = DeviceProfiler.collect(requireContext());
+        return new CompatibilityEngine.DeviceSnapshot(
+                p.sdkInt,
+                p.abis.isEmpty() ? "" : p.abis.get(0),
+                p.storageFreeMb * 1024 * 1024,
+                p.ramTotalMb * 1024 * 1024);
     }
 }

@@ -27,6 +27,12 @@ public final class ModelManifest {
     public String quantization;
     public long contextLength;
     public String description;
+    public List<String> tasks;
+    public List<String> languages;
+    /** approved=真实正式权重；demo=开发演示载荷（不可推理）。缺省视为 demo。 */
+    public String weightStatus;
+    public String chatTemplate;
+    public String updatedAt;
     public List<FileEntry> files;
     public Runtime runtime;
 
@@ -107,6 +113,14 @@ public final class ModelManifest {
 
     public FileEntry primaryFile() {
         return files == null || files.isEmpty() ? null : files.get(0);
+    }
+
+    public boolean isApproved() {
+        return "approved".equals(weightStatus);
+    }
+
+    public boolean isDemo() {
+        return !isApproved();
     }
 
     private static boolean isBlank(String s) {

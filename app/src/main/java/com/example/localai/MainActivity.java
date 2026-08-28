@@ -27,6 +27,44 @@ public class MainActivity extends AppCompatActivity {
     private DiagnosticsFragment diagnosticsFragment;
     private SettingsFragment settingsFragment;
 
+    /** 跨页导航暂存（详情→聊天、历史→聊天）；对话页 onResume 消费一次。 */
+    private long pendingConversationId = 0;
+    private String pendingChatModel;
+    private String pendingChatPrefill;
+
+    /** 打开聊天 Tab 并切换指定模型。 */
+    public void openChatWithModel(String modelId) {
+        pendingChatModel = modelId;
+        openTab(R.id.nav_chat);
+    }
+
+    public void openConversation(long conversationId) {
+        pendingConversationId = conversationId;
+        openTab(R.id.nav_chat);
+    }
+
+    public void setChatPrefill(String prefill) {
+        pendingChatPrefill = prefill;
+    }
+
+    public String consumeChatPrefill() {
+        String value = pendingChatPrefill;
+        pendingChatPrefill = null;
+        return value;
+    }
+
+    public long consumePendingConversation() {
+        long value = pendingConversationId;
+        pendingConversationId = 0;
+        return value;
+    }
+
+    public String consumePendingChatModel() {
+        String value = pendingChatModel;
+        pendingChatModel = null;
+        return value;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

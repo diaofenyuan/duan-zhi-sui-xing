@@ -50,21 +50,58 @@ public final class DownloadRepository {
         public final String version;
         public final String displayName;
         public final String description;
-        public final long sizeBytes;
+        public final String publisher;
         public final String licenseSpdx;
+        public final String licenseUrl;
+        public final String sourceUrl;
+        public final long sizeBytes;
         public final String quantization;
+        public final long parameterCount;
+        public final long contextLength;
+        public final List<String> tasks;
+        public final List<String> languages;
+        /** approved=正式权重（真实 GGUF）；demo=演示载荷（不可推理）。 */
+        public final String weightStatus;
+        public final String chatTemplate;
+        public final String updatedAt;
+        public final int minAndroidApi;
+        public final List<String> abis;
         public final boolean installed;
 
         CatalogItem(String modelId, String version, String displayName, String description,
-                    long sizeBytes, String licenseSpdx, String quantization, boolean installed) {
+                    String publisher, String licenseSpdx, String licenseUrl, String sourceUrl,
+                    long sizeBytes, String quantization, long parameterCount, long contextLength,
+                    List<String> tasks, List<String> languages, String weightStatus,
+                    String chatTemplate, String updatedAt, int minAndroidApi, List<String> abis,
+                    boolean installed) {
             this.modelId = modelId;
             this.version = version;
             this.displayName = displayName;
             this.description = description;
-            this.sizeBytes = sizeBytes;
+            this.publisher = publisher;
             this.licenseSpdx = licenseSpdx;
+            this.licenseUrl = licenseUrl;
+            this.sourceUrl = sourceUrl;
+            this.sizeBytes = sizeBytes;
             this.quantization = quantization;
+            this.parameterCount = parameterCount;
+            this.contextLength = contextLength;
+            this.tasks = tasks;
+            this.languages = languages;
+            this.weightStatus = weightStatus;
+            this.chatTemplate = chatTemplate;
+            this.updatedAt = updatedAt;
+            this.minAndroidApi = minAndroidApi;
+            this.abis = abis;
             this.installed = installed;
+        }
+
+        public boolean isApproved() {
+            return "approved".equals(weightStatus);
+        }
+
+        public boolean isDemo() {
+            return !isApproved();
         }
     }
 
@@ -152,11 +189,27 @@ public final class DownloadRepository {
                         items.add(new CatalogItem(entry.modelId, entry.version,
                                 entry.displayName == null ? entry.modelId : entry.displayName,
                                 entry.description == null ? manifest.description : entry.description,
-                                file == null ? 0 : file.sizeBytes,
+                                manifest.source == null ? null : manifest.source.publisher,
                                 manifest.license == null ? null : manifest.license.spdx,
-                                manifest.quantization, installed));
-                    } catch (CatalogException ignored) {
+                                manifest.license == null ? null : manifest.license.url,
+                                manifest.source == null ? null : manifest.source.url,
+                                file == null ? 0 : file.sizeBytes,
+                                manifest.quantization,
+                                manifest.parameterCount,
+                                manifest.contextLength,
+                                manifest.tasks == null ? Collections.<String>emptyList() : manifest.tasks,
+                                manifest.languages == null ? Collections.<String>emptyList() : manifest.languages,
+                                "approved".equals(manifest.weightStatus) ? "approved" : "demo",
+                                manifest.chatTemplate,
+                                manifest.updatedAt,
+                                manifest.runtime == null ? 0 : manifest.runtime.minAndroidApi,
+                                manifest.runtime == null ? Collections.<String>emptyList() : manifest.runtime.abis,
+                                installed));
+                    } catch (CatalogException e) {
                         // 单模型 Manifest 签名/结构失败：不进入列表（只显示签名通过的模型）
+                        android.util.Log.w("localai-catalog",
+                                "manifest rejected " + entry.modelId + ": "
+                                        + e.code() + " " + e.getMessage());
                     }
                 }
                 setCatalogReady(items);
@@ -264,7 +317,10 @@ public final class DownloadRepository {
             List<CatalogItem> items = new ArrayList<>();
             for (CatalogItem item : view.models) {
                 items.add(new CatalogItem(item.modelId, item.version, item.displayName,
-                        item.description, item.sizeBytes, item.licenseSpdx, item.quantization,
+                        item.description, item.publisher, item.licenseSpdx, item.licenseUrl,
+                        item.sourceUrl, item.sizeBytes, item.quantization, item.parameterCount,
+                        item.contextLength, item.tasks, item.languages, item.weightStatus,
+                        item.chatTemplate, item.updatedAt, item.minAndroidApi, item.abis,
                         installedIds.contains(item.modelId)));
             }
             view.models = items;
