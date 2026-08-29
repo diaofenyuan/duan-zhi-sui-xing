@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -40,6 +41,10 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.valueOf("VERSION_" + libs.versions.javaVersion.get())
         targetCompatibility JavaVersion.valueOf("VERSION_" + libs.versions.javaVersion.get())
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
     buildFeatures {

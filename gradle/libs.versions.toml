@@ -10,6 +10,7 @@ buildTools = "36.0.0"
 javaVersion = "17"
 ndk = "28.2.13676358"
 cmake = "3.22.1"
+kotlin = "2.2.20"
 
 # 代码依赖版本（S003 登记，2026-08-23 核实）
 # P1 调整：androidx.core 由 1.19.0 降至 1.16.0——1.19.0 强制要求 compileSdk 37 与 AGP 9.1，
@@ -56,3 +57,4 @@ androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
