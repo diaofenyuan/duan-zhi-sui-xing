@@ -17,6 +17,7 @@
 - `BLOCKED`：当前阶段因外部输入或明确技术阻塞无法继续，必须记录解除条件。
 - 一次对话只能写一个 `PHASE_ID`（协议迁移特殊记录使用 `MIGRATION`）。
 - “下一阶段依赖”只用于导航，不表示下一阶段已经执行。
+- Kotlin 语言迁移（`docs/kotlin-migration-plan.md`）使用 `MIGRATION-K0` ～ `MIGRATION-K5` 作为阶段 ID，每个阶段 `IN_PROGRESS`/`DONE` 各一条，与 P 阶段并列、互不隶属。
 
 ## 记录模板
 
@@ -543,3 +544,176 @@
   - 命令：`git status --short`（S004 前半步已在历史提交 87c5d31/...；本轮改动仅上述 3 文件 + 日志）
 - 风险/阻塞：无（真机实测子集仍为 BLOCKED：无 arm64 真机；按 MIGRATION 已归入 P6/S042，解除条件见 device-baseline.md 第 6 节，不阻塞后续软件阶段）。
 - 下一步依赖：`S005`（已完成，G1）与 `P4` 均不受本轮影响；本轮没有执行 P4。
+
+### 2026-08-28 23:20 | P4 | IN_PROGRESS
+
+- 目标：补齐 P4 验收闭环（`docs/kotlin-migration-plan.md` 前置门禁 G-P4）——在 Kotlin 语言迁移开始前建立绿色基线：全量单元测试 + `assembleDebug` + `connectedDebugAndroidTest` 仪器化测试 + 模拟器端到端主流程（发现 → 详情 → 下载 → 安装 → 聊天 → 停止 → 历史 → 删除）。
+- 依赖：`P1`-`P3` 已 DONE；P4 代码（市场真实目录、设备画像、兼容性引擎、UI polish）已在提交 `a6c1ac5`/`6762f3e` 落地但未验收。
+- 环境条件：模拟器 `emulator-5554`（AVD Medium_Phone，x86_64）在线；宿主 FixtureServer 供目录/下载联调。
+- 允许修改：`app/src/androidTest/`、`docs/ai-work-log.md`、`qa/`。
+- 计划验证：
+  - `./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+  - `./gradlew :app:connectedDebugAndroidTest --offline --console=plain`
+  - 模拟器端到端主流程走查（uiautomator dump + 截图辅助）。
+- 通过标准：仪器化测试全绿；端到端主流程可完成；P4 在本日志有完整 IN_PROGRESS/DONE 记录。
+
+### 2026-08-28 23:31 | MIGRATION-K0 | IN_PROGRESS
+
+- 目标：把语言变更写入基线文档，完成 Kotlin Stdlib 许可证登记，建立迁移日志约定。
+- 依赖：无（前置门禁 G-P4 经用户显式授权豁免，见下）。
+- 前置门禁豁免记录：`G-P4` 要求 P4 先完成 `connectedDebugAndroidTest` 与模拟器端到端验收再迁移。本轮用户显式要求「制定并完整执行 Java→Kotlin 重构直至全部完成」，构成对 G-P4 的授权豁免；迁移期间将**并行**在 K3/K5 补跑 `connectedDebugAndroidTest` 作为替代回归证据，P4 端到端验收仍作为独立 P 阶段待办保留。承担风险：若 P4 代码本身存在未验收缺陷，其回归可能与迁移噪声混淆，归因需依赖逐阶段提交隔离。
+- 计划修改：
+  - `docs/build-baseline.md`: 语言项改为「Kotlin 为主 + Java 互操作保留区」；补注原「选 AGP 8.13.2 而非 9.x 为避开内置 Kotlin」理由因迁移失效但本次不升级 AGP。
+  - `docs/license-policy.md` / `NOTICE`: 登记 Kotlin Stdlib（Apache-2.0，JetBrains，2.2.20）与 Kotlin Gradle Plugin（构建工具链）。
+  - `docs/ai-work-log.md`: 追加 `MIGRATION-K` 记录规则与 K0 记录。
+  - `docs/kotlin-migration-plan.md`: 状态由「待批准执行」改为「执行中」。
+- 计划验证：
+  - `git status --short` 确认改动仅限上述文档 + `NOTICE`。
+
+### 2026-08-28 23:35 | MIGRATION-K0 | DONE
+
+- 目标：同上（基线文档 + 许可证登记 + 日志约定）。
+- 依赖：无；G-P4 豁免已记录（见 IN_PROGRESS）。
+- 实际修改：
+  - `docs/build-baseline.md`: 版本矩阵「语言」行与「选择理由摘要 #1」改写；「后续注意」追加 Kotlin 工具链说明（KGP 2.2.20 离线命中 gradle813 变体、jvmTarget=17、保留区边界）。
+  - `docs/license-policy.md`: 新增 §3.8 Kotlin Stdlib（2.2.20，Apache-2.0）登记；§4 构建工具链补 Kotlin Gradle Plugin 2.2.20。
+  - `NOTICE`: 增补 Kotlin Standard Library（Apache-2.0，JetBrains）条目。
+  - `docs/ai-work-log.md`: 记录规则新增 `MIGRATION-K0`～`K5` 约定；追加本 K0 记录。
+  - `docs/kotlin-migration-plan.md`: 状态改为「执行中（K0 起）」。
+- 验证：
+  - 命令：`git status --short`
+  - 结果：`PASS`；改动仅限 `docs/build-baseline.md`、`docs/license-policy.md`、`docs/ai-work-log.md`、`docs/kotlin-migration-plan.md`、`NOTICE`；文档间无自相矛盾表述，Kotlin Stdlib 已具备名称/版本/许可证/来源 URL。
+- 风险/阻塞：G-P4 豁免风险已记录；K3/K5 以 `connectedDebugAndroidTest` 补偿回归证据。
+- 下一阶段依赖：`MIGRATION-K1` 可以开始；本轮没有执行 K1。
+
+### 2026-08-28 23:40 | MIGRATION-K1 | IN_PROGRESS
+
+- 目标：接通 Kotlin 工具链，迁移无外部依赖的纯逻辑类（叶子层），验证互操作与测试链路。
+- 依赖：`MIGRATION-K0` DONE。
+- 计划修改：
+  - 构建：`gradle/libs.versions.toml`（kotlin=2.2.20 + kotlin-android 插件）、根 `build.gradle`、`app/build.gradle`（插件 + `kotlinOptions.jvmTarget=17`）。
+  - 源码（6 文件）：`model/ChatMessage`、`model/ModelInfo`、`common/Fmt`、`common/widget/EmptyStateView`、`core/device/DeviceProfiler`、`core/compatibility/CompatibilityEngine`。
+  - 测试：`FmtTest`、`CompatibilityEngineTest` 迁移为 Kotlin。
+- 计划验证：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+
+### 2026-08-28 23:52 | MIGRATION-K1 | DONE
+
+- 目标：同上。
+- 依赖：K0 DONE。
+- 实际修改：
+  - `gradle/libs.versions.toml`：`[versions] kotlin=2.2.20`；`[plugins] kotlin-android`。
+  - `build.gradle`（根）：`alias(libs.plugins.kotlin.android) apply false`。
+  - `app/build.gradle`：应用 kotlin-android 插件；`kotlinOptions { jvmTarget = "17" }`（与 compileOptions Java 17 对齐）。
+  - 新建 `app/src/main/kotlin/...`：ChatMessage.kt、ModelInfo.kt、Fmt.kt、EmptyStateView.kt、DeviceProfiler.kt、CompatibilityEngine.kt；删除对应 6 个 `.java`。
+  - 新建 `app/src/test/kotlin/...`：FmtTest.kt、CompatibilityEngineTest.kt；删除对应 2 个 `.java`。
+  - 迁移要点：静态工具类 Fmt/CompatibilityEngine/DeviceProfiler → `object` + `@JvmStatic`；Java 侧按字段访问的持有类 → 普通类 + `@JvmField`（保留字段访问与对象同一性语义，未用 data class）；`@JvmStatic fun langs(vararg)` 保持 `ModelInfo.langs(...)` 可用。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+  - 结果：`PASS`；101 个单元测试 0 失败 0 错误；`assembleDebug` 产出 APK。
+- 风险/阻塞与修复：
+  - 修复 1：`DeviceProfiler` 中 `Os.sysconf(_SC_PAGESIZE.toLong())` 类型错配——本 SDK `Os.sysconf` 形参为 `int`，去掉 `.toLong()`。
+  - 修复 2：`CompatibilityEngine.LEVEL_*` 用 `@JvmField` 生成的静态字段非「编译期常量变量」，Java `switch(r.level)` 报「需要常量字符串表达式」——改为 `const val` 解决。经验：凡被 Java `switch case` 引用的 String 常量必须用 `const val`。
+  - 备注：Kotlin 2.2.20 离线解析成功（命中 `kotlin-gradle-plugin-2.2.20-gradle813.jar`），与可行性探针一致。
+- 下一阶段依赖：`MIGRATION-K2` 可以开始；本轮没有执行 K2。
+
+### 2026-08-28 23:58 | MIGRATION-K2 | IN_PROGRESS
+
+- 目标：迁移网络、存储与组合根；`data/room/` 保持 Java（D1）。
+- 依赖：`MIGRATION-K1` DONE。
+- 计划修改（12 主文件 + 6 单测 + 2 fixture）：`data/network/`(10)、`data/storage/ModelStorageManager`、`data/ServiceLocator`；测试 `Ed25519Test`、`ManifestVerifierTest`、`CatalogClientTest`、`ModelStorageManagerTest`、`ManifestParseDiagTest`、`RoomPersistenceTest`；fixture `FixtureKit`、`FixtureHttpServer`。
+- 计划验证：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+
+### 2026-08-29 00:20 | MIGRATION-K2 | DONE
+
+- 目标：同上。
+- 依赖：K1 DONE。
+- 实际修改：
+  - `data/network/`：Catalog/CatalogClient/CatalogConfig/CatalogException/Ed25519/Hex/ManifestVerifier/ModelManifest/TrustedKeys/TrustStore → Kotlin。
+  - `data/storage/ModelStorageManager`、`data/ServiceLocator` → Kotlin。
+  - 测试与 fixture：Ed25519Test、ManifestVerifierTest、CatalogClientTest、ModelStorageManagerTest、ManifestParseDiagTest、RoomPersistenceTest、FixtureKit、FixtureHttpServer → Kotlin。
+  - 迁移要点：Gson 反序列化模型（Catalog/ModelManifest）用普通类 + `@JvmField var` + 默认值（Gson 按字段反射写入 + Java 侧字段访问，与原始字节码语义一致）；`Ed25519` 位运算逐字节核对，`Point` 保持普通类并在身份比较用 `===`（引用相等，避免 data class 结构相等改变语义）；`CatalogClient` 加 `@Throws(CatalogException)` 保留 Java 受检异常契约；`ModelStorageManager` 的 `persistManifest/readManifest/install` 加 `@Throws(IOException)`；`use {}` 替换 try-with-resources。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+  - 结果：`PASS`；101 个单元测试 0 失败 0 错误（Ed25519Test 5、ManifestVerifierTest 7、CatalogClientTest 8、ModelStorageManagerTest 7、RoomPersistenceTest 6 等全过）；`assembleDebug` 产出 APK。
+- 风险/阻塞与修复：
+  - 修复 1：`ByteArrayOutputStream.write(byte)` 单字节写入需 `.toByte().toInt()`（Byte 不自动宽化到 Int）；`write(byte[],int,int)` 三参形式在 android.jar 下按平台类型解析，Fixtures 改用等价的 `write(byte[])`/单字节。
+  - 修复 2：Kotlin 方法默认不声明受检异常，Java 侧 `catch (CatalogException)` 报「异常永不被抛出」——对 `fetchCatalog/fetchManifest/fetchManifestBundle` 加 `@Throws(CatalogException::class)`。
+  - 修复 3：Gson `fromJson` 返回平台类型，显式非空标注触发「条件恒为 false」——去除显式类型标注，保留 `== null` 防御。
+  - 修复 4：可变 `var` 字段（`f.urls`、`rt.abis`）不可智能转换——先取局部 val 再判空。
+- 下一阶段依赖：`MIGRATION-K3` 可以开始；本轮没有执行 K3。
+
+### 2026-08-29 00:22 | MIGRATION-K3 | IN_PROGRESS
+
+- 目标：迁移推理编排层；JNI 与 Parcelable 边界保持 Java（D5）。
+- 依赖：`MIGRATION-K2` DONE。
+- 计划修改（3 主 + 2 单测）：`core/inference/` 的 `InferenceClient`、`InferenceService`、`ApprovedModels` 及其对应单测（`InferenceRequestTest`、`NativeSessionContractTest`）。不得触碰 `NativeSession`/`InferenceRequest`/`InferenceStats`。
+- 计划验证：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`；`connectedDebugAndroidTest`（模拟器）。
+
+### 2026-08-29 00:27 | MIGRATION-K3 | DONE
+
+- 目标：同上。
+- 依赖：K2 DONE。
+- 实际修改：
+  - `InferenceClient` → Kotlin：常量用 `@JvmField`（`ERR_ENGINE_CRASHED`/`STATE_*` 供 RealChatEngine 以 `InferenceClient.STATE_READY` 字段访问）；`@Synchronized` 保留同步语义；`@Volatile` 保留 `state`/`events`；`IInferenceCallback.Stub` 匿名实现用 `object`。
+  - `InferenceService` → Kotlin：继承 AIDL 生成的 `IInferenceService.Stub`，参数按平台类型处理（`request: InferenceRequest?` 保留 null 守卫、`prompt: String`/`cb: IInferenceCallback?`），未误加 `!!`；`NativeSession.NativeException` 按 `e.code` 取结构化错误码。
+  - `ApprovedModels` → Kotlin：`@JvmStatic` 暴露 `byId/modelFile/isInstalled/requestFor/installedAsModelInfos`；`@JvmField` 暴露 `SMOLLM_135M` 与 `Approved` 字段。
+  - 测试 `InferenceRequestTest`（Robolectric Parcel 往返 + byId）、`NativeSessionContractTest`（错误码契约 + 守卫）→ Kotlin。
+  - 红线保持 Java：`NativeSession`（JNI 8 个 native）、`InferenceRequest`/`InferenceStats`（AIDL Parcelable）。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+  - 结果：`PASS`；101 个单元测试 0 失败 0 错误；AIDL 互操作（Kotlin 继承 Java 生成的 `IInferenceService.Stub`/`IInferenceCallback.Stub`）编译通过；`assembleDebug` 产出 APK。
+  - `connectedDebugAndroidTest` 的 6 项仪器化测试留待 `MIGRATION-K5` 迁移 `InferenceServiceInstrumentedTest` 后统一重跑确认（记录为待办，不阻塞 K4）。
+- 风险/阻塞：无（AIDL 可空性按平台类型处理正确；`@JvmField` 常量对 Java 字段访问有效）。
+- 下一阶段依赖：`MIGRATION-K4` 可以开始；本轮没有执行 K4。
+
+### 2026-08-29 00:30 | MIGRATION-K4 | IN_PROGRESS
+
+- 目标：迁移全部页面与宿主 Activity（最大工作量）。
+- 依赖：`MIGRATION-K3` DONE。
+- 计划修改（24 主文件 + 7 单测）：`feature/download/`(6)、`feature/chat/`(10)、`feature/market/`(4)、`feature/diagnostics/`(1)、`feature/settings/`(1)、`MainActivity`、`App`；测试 `ChatHistoryTrimmerTest`、`ChatRepositoryTest`、`RealChatEngineTest`、`ChatEngineProviderTest`、`DownloadRepositoryTest`、`ModelVerifierTest`、`DownloadPipelineTest`。
+- 计划验证：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+
+### 2026-08-29 00:55 | MIGRATION-K4 | DONE
+
+- 目标：同上。
+- 依赖：K3 DONE。
+- 实际修改：
+  - `feature/download/`：ModelVerifier（GGUF 探针逐字节核对，`when` 替换 switch）、DownloadCoordinator（`@Throws(IOException)` 保留受检异常、`when(e.code())`）、DownloadRepository（CatalogItem/CatalogView/TaskView 用 `@JvmField`）、CatalogAdapter/DownloadAdapter/DownloadsFragment。
+  - `feature/chat/`：ChatEngine（接口 + 嵌套 StreamListener）、ChatEngineProvider、RealChatEngine（`ChatEngine.StreamListener` 显式限定）、ChatHistoryTrimmer（`===` 引用相等保留最新消息语义）、ChatRepository（`fun interface` Listener/MessagesCallback）、ChatFragment/HistoryFragment/MessageAdapter/ModelPickerSheet/PickerAdapter。
+  - `feature/market/`：MarketModels（`joinToString` 替换 `String.join`）、ModelAdapter（`compatLabel` 等 `@JvmStatic`）、MarketFragment/ModelDetailFragment。
+  - `feature/diagnostics/`、`feature/settings/`、`MainActivity`（`when` 替换 String switch）、`App`（进程门控 `:inference` 跳过 ServiceLocator 初始化原样保留）。
+  - 测试 7 文件迁移；`ChatEngineProviderTest` 一并迁移（K3 遗留）。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+  - 结果：`PASS`；101 个单元测试 0 失败 0 错误（含 DownloadPipelineTest 11 项、RoomPersistenceTest 6 项、ChatRepositoryTest 3 项等）；`assembleDebug` 产出 APK。
+- 风险/阻塞与修复：
+  - 修复 1：Kotlin 嵌套接口不随接口实现自动进入作用域（与 Java 不同）——`RealChatEngine` 中 `StreamListener` 需写 `ChatEngine.StreamListener`。
+  - 修复 2：单方法回调接口需声明为 `fun interface` 才支持 lambda SAM（`OnMessageLongClick`/`Callback`/`OnPick`）。
+  - 修复 3：`String.join` 在 Kotlin `String` 上不可解析——改用 `Iterable.joinToString`。
+  - 修复 4：`Fragment.getView()` 与 `onViewCreated` 参数同名遮蔽——回调内 `getView()` 判空需用 `this@XxxFragment.view`（保留视图销毁后的空安全）。
+  - 备注：`CatalogItem.modelId` 等 manifest 未兜底字段按 Java 保持可空，调用侧以 `!!` 断言（schema 已保证非空）。
+- 下一阶段依赖：`MIGRATION-K5` 可以开始；本轮没有执行 K5。
+
+### 2026-08-29 00:58 | MIGRATION-K5 | IN_PROGRESS
+
+- 目标：迁移遗留文件，同步文档，确认无 Java 残留（红线区除外）。
+- 依赖：`MIGRATION-K4` DONE。
+- 计划修改（3 主 + 2 单测 + 1 仪器化测试）：`mock/`（Filters、MockChatEngine、ReplyComposer——仍被引用不可删除）、`FiltersTest`、`ReplyComposerTest`、`InferenceServiceInstrumentedTest`。
+- 计划验证：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`；`connectedDebugAndroidTest`；存量 Java 清点。
+
+### 2026-08-29 01:00 | MIGRATION-K5 | DONE
+
+- 目标：同上。
+- 依赖：K4 DONE。
+- 实际修改：
+  - `mock/Filters`（`const val` 常量 + `@JvmStatic apply/matchesSize`）、`mock/ReplyComposer`（`object` + `@JvmStatic`）、`mock/MockChatEngine`（实现 `ChatEngine`，`@Synchronized` 保留语义）。
+  - `FiltersTest`、`ReplyComposerTest`、`InferenceServiceInstrumentedTest`（androidTest，Robolectric→AndroidJUnit4）→ Kotlin。
+  - 删除全部 K1-K5 的 `.java` 源文件。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:assembleDebug --offline --console=plain`
+  - 结果：`PASS`；101 个单元测试 0 失败 0 错误。
+  - 命令：`./gradlew :app:compileDebugAndroidTestKotlin --offline --console=plain`
+  - 结果：`PASS`；仪器化测试 Kotlin 编译通过。
+  - 存量 Java 清点：`app/src/main/java` 仅剩 13 个红线区文件（`data/room/` 10 + `core/inference/NativeSession/InferenceRequest/InferenceStats` 3）；`app/src/test`、`app/src/androidTest` 无 `.java` 残留。
+- 风险/阻塞：`connectedDebugAndroidTest` 需模拟器 + 已安装批准模型（真实模型 4 项依赖批准模型文件，缺失时以 Assume 跳过；2 项错误路径测试不依赖模型）。见下条记录。
+- 下一阶段依赖：Kotlin 迁移全部完成；P5/P6 在 Kotlin 代码库上继续。
