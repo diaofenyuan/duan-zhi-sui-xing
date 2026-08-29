@@ -1,0 +1,124 @@
+package com.example.localai.feature.chat
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.localai.MainActivity
+import com.example.localai.R
+import com.example.localai.common.Fmt
+import com.example.localai.common.widget.EmptyStateView
+import com.example.localai.data.ServiceLocator
+import com.example.localai.data.room.ConversationEntity
+import java.util.ArrayList
+
+/** 会话历史页：Room 持久化的真实会话列表；点击恢复、删除、空态。 */
+class HistoryFragment : Fragment() {
+
+    private val sessions = ArrayList<ConversationEntity>()
+    private var listView: RecyclerView? = null
+    private var emptyView: EmptyStateView? = null
+    private var repository: ChatRepository? = null
+    private val listener = ChatRepository.Listener { refresh() }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
+                              savedInstanceState: Bundle?): View? {
+        return inflater.inflate(R.layout.fragment_history, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        repository = ServiceLocator.chat()
+        listView = view.findViewById(R.id.list)
+        emptyView = view.findViewById(R.id.empty)
+        listView!!.layoutManager = LinearLayoutManager(requireContext())
+        listView!!.adapter = SessionAdapter()
+
+        view.findViewById<View>(R.id.btn_back).setOnClickListener {
+            if (activity is MainActivity) {
+                (activity as MainActivity).onBackPressedDispatcher.onBackPressed()
+            }
+        }
+        refresh()
+        repository?.register(listener)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        repository?.unregister(listener)
+    }
+
+    private fun refresh() {
+        repository?.let {
+            it.refresh()
+            sessions.clear()
+            sessions.addAll(it.conversations())
+        }
+        val lv = listView ?: return
+        if (lv.adapter == null) {
+            return
+        }
+        lv.adapter!!.notifyDataSetChanged()
+        emptyView?.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
+        lv.visibility = if (sessions.isEmpty()) View.GONE else View.VISIBLE
+    }
+
+    private fun modelLabel(entity: ConversationEntity): String {
+        if (entity.modelId == null || entity.modelId.isEmpty()) {
+            return "本地模型"
+        }
+        return entity.modelId
+    }
+
+    private inner class SessionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+            val v = layoutInflater.inflate(R.layout.item_session, parent, false)
+            return object : RecyclerView.ViewHolder(v) {}
+        }
+
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val itemView = holder.itemView
+            val session = sessions[position]
+
+            itemView.findViewById<View>(R.id.icon_bg)
+                .setBackgroundResource(PickerAdapter.grad(position % 4))
+            val iconText = itemView.findViewById<TextView>(R.id.text_icon)
+            val title = if (session.title == null || session.title.isEmpty()) "会话" else session.title
+            iconText.text = Character.toUpperCase(title[0]).toString()
+            itemView.findViewById<TextView>(R.id.text_title).text = title
+            itemView.findViewById<TextView>(R.id.text_meta).text =
+                getString(R.string.session_meta2_fmt,
+                    modelLabel(session),
+                    Fmt.timeLabel(session.updatedAt, System.currentTimeMillis()))
+            itemView.findViewById<TextView>(R.id.text_preview).text = ""
+
+            itemView.setOnClickListener {
+                android.util.Log.d("p4history", "item clicked id=" + session.id)
+                if (activity is MainActivity) {
+                    (activity as MainActivity).openConversation(session.id)
+                }
+            }
+            itemView.findViewById<View>(R.id.btn_more).setOnClickListener {
+                android.util.Log.d("p4history", "more clicked id=" + session.id)
+                AlertDialog.Builder(requireContext())
+                    .setTitle(title)
+                    .setMessage(R.string.dialog_clear_sessions_msg)
+                    .setPositiveButton(R.string.action_delete) { _, _ ->
+                        repository?.let {
+                            it.deleteConversation(session.id)
+                            refresh()
+                        }
+                    }
+                    .setNegativeButton(R.string.action_cancel, null)
+                    .show()
+            }
+        }
+
+        override fun getItemCount(): Int = sessions.size
+    }
+}
