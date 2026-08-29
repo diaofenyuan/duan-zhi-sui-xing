@@ -81,9 +81,17 @@
 | --- | --- | --- | --- |
 | Ed25519 验证器（verify-only） | `app/src/main/java/com/example/localai/data/network/Ed25519.java` | CC0（公共领域，算法结构参考 str4d/ed25519-java） | 自研纯 Java 验证路径，供 API 26+ 无平台 EdDSA 设备使用；单测与 JDK 17 Ed25519 交叉验证；归属声明见 NOTICE |
 
+### 3.8 Kotlin Stdlib（MIGRATION-K1 引入，2026-08-28 登记）
+
+| 名称 | 坐标 | 版本 | 许可证 | 来源 | 实际引入步骤 |
+| --- | --- | --- | --- | --- | --- |
+| Kotlin Standard Library | org.jetbrains.kotlin:kotlin-stdlib | 2.2.20 | Apache-2.0 | https://github.com/JetBrains/kotlin （Maven Central） | K1（语言迁移，Kotlin Gradle Plugin 传递引入） |
+
+备注：Kotlin Stdlib 由 Kotlin Gradle Plugin（`org.jetbrains.kotlin.android`，2.2.20）作为传递依赖自动引入，非手工声明；其 Apache-2.0 许可与 `NOTICE` 归属声明已登记。kotlin-stdlib 采用 2.2.20，与 KGP 2.2.20 版本对齐。
+
 ## 4. 构建工具链（不随应用分发，仅列示）
 
-Gradle 8.14（Apache-2.0）、Android Gradle Plugin 8.13.2（Apache-2.0）、NDK r28（Apache-2.0 及第三方组件见 `$SDK/ndk/.../NOTICE`）、CMake 3.22.1（BSD-3）、JDK Temurin 17（GPLv2+Classpath）。工具链产物不打包进 APK，发布归档时在 SBOM 中单独列出。
+Gradle 8.14（Apache-2.0）、Android Gradle Plugin 8.13.2（Apache-2.0）、Kotlin Gradle Plugin 2.2.20（Apache-2.0，JetBrains）、NDK r28（Apache-2.0 及第三方组件见 `$SDK/ndk/.../NOTICE`）、CMake 3.22.1（BSD-3）、JDK Temurin 17（GPLv2+Classpath）。工具链产物不打包进 APK，发布归档时在 SBOM 中单独列出。
 
 ## 5. 当前状态核对（2026-08-23，P3 更新）
 
