@@ -127,7 +127,10 @@ class DownloadRepository(
                     try {
                         val manifest = catalogClient.fetchManifest(entry.modelId!!, entry.version!!)
                         val file = manifest.primaryFile()
-                        val installed = modelDao.getByModelId(entry.modelId) != null
+                        val entity = modelDao.getByModelId(entry.modelId)
+                        val installed = entity != null &&
+                                storage.modelFile(entity.modelId, entity.version,
+                                    entity.fileName ?: "").isFile
                         items.add(CatalogItem(entry.modelId, entry.version,
                             if (entry.displayName == null) entry.modelId else entry.displayName,
                             if (entry.description == null) manifest.description else entry.description,

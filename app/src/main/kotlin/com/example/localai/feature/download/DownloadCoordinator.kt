@@ -79,7 +79,11 @@ class DownloadCoordinator(
                     callback.onResult(false, "该模型已有进行中的任务")
                     return@execute
                 }
-                if (modelDao.getByModelId(modelId) != null) {
+                val installed = modelDao.getByModelId(modelId)?.let { entity ->
+                    storage.modelFile(entity.modelId, entity.version,
+                        entity.fileName ?: "").isFile
+                } ?: false
+                if (installed) {
                     callback.onResult(false, "该模型已安装")
                     return@execute
                 }
