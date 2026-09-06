@@ -56,6 +56,14 @@ android {
         }
     }
 
+    buildTypes.create('releaseCheck') {
+        // 正式签名和 ARM64 Release 配置，独立标识保护现有调试应用的数据。
+        initWith buildTypes.release
+        applicationIdSuffix '.releasecheck'
+        matchingFallbacks = ['release']
+    }
+    testBuildType providers.gradleProperty('instrumentedBuildType').getOrElse('debug')
+
     compileOptions {
         sourceCompatibility JavaVersion.valueOf("VERSION_" + libs.versions.javaVersion.get())
         targetCompatibility JavaVersion.valueOf("VERSION_" + libs.versions.javaVersion.get())
@@ -87,6 +95,15 @@ android {
                 systemProperty 'robolectric.dependency.repo.url', 'https://maven.aliyun.com/repository/central'
                 maxHeapSize = '1024m'
             }
+        }
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType('releaseCheck')) { variant ->
+        variant.outputs.each { output ->
+            // 仅改变验收包版本，正式包的版本信息保持独立。
+            output.versionCode.set(providers.gradleProperty('releaseCheckVersionCode').map { Integer.parseInt(it) }.orElse(2))
         }
     }
 }
