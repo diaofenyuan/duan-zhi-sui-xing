@@ -66,6 +66,16 @@ class CompatibilityEngineTest {
     }
 
     @Test
+    fun installedModelDoesNotRequireDownloadingItsWeightsAgain() {
+        val lowStorage = DeviceSnapshot(34, "arm64-v8a", 100L * 1024 * 1024, 8L * 1024 * 1024 * 1024)
+        assertTrue(CompatibilityEngine.evaluate(lowStorage, smallModel()).isUnsupported())
+        val installed = CompatibilityEngine.evaluate(lowStorage, smallModel(), requireDownloadSpace = false)
+        assertTrue(installed.isRecommended())
+        val incompatible = DeviceSnapshot(25, "armeabi-v7a", 0, 8L * 1024 * 1024 * 1024)
+        assertTrue(CompatibilityEngine.evaluate(incompatible, smallModel(), requireDownloadSpace = false).isUnsupported())
+    }
+
+    @Test
     fun entryDeviceApprovesSmallModel() {
         val r = CompatibilityEngine.evaluate(entry(), smallModel())
         assertEquals(CompatibilityEngine.LEVEL_RECOMMENDED, r.level)

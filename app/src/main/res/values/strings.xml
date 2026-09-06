@@ -140,8 +140,8 @@
 
     <!-- 诊断 -->
     <string name="diag_title">设备诊断</string>
-    <string name="diag_device_name">Pixel 8 Pro（参考档）</string>
-    <string name="diag_device_tier">旗舰档 · 演示数据</string>
+    <string name="diag_device_name">正在读取设备信息</string>
+    <string name="diag_device_tier">本机状态 · 页面可见时定期更新</string>
     <string name="diag_soc">处理器</string>
     <string name="diag_ram">内存</string>
     <string name="diag_os">系统</string>
@@ -149,10 +149,11 @@
     <string name="diag_storage">存储</string>
     <string name="diag_page">内存页</string>
     <string name="chip_thermal_ok">温控正常</string>
-    <string name="chip_battery_fmt">电量 %d%% · 未充电</string>
-    <string name="chip_backend">CPU · NEON</string>
-    <string name="bench_title">性能基准（本机短测）</string>
-    <string name="bench_note">协议：输入 512 / 输出 128 token · P50 · 温度正常</string>
+    <string name="chip_battery_fmt">电量 %1$d%% · %2$s</string>
+    <string name="chip_battery_unknown">电量未知</string>
+    <string name="chip_backend">CPU · 本地推理</string>
+    <string name="bench_title">模型运行内存估算</string>
+    <string name="bench_note">根据当前运行模式粗略估算，实际占用随设备和输入变化；此处未进行性能测速。</string>
     <string name="compat_overview_title">兼容性总览</string>
     <string name="unsupported_reason_fmt">· %1$s：%2$s</string>
 

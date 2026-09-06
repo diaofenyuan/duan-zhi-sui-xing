@@ -99,7 +99,8 @@ object DeviceProfiler {
         if (data != null) {
             try {
                 val fs = StatFs(data.absolutePath)
-                p.storageFreeMb = (fs.availableBytes + fs.freeBytes) / 2 / (1024 * 1024)
+                // freeBytes 包括系统保留块，下载只能使用应用可分配的 availableBytes。
+                p.storageFreeMb = fs.availableBytes / (1024 * 1024)
             } catch (ignored: RuntimeException) {
                 p.storageFreeMb = 0
             }
@@ -116,6 +117,7 @@ object DeviceProfiler {
             val bm = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager?
             if (bm != null) {
                 p.batteryPercent = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    .takeIf { it in 0..100 } ?: -1
             } else {
                 p.batteryPercent = -1
             }

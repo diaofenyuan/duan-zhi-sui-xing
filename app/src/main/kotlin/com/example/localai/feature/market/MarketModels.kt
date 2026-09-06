@@ -27,7 +27,7 @@ object MarketModels {
             val resultCompat = CompatibilityEngine.evaluate(device,
                 CompatibilityEngine.ModelConstraints(
                     item.minAndroidApi, item.abis, item.sizeBytes,
-                    item.contextLength, item.parameterCount))
+                    item.contextLength, item.parameterCount), requireDownloadSpace = !item.installed)
 
             val info = ModelInfo(
                 item.modelId!!, item.displayName!!,

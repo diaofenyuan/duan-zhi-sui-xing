@@ -119,7 +119,7 @@
                 android:layout_height="wrap_content">
 
                 <LinearLayout style="@style/StatusCell">
-                    <ImageView style="@style/StatusIcon" android:src="@drawable/ic_thermo" app:tint="@color/status_success" />
+                    <ImageView android:id="@+id/icon_thermal" style="@style/StatusIcon" android:src="@drawable/ic_thermo" app:tint="@color/status_success" />
                     <TextView android:id="@+id/chip_thermal" style="@style/StatusText" android:text="@string/chip_thermal_ok" android:textColor="@color/status_success" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

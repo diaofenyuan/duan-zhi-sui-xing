@@ -26,7 +26,7 @@ object CompatibilityEngine {
         @JvmField val freeStorageBytes: Long,
         @JvmField val ramBytes: Long
     ) {
-        @JvmField val unknownNote: String = "估算值，P6 真机校准后生效"
+        @JvmField val unknownNote: String = "内存为粗略估算，实际占用因设备和输入而异"
     }
 
     /** 模型侧关键约束（来自 ModelManifest runtime/files，客户端已验证结构）。 */
@@ -54,11 +54,12 @@ object CompatibilityEngine {
     }
 
     @JvmStatic
-    fun evaluate(device: DeviceSnapshot, model: ModelConstraints): Result {
+    @JvmOverloads
+    fun evaluate(device: DeviceSnapshot, model: ModelConstraints, requireDownloadSpace: Boolean = true): Result {
         val reasons = ArrayList<String>()
 
         if (device.androidApi < model.minAndroidApi) {
-            reasons.add("系统需 Android ${model.minAndroidApi} 或更高（当前 API ${device.androidApi}）")
+            reasons.add("系统需 Android API ${model.minAndroidApi} 或更高（当前 API ${device.androidApi}）")
         }
         val abiOk = model.abis.contains(device.deviceAbi)
         // 模拟器 x86_64 特例：应用为 arm64 真机设计，但 x86_64 ABI 的 Native 构建同样产出，
@@ -67,7 +68,7 @@ object CompatibilityEngine {
             reasons.add("模型不支持当前架构（需要 " + join(model.abis) + "，本机 " + device.deviceAbi + "）")
         }
         val freeLimit = model.sizeBytes * 2L + 300L * 1024L * 1024L
-        if (device.freeStorageBytes < freeLimit) {
+        if (requireDownloadSpace && device.freeStorageBytes < freeLimit) {
             reasons.add("可用存储不足（至少需要约 " + humanMb(freeLimit) + "，当前可用 "
                     + humanMb(device.freeStorageBytes) + "）")
         }
