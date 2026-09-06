@@ -187,13 +187,13 @@ bool installListener(JNIEnv * env, const std::shared_ptr<Session> & s, jobject l
     if (listener == nullptr) {
         return false;
     }
-    jclass local = env->FindClass("com/example/localai/core/inference/NativeSession$StreamListener");
+    jclass local = env->FindClass("com/example/localai/core/inference/NativeSession$StreamBridge");
     if (local == nullptr) {
         return false;
     }
     s->listener.cls = static_cast<jclass>(env->NewGlobalRef(local));
     s->listener.object = env->NewGlobalRef(listener);
-    s->listener.on_delta = env->GetMethodID(local, "onDelta", "(Ljava/lang/String;)V");
+    s->listener.on_delta = env->GetMethodID(local, "onBytes", "([B)V");
     s->listener.on_finished = env->GetMethodID(local, "onFinished", "(I)V");
     s->listener.on_error = env->GetMethodID(local, "onError", "(ILjava/lang/String;)V");
     env->DeleteLocalRef(local);
@@ -269,10 +269,13 @@ void generationWorker(std::shared_ptr<Session> s, std::string prompt) {
         if (batch_text.empty()) {
             return;
         }
-        jstring jtext = env->NewStringUTF(batch_text.c_str());
-        if (jtext != nullptr) {
-            env->CallVoidMethod(s->listener.object, s->listener.on_delta, jtext);
-            env->DeleteLocalRef(jtext);
+        // 输出可能包含跨批次的 UTF-8 字符或 NUL，不经过 Modified UTF-8 字符串接口。
+        jbyteArray bytes = env->NewByteArray(static_cast<jsize>(batch_text.size()));
+        if (bytes != nullptr) {
+            env->SetByteArrayRegion(bytes, 0, static_cast<jsize>(batch_text.size()),
+                                   reinterpret_cast<const jbyte *>(batch_text.data()));
+            env->CallVoidMethod(s->listener.object, s->listener.on_delta, bytes);
+            env->DeleteLocalRef(bytes);
         }
         if (first_flush) {
             first_flush = false;

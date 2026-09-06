@@ -1,5 +1,12 @@
 package com.example.localai.core.inference;
 
+import androidx.annotation.Keep;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+
 /**
  * JNI 推理会话（P3）：真实 llama.cpp 加载/生成/停止/释放边界。
  * 线程约定：实例方法 synchronized，同一会话串行访问；句柄 0 恒为无效值。
@@ -25,7 +32,7 @@ public final class NativeSession implements AutoCloseable {
     /** 结束原因：被 stop() 取消。 */
     public static final int FINISH_STOPPED = 1;
 
-    /** 流式回调：onDelta/onFinished/onError 每个生成周期各最多一次，顺序稳定。 */
+    /** 流式回调：增量有序，结束或错误每轮最多一次。 */
     public interface StreamListener {
         /** 增量文本片段（批量合并后回调，非逐 Token）。 */
         void onDelta(String text);
@@ -35,6 +42,50 @@ public final class NativeSession implements AutoCloseable {
 
         /** 生成失败；message 已脱敏。 */
         void onError(int code, String message);
+    }
+
+    /** JNI 传标准 UTF-8 字节；每轮独立解码，避免跨 token 的汉字或表情被提前转换。 */
+    @Keep
+    static final class StreamBridge {
+        private final StreamListener listener;
+        private final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+        private byte[] pending = new byte[0];
+        private boolean ended;
+
+        StreamBridge(StreamListener listener) { this.listener = listener; }
+
+        public void onBytes(byte[] bytes) {
+            if (ended || bytes.length == 0) return;
+            ByteBuffer input = ByteBuffer.allocate(pending.length + bytes.length);
+            input.put(pending).put(bytes).flip();
+            CharBuffer output = CharBuffer.allocate(input.remaining());
+            decoder.decode(input, output, false);
+            pending = new byte[input.remaining()];
+            input.get(pending);
+            output.flip();
+            if (output.hasRemaining()) listener.onDelta(output.toString());
+        }
+
+        public void onFinished(int reason) {
+            if (ended) return;
+            finishDecoding();
+            listener.onFinished(reason);
+        }
+
+        public void onError(int code, String message) {
+            if (ended) return;
+            finishDecoding();
+            listener.onError(code, message);
+        }
+
+        private void finishDecoding() {
+            ended = true;
+            // 停止或 token 上限可能落在字符中间；只展示已完整生成的字符。
+            pending = new byte[0];
+            decoder.reset();
+        }
     }
 
     private static volatile boolean libraryLoaded;
@@ -84,14 +135,14 @@ public final class NativeSession implements AutoCloseable {
         if (listener == null) {
             throw new NullPointerException("listener must not be null");
         }
-        check(nativeStart(handle, prompt.getBytes(java.nio.charset.StandardCharsets.UTF_8), listener), "start");
+        check(nativeStart(handle, prompt.getBytes(StandardCharsets.UTF_8), new StreamBridge(listener)), "start");
     }
 
     /** 使用已加载模型的真实词表，包含与生成相同的模板特殊 token。 */
     public synchronized int countTokens(String prompt) {
         ensureOpen(handle);
         requireNonEmpty(prompt, "prompt");
-        int count = nativeCountTokens(handle, prompt.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        int count = nativeCountTokens(handle, prompt.getBytes(StandardCharsets.UTF_8));
         if (count < 0) check(-count, "countTokens");
         return count;
     }
@@ -174,7 +225,7 @@ public final class NativeSession implements AutoCloseable {
                                          int threadCount, float temperature, float topP,
                                          int maxNewTokens);
 
-    private static native int nativeStart(long handle, byte[] prompt, StreamListener listener);
+    private static native int nativeStart(long handle, byte[] prompt, StreamBridge listener);
 
     private static native int nativeCountTokens(long handle, byte[] prompt);
 
