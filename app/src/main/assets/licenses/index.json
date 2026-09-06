@@ -1,0 +1,233 @@
+[
+  {
+    "title": "AndroidX / Jetpack",
+    "summary": "Apache-2.0",
+    "components": [
+      "androidx.activity:activity:1.8.0",
+      "androidx.annotation:annotation-experimental:1.5.0",
+      "androidx.annotation:annotation-jvm:1.9.1",
+      "androidx.appcompat:appcompat-resources:1.8.0",
+      "androidx.appcompat:appcompat:1.8.0",
+      "androidx.arch.core:core-common:2.2.0",
+      "androidx.arch.core:core-runtime:2.2.0",
+      "androidx.cardview:cardview:1.0.0",
+      "androidx.collection:collection-jvm:1.5.0",
+      "androidx.concurrent:concurrent-futures:1.1.0",
+      "androidx.constraintlayout:constraintlayout-solver:2.0.1",
+      "androidx.constraintlayout:constraintlayout:2.0.1",
+      "androidx.coordinatorlayout:coordinatorlayout:1.1.0",
+      "androidx.core:core-ktx:1.16.0",
+      "androidx.core:core-viewtree:1.0.0",
+      "androidx.core:core:1.16.0",
+      "androidx.cursoradapter:cursoradapter:1.0.0",
+      "androidx.customview:customview-poolingcontainer:1.0.0",
+      "androidx.customview:customview:1.1.0",
+      "androidx.documentfile:documentfile:1.0.0",
+      "androidx.drawerlayout:drawerlayout:1.1.1",
+      "androidx.dynamicanimation:dynamicanimation:1.0.0",
+      "androidx.emoji2:emoji2-views-helper:1.3.0",
+      "androidx.emoji2:emoji2:1.3.0",
+      "androidx.fragment:fragment:1.5.4",
+      "androidx.interpolator:interpolator:1.0.0",
+      "androidx.legacy:legacy-support-core-utils:1.0.0",
+      "androidx.lifecycle:lifecycle-common:2.6.2",
+      "androidx.lifecycle:lifecycle-livedata-core:2.6.2",
+      "androidx.lifecycle:lifecycle-livedata:2.6.2",
+      "androidx.lifecycle:lifecycle-process:2.6.2",
+      "androidx.lifecycle:lifecycle-runtime:2.6.2",
+      "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2",
+      "androidx.lifecycle:lifecycle-viewmodel:2.6.2",
+      "androidx.loader:loader:1.0.0",
+      "androidx.localbroadcastmanager:localbroadcastmanager:1.0.0",
+      "androidx.print:print:1.0.0",
+      "androidx.profileinstaller:profileinstaller:1.4.0",
+      "androidx.recyclerview:recyclerview:1.4.0",
+      "androidx.resourceinspection:resourceinspection-annotation:1.0.1",
+      "androidx.room:room-common-jvm:2.8.4",
+      "androidx.room:room-runtime-android:2.8.4",
+      "androidx.savedstate:savedstate:1.2.1",
+      "androidx.sqlite:sqlite-android:2.6.2",
+      "androidx.sqlite:sqlite-framework-android:2.6.2",
+      "androidx.startup:startup-runtime:1.1.1",
+      "androidx.tracing:tracing:1.2.0",
+      "androidx.transition:transition:1.5.0",
+      "androidx.vectordrawable:vectordrawable-animated:1.1.0",
+      "androidx.vectordrawable:vectordrawable:1.1.0",
+      "androidx.versionedparcelable:versionedparcelable:1.1.1",
+      "androidx.viewpager2:viewpager2:1.1.0-beta02",
+      "androidx.viewpager:viewpager:1.0.0"
+    ],
+    "notice": "The Android Open Source Project\n来源：https://android.googlesource.com/platform/frameworks/support",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Material Components",
+    "summary": "Apache-2.0",
+    "components": [
+      "com.google.android.material:material:1.12.0"
+    ],
+    "notice": "The Android Open Source Project / Material Components contributors\n来源：https://github.com/material-components/material-components-android",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Gson",
+    "summary": "Apache-2.0",
+    "components": [
+      "com.google.code.gson:gson:2.11.0"
+    ],
+    "notice": "Google Inc.\n来源：https://github.com/google/gson",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Error Prone annotations",
+    "summary": "Apache-2.0",
+    "components": [
+      "com.google.errorprone:error_prone_annotations:2.27.0"
+    ],
+    "notice": "The Error Prone Authors\n来源：https://github.com/google/error-prone",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Guava ListenableFuture",
+    "summary": "Apache-2.0",
+    "components": [
+      "com.google.guava:listenablefuture:1.0"
+    ],
+    "notice": "Copyright (C) 2007 The Guava Authors\n来源：https://github.com/google/guava",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "OkHttp",
+    "summary": "Apache-2.0",
+    "components": [
+      "com.squareup.okhttp3:okhttp:4.12.0"
+    ],
+    "notice": "Square, Inc.\n来源：https://github.com/square/okhttp/tree/parent-4.12.0",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Okio",
+    "summary": "Apache-2.0",
+    "components": [
+      "com.squareup.okio:okio-jvm:3.6.0"
+    ],
+    "notice": "Square, Inc.\n来源：https://github.com/square/okio/tree/3.6.0",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Kotlin 标准库",
+    "summary": "Apache-2.0",
+    "components": [
+      "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10",
+      "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10",
+      "org.jetbrains.kotlin:kotlin-stdlib:2.2.20"
+    ],
+    "notice": "JetBrains s.r.o. and Kotlin Programming Language contributors\n来源：https://github.com/JetBrains/kotlin/tree/v2.2.20",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Kotlin 协程",
+    "summary": "Apache-2.0",
+    "components": [
+      "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1",
+      "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1"
+    ],
+    "notice": "JetBrains s.r.o. and Kotlin Programming Language contributors\n来源：https://github.com/Kotlin/kotlinx.coroutines/tree/1.8.1",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "JetBrains annotations",
+    "summary": "Apache-2.0",
+    "components": [
+      "org.jetbrains:annotations:23.0.0"
+    ],
+    "notice": "JetBrains s.r.o.\n来源：https://github.com/JetBrains/java-annotations",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "JSpecify",
+    "summary": "Apache-2.0",
+    "components": [
+      "org.jspecify:jspecify:1.0.0"
+    ],
+    "notice": "The JSpecify Authors\n来源：https://github.com/jspecify/jspecify/tree/1.0.0",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Public Suffix List",
+    "summary": "MPL-2.0 · OkHttp 内附数据",
+    "components": [],
+    "notice": "Note that publicsuffixes.gz is compiled from The Public Suffix List:\nhttps://publicsuffix.org/list/public_suffix_list.dat\n\nIt is subject to the terms of the Mozilla Public License, v. 2.0:\nhttps://mozilla.org/MPL/2.0/\n\n随 OkHttp 4.12.0 分发的数据及来源声明；源数据见上方来源地址。",
+    "texts": [
+      "MPL-2.0.txt"
+    ]
+  },
+  {
+    "title": "llama.cpp / ggml 与内附代码",
+    "summary": "MIT / BSD-2-Clause / Public Domain",
+    "components": [],
+    "notice": "本机 CPU 推理引擎，包含 llamafile、xxHash、rotate-bits、SHA 和 YaRN 的归属声明。\n来源：https://github.com/ggml-org/llama.cpp\n本应用的 JNI 封装和构建配置包含本项目修改。",
+    "texts": [
+      "Native-notices.txt",
+      "Unicode.txt"
+    ]
+  },
+  {
+    "title": "LLVM / libc++ 运行库",
+    "summary": "Apache-2.0 WITH LLVM-exception 等",
+    "components": [],
+    "notice": "本 APK 使用 NDK 28.2 的 libc++ 运行库。以下原样保留该 LLVM 发行版 NOTICE，包括其历史许可和第三方声明；不表示安装包包含所有编译工具。\n来源：https://android.googlesource.com/toolchain/llvm-project",
+    "texts": [
+      "LLVM-NOTICE.txt"
+    ]
+  },
+  {
+    "title": "Ed25519 校验实现参考",
+    "summary": "CC0-1.0",
+    "components": [],
+    "notice": "本项目独立实现校验路径，算法结构参考 str4d/ed25519-java。\n来源：https://github.com/str4d/ed25519-java",
+    "texts": [
+      "CC0-1.0.txt"
+    ]
+  },
+  {
+    "title": "Qwen2.5-0.5B-Instruct",
+    "summary": "Apache-2.0 · 单独下载的模型",
+    "components": [],
+    "notice": "Qwen 团队。权重不内置于 APK，模型权重、分词器和聊天模板依其自身许可使用。\n来源：https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/tree/9217f5db79a29953eb74d5343926648285ec7e67",
+    "texts": [
+      "Qwen2.5-LICENSE.txt"
+    ]
+  },
+  {
+    "title": "SmolLM-135M-Instruct（旧版模型）",
+    "summary": "Apache-2.0 · 单独下载的模型",
+    "components": [],
+    "notice": "HuggingFaceTB。旧版本已安装的模型可能仍保留在本机；权重不内置于 APK。\n来源：https://huggingface.co/HuggingFaceTB/SmolLM-135M-Instruct\nGGUF 转换：https://huggingface.co/second-state/SmolLM-135M-Instruct-GGUF",
+    "texts": [
+      "Apache-2.0.txt"
+    ]
+  }
+]

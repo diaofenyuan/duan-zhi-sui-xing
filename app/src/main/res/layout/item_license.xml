@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/TapRow">
+    <LinearLayout style="@style/SwitchTextCol">
+        <TextView
+            android:id="@+id/license_name"
+            style="@style/RowTitle" />
+        <TextView
+            android:id="@+id/license_summary"
+            style="@style/Text.App.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+</LinearLayout>

@@ -112,3 +112,31 @@ dependencies {
     androidTestImplementation libs.androidx.test.junit
     androidTestImplementation libs.androidx.test.core
 }
+
+// 发布依赖升级后必须同步随包许可清单，避免只更新代码而遗漏间接依赖的声明。
+def verifyThirdPartyLicenses = tasks.register('verifyThirdPartyLicenses') {
+    inputs.dir('src/main/assets/licenses')
+    inputs.files(configurations.releaseRuntimeClasspath)
+    doLast {
+        def directory = file('src/main/assets/licenses')
+        def entries = new groovy.json.JsonSlurper().parse(new File(directory, 'index.json'), 'UTF-8')
+        def listed = entries.collectMany { it.components }.toSet()
+        def resolved = configurations.releaseRuntimeClasspath.resolvedConfiguration.resolvedArtifacts
+                .collect { it.moduleVersion.id.toString() }.toSet()
+        if (listed != resolved) {
+            throw new GradleException("请更新随包许可清单。缺少：${resolved - listed}；已移除：${listed - resolved}")
+        }
+        entries.each { entry ->
+            if (!entry.title || !entry.summary || !entry.notice || !entry.texts) {
+                throw new GradleException('许可条目必须包含标题、归属和文本')
+            }
+            entry.texts.each { name ->
+                if (!(name ==~ /[A-Za-z0-9_.-]+/) || !new File(directory, name).isFile()
+                        || new File(directory, name).length() == 0) {
+                    throw new GradleException("许可文件缺失：${name}")
+                }
+            }
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn(verifyThirdPartyLicenses) }

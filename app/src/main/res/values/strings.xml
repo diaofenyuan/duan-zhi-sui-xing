@@ -187,7 +187,10 @@
     <string name="sw_metrics_sub">模型下载需要联网；聊天推理在本机完成，不上传对话或性能数据</string>
     <string name="group_about">关于</string>
     <string name="row_license">开源许可证</string>
-    <string name="row_license_sub">Apache-2.0 / MIT 等，详见许可清单</string>
+    <string name="row_license_sub">离线查看组件归属、版本与完整许可文本</string>
+    <string name="licenses_intro">感谢开源社区。点击条目查看本安装包使用的组件、来源及许可文本；模型权重单独下载，遵循各自许可。测试工具不包含在应用安装包中。</string>
+    <string name="licenses_load_failed">许可内容暂时无法读取，请重试。</string>
+    <item name="license_text" type="id" />
     <string name="license_dialog_title">开源许可证</string>
     <string name="cache_cleaned_fmt">已清理 %s 临时缓存</string>
 </resources>

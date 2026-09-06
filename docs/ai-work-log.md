@@ -845,3 +845,13 @@
 - 当前 Android Studio 虚拟机 emulator-5554 覆盖安装后，完整说明/滚动位置重建/返回与 Tab 切换、安装 APK Manifest 与排除规则检查共 2 项通过，2.592 秒，0 失败/跳过；实际点击设置入口并检查页面截图。仅检查系统配置，未执行云备份或跨设备迁移，不将此结果扩大为各厂商迁移实测。
 - Debug、androidTest、签名 Release 构建和 Lint 通过，Lint 0 错误、124 警告，diff --check 通过。业务推理逻辑未变，本轮未重复运行此前各 149 项 JVM 用例。无模型或会话删除；按约定中文提交并推送。
 - 后续明确缺项：开源许可证仍为摘要，缺少 APK 内可阅读的完整依赖归属和部分许可文本；当前说明是实际数据行为说明，不能据此宣称完整发布审查通过。整体目标继续。
+
+### 2026-09-06 | APK 内完整许可阅读与依赖清单检查 | IN_PROGRESS
+
+- 原设置入口仅显示手写摘要，并要求用户查看 APK 外的 docs/NOTICE。现提供 17 个离线阅读条目，展示组件版本、归属、来源和完整许可文本；长文可选择复制，正文及滚动位置随重建恢复，缺失条目显示重试而非崩溃。
+- 核对当前 Gradle releaseRuntimeClasspath 的 66 个唯一运行时组件及缓存 POM/JAR/AAR 声明，补齐 Okio、协程、注解等间接依赖。移除将未采用 WorkManager 当作实际依赖的表述；测试库不列入 APK 运行时清单。签名 Release 包内已确认全部 17 个条目、66 个组件、7 个被引用文本齐全。
+- Native 许可从当前编译源码核对，保留 ggml、llamafile、xxHash、rotate-bits、SHA、YaRN 与 tokenizer 改编归属；另附 Unicode 许可及 NDK 28.2 LLVM NOTICE。模型权重单独下载的范围明确，保留 Qwen 原许可和旧 SmolLM 说明。
+- OkHttp 4.12.0 内附 NOTICE 明确 Public Suffix List 使用 MPL-2.0，已增加对应条目和完整文本。来源：https://raw.githubusercontent.com/square/okhttp/parent-4.12.0/okhttp/src/main/resources/okhttp3/internal/publicsuffix/NOTICE 。CC0 原文来源：https://raw.githubusercontent.com/str4d/ed25519-java/master/LICENSE.txt 。许可清单维护说明同步到既有 docs/license-policy.md，未生成额外报告。
+- 新增 preBuild 许可检查：实际发布依赖与清单不一致或许可文件缺失时拒绝构建。通过仅限临时 Gradle init 脚本加入未登记 JUnit 的负向验收，明确拦截 JUnit/Hamcrest；正常配置检查通过，未把测试依赖加入正式工程。
+- 当前 Android Studio 虚拟机 emulator-5554 覆盖安装后，两项仪器化测试通过，2.756 秒，0 失败/跳过：所有文本读取、间接/Native/模型声明、真实入口、长文滚动重建恢复、超过 100 KB 的 LLVM 文本打开、异常条目重试与返回。实际点击设置入口检查列表和正文截图，排版正常，模型与会话未删除。
+- Debug、androidTest、签名 Release 构建和 Lint 通过，0 错误、126 警告。无推理业务逻辑修改，本轮不重复此前 JVM 回归。整体仍需正式签名安装/升级与发布候选验收，目标继续进行。

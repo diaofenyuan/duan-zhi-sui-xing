@@ -5,19 +5,19 @@ This product includes software developed by third parties:
 
 ===========================================================================
 llama.cpp
-Copyright (c) 2023-2024 Georgi Gerganov and contributors
+Copyright (c) 2023-2026 The ggml authors
 Licensed under the MIT License.
 https://github.com/ggml-org/llama.cpp
 Vendored as source under app/src/main/cpp/engine_llama/ from a fixed
 commit recorded in docs/native-baseline.md (locked at step S005).
 
 ggml
-Copyright (c) 2016-2024 Georgi Gerganov and ggml contributors
+Copyright (c) 2023-2026 The ggml authors
 Licensed under the MIT License.
 https://github.com/ggml-org/ggml
 Distributed together with llama.cpp.
 
-AndroidX / Jetpack libraries (Room, WorkManager, AppCompat, Core,
+AndroidX / Jetpack libraries (Room, AppCompat, Core,
 RecyclerView, Lifecycle)
 Copyright The Android Open Source Project
 Licensed under the Apache License, Version 2.0.
@@ -77,6 +77,19 @@ verification path only; cross-validated against JDK 17 Ed25519 in tests.
 See docs/license-policy.md section 3.7.
 
 Full version and source listing: docs/license-policy.md
+The shipped runtime component/version inventory and offline license texts are
+in app/src/main/assets/licenses/index.json and its referenced text files.
+This inventory includes transitive dependencies (Okio, Kotlin coroutines,
+JetBrains annotations, JSpecify, Error Prone annotations, ListenableFuture),
+OkHttp's Public Suffix List data (MPL-2.0), native embedded code notices,
+and the NDK LLVM/libc++ distribution notice. Build/test tools are not part
+of the APK runtime inventory. WorkManager is not a shipped dependency.
+
+Qwen2.5-0.5B-Instruct (separately downloaded model)
+Qwen team; Apache License, Version 2.0.
+Source: https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/tree/9217f5db79a29953eb74d5343926648285ec7e67
+The original license is included in assets/licenses/Qwen2.5-LICENSE.txt.
+
 Model weights, tokenizers and chat templates are licensed separately and
 are NOT covered by this NOTICE; see the per-model manifest shown on each
 model detail page.

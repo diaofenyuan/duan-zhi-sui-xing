@@ -102,3 +102,11 @@ Gradle 8.14（Apache-2.0）、Android Gradle Plugin 8.13.2（Apache-2.0）、Kot
 - androidTestImplementation（不随 APK 分发）：androidx.test:runner 1.6.2、rules 1.6.1、ext:junit 1.2.1、core 1.6.1。
 
 全部条目已在本清单登记；Room 2.8.4 / OkHttp（4.12.0 调整）版本决策见上表备注。`NOTICE` 已同步更新（含批准评估模型 SmolLM-135M-Instruct 的权重许可归属说明）。
+
+## 6. APK 内离线许可清单（2026-09-06）
+
+以 `app/src/main/assets/licenses/index.json` 为当前发布运行时组件与版本清单；本次按 Gradle `releaseRuntimeClasspath` 实际解析的 66 个组件核对，包含间接依赖。早期登记的 WorkManager 未实际引入，JUnit、Robolectric 和构建工具不属于 APK 运行时组件。
+
+设置页可离线分项阅读归属、来源及完整文本，包括 Apache-2.0、MPL-2.0 Public Suffix List 声明、CC0、Native 内附代码许可、所用 NDK LLVM 发行版 NOTICE 和单独下载的模型许可。Native 声明来自当前源码树及对应上游文件；LLVM NOTICE 从 NDK 28.2.13676358 的 `toolchains/llvm/prebuilt/windows-x86_64/NOTICE` 原样复制。Public Suffix List 归属由 OkHttp 4.12.0 JAR 内 `okhttp3/internal/publicsuffix/NOTICE` 确认。
+
+`verifyThirdPartyLicenses` 随 preBuild 执行，核对许可清单与实际运行时组件集合，并检查被引用文本存在且非空；新增或升级依赖后需同步核对来源、版本和随包声明。Native 源码或 NDK 升级时也需重新核对其声明，不将该检查当作自动许可判定。

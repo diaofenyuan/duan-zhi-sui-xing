@@ -105,12 +105,7 @@ class SettingsFragment : Fragment() {
 
         // 关于：开源许可证
         view.findViewById<View>(R.id.row_license).setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle(R.string.license_dialog_title)
-                .setMessage(licenseSummary() + "\n\nQwen2.5 模型许可证\n\n" +
-                    requireContext().assets.open("licenses/Qwen2.5-LICENSE.txt").bufferedReader().use { it.readText() })
-                .setPositiveButton(R.string.action_close, null)
-                .show()
+            (activity as? MainActivity)?.push(LicensesFragment())
         }
     }
 
@@ -184,17 +179,6 @@ class SettingsFragment : Fragment() {
                 }
             }
         }
-    }
-
-    private fun licenseSummary(): String {
-        return "端智随行 " + BuildConfig.VERSION_NAME + "\n\n" +
-                "· Material Components — Apache-2.0\n" +
-                "· AndroidX（AppCompat / RecyclerView / Core / Room / Work）— Apache-2.0\n" +
-                "· llama.cpp / ggml — MIT\n" +
-                "· OkHttp — Apache-2.0\n" +
-                "· Gson — Apache-2.0\n" +
-                "· JUnit 4 — EPL-1.0（仅测试）\n\n" +
-                "完整清单见 docs/license-policy.md 与 NOTICE。"
     }
 
     private fun prefs(): SharedPreferences =
