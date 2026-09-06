@@ -262,8 +262,8 @@ void generationWorker(std::shared_ptr<Session> s, std::string prompt) {
     int64_t t_last_flush_ms = 0;
     bool first_flush = true;
     std::string batch_text;
-    s->ttft_ms.store(-1);
-    s->elapsed_ms.store(0);
+    jint error_code = EC_OK;
+    const char * error_message = "";
 
     auto flush = [&]() {
         if (batch_text.empty()) {
@@ -287,22 +287,20 @@ void generationWorker(std::shared_ptr<Session> s, std::string prompt) {
     };
 
     auto fail = [&](jint code, const char * message) {
-        flush();
-        jstring jmsg = env->NewStringUTF(message);
-        if (jmsg != nullptr) {
-            env->CallVoidMethod(s->listener.object, s->listener.on_error, code, jmsg);
-            env->DeleteLocalRef(jmsg);
-        }
+        error_code = code;
+        error_message = message;
     };
 
     const llama_vocab * vocab = llama_model_get_vocab(s->model);
-    s->cancel.store(false);
     logInfo("generation start: promptLen=%zu eos=%d eot=%d",
             prompt.size(), static_cast<int>(llama_vocab_eos(vocab)),
             static_cast<int>(llama_vocab_eot(vocab)));
 
     std::vector<llama_token> tokens(1024);
-    int n_tokens = llama_tokenize(vocab, prompt.c_str(), static_cast<int32_t>(prompt.size()),
+    int n_tokens = 0;
+    // 停止可能早于线程真正开始执行，只有 nativeStart 可以重置取消标记。
+    if (s->cancel.load()) goto done;
+    n_tokens = llama_tokenize(vocab, prompt.c_str(), static_cast<int32_t>(prompt.size()),
                                   tokens.data(), static_cast<int32_t>(tokens.size()), true, true);
     if (n_tokens < 0) {
         tokens.resize(static_cast<size_t>(-n_tokens));
@@ -330,9 +328,11 @@ void generationWorker(std::shared_ptr<Session> s, std::string prompt) {
     s->gen_tokens.store(0);
 
     if (decodePrompt(s, tokens) != EC_OK) {
-        fail(EC_INTERNAL, "prompt decode failed");
+        if (!s->cancel.load()) fail(EC_INTERNAL, "prompt decode failed");
         goto done;
     }
+    // 预填充被取消时 logits 可能尚不存在，不能继续读取或采样。
+    if (s->cancel.load()) goto done;
 
     {
         const float * logits = llama_get_logits_ith(s->ctx, -1);
@@ -402,6 +402,7 @@ void generationWorker(std::shared_ptr<Session> s, std::string prompt) {
         }
     }
 
+done:
     flush();
     {
         const auto now = std::chrono::steady_clock::now();
@@ -413,13 +414,26 @@ void generationWorker(std::shared_ptr<Session> s, std::string prompt) {
             static_cast<long long>(s->gen_tokens.load()),
             static_cast<long long>(s->ttft_ms.load()),
             s->cancel.load() ? 1 : 0);
-    env->CallVoidMethod(s->listener.object, s->listener.on_finished,
-                        s->cancel.load() ? FINISH_STOPPED : FINISH_END);
-
-done:
-    clearListener(env, s.get());
-    // 生成结束回到 READY：同一会话可继续下一轮 start（模型已加载）
-    s->state.store(STATE_READY);
+    {
+        // 先清理共享回调并发布 READY，再通知完成；下一轮不能被旧线程的清理覆盖。
+        const jint reason = s->cancel.load() ? FINISH_STOPPED : FINISH_END;
+        jobject receiver = env->NewLocalRef(s->listener.object);
+        const jmethodID method = error_code == EC_OK ? s->listener.on_finished : s->listener.on_error;
+        clearListener(env, s.get());
+        s->state.store(STATE_READY);
+        if (receiver != nullptr) {
+            if (error_code == EC_OK) {
+                env->CallVoidMethod(receiver, method, reason);
+            } else {
+                jstring message = env->NewStringUTF(error_message);
+                if (message != nullptr) {
+                    env->CallVoidMethod(receiver, method, error_code, message);
+                    env->DeleteLocalRef(message);
+                }
+            }
+            env->DeleteLocalRef(receiver);
+        }
+    }
     if (attached) {
         s->vm->DetachCurrentThread();
     }
@@ -563,16 +577,20 @@ Java_com_example_localai_core_inference_NativeSession_nativeStart(
             return EC_INTERNAL;
         }
 
+        if (session->worker.joinable()) {
+            session->worker.join();
+        }
+
         if (!installListener(env, session, listener)) {
             session->state.store(STATE_READY);
             return EC_INTERNAL;
         }
 
-        if (session->worker.joinable()) {
-            session->worker.join();
-        }
-
         session->cancel.store(false);
+        session->prompt_tokens.store(0);
+        session->gen_tokens.store(0);
+        session->ttft_ms.store(-1);
+        session->elapsed_ms.store(0);
         session->worker = std::thread(generationWorker, session, prompt_text);
         return EC_OK;
     } catch (const std::exception & e) {
@@ -612,10 +630,10 @@ Java_com_example_localai_core_inference_NativeSession_nativeStop(JNIEnv * env, j
         if (!session) {
             return EC_INVALID_HANDLE;
         }
-        int expected = STATE_RUNNING;
-        if (!session->state.compare_exchange_strong(expected, STATE_IDLE)) {
+        if (session->state.load() != STATE_RUNNING) {
             return EC_WRONG_STATE;
         }
+        // 请求停止不等于已经退出；由工作线程清理后统一回到 READY。
         session->cancel.store(true);
         return EC_OK;
     } catch (const std::exception & e) {

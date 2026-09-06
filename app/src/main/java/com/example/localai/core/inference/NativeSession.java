@@ -147,7 +147,7 @@ public final class NativeSession implements AutoCloseable {
         return count;
     }
 
-    /** 请求取消生成（RUNNING -> IDLE）；未在运行时返回 WRONG_STATE。 */
+    /** 请求取消生成；收到终止回调后回到 READY，未在运行时返回 WRONG_STATE。 */
     public synchronized void stop() {
         ensureOpen(handle);
         check(nativeStop(handle), "stop");
