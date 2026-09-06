@@ -66,8 +66,46 @@ class DiagnosticsFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        adaptReadableLayout(view)
         repository = ServiceLocator.downloads()
         repository?.register(repositoryListener)
+    }
+
+    private fun adaptReadableLayout(root: View) {
+        val config = resources.configuration
+        val compact = config.screenWidthDp / config.fontScale < 360
+        val grid = root.findViewById<android.widget.GridLayout>(R.id.spec_grid)
+        val columns = if (compact) 1 else 2
+        grid.columnCount = columns
+        for (i in 0 until grid.childCount) {
+            grid.getChildAt(i).layoutParams = android.widget.GridLayout.LayoutParams().apply {
+                width = 0
+                height = ViewGroup.LayoutParams.WRAP_CONTENT
+                columnSpec = android.widget.GridLayout.spec(i % columns, 1f)
+                rowSpec = android.widget.GridLayout.spec(i / columns)
+                topMargin = dp(12f)
+            }
+        }
+        root.findViewById<TextView>(R.id.diag_device_name).apply { maxLines = Int.MAX_VALUE; ellipsize = null }
+        if (compact) {
+            val cell = root.findViewById<TextView>(R.id.chip_thermal).parent as LinearLayout
+            val statusRow = cell.parent.parent as LinearLayout
+            statusRow.orientation = LinearLayout.VERTICAL
+            for (i in 0 until statusRow.childCount) {
+                val card = statusRow.getChildAt(i) as ViewGroup
+                card.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    if (i > 0) topMargin = dp(8f)
+                }
+                val contents = card.getChildAt(0) as LinearLayout
+                contents.orientation = LinearLayout.HORIZONTAL
+                contents.gravity = Gravity.CENTER_VERTICAL
+                contents.setPadding(dp(12f), dp(12f), dp(12f), dp(12f))
+                (contents.getChildAt(1) as TextView).apply {
+                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(10f) }
+                }
+            }
+        }
     }
 
     private fun render(view: View) {

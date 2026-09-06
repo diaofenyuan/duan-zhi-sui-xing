@@ -95,7 +95,7 @@
     <style name="SpecRow">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:orientation">horizontal</item>
+        <item name="android:orientation">vertical</item>
         <item name="android:gravity">center_vertical</item>
         <item name="android:layout_marginTop">12dp</item>
     </style>
@@ -108,16 +108,13 @@
     </style>
 
     <style name="SpecValue" parent="android:TextAppearance">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_weight">1</item>
+        <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:layout_marginTop">2dp</item>
         <item name="android:layout_marginEnd">10dp</item>
         <item name="android:textSize">13sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="android:maxLines">2</item>
-        <item name="android:ellipsize">end</item>
     </style>
 
     <!-- 诊断页状态小卡 -->
@@ -138,13 +135,13 @@
     </style>
 
     <style name="StatusText" parent="android:TextAppearance">
-        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">6dp</item>
         <item name="android:textSize">11sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="android:maxLines">1</item>
+        <item name="android:gravity">center</item>
     </style>
 
     <!-- 设置页 -->

@@ -80,27 +80,39 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- 规格网格：两列三行 -->
-                <LinearLayout style="@style/SpecRow">
-                    <TextView style="@style/SpecLabel" android:text="@string/diag_soc" />
-                    <TextView android:id="@+id/spec_soc" style="@style/SpecValue" />
-                    <TextView style="@style/SpecLabel" android:text="@string/diag_ram" />
-                    <TextView android:id="@+id/spec_ram" style="@style/SpecValue" />
-                </LinearLayout>
+                <!-- 每项独立成组，大字体时由页面切为单列，避免关键数值被截断。 -->
+                <GridLayout
+                    android:id="@+id/spec_grid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="2">
+                    <LinearLayout style="@style/SpecRow">
+                        <TextView style="@style/SpecLabel" android:text="@string/diag_soc" />
+                        <TextView android:id="@+id/spec_soc" style="@style/SpecValue" />
+                    </LinearLayout>
+                    <LinearLayout style="@style/SpecRow">
+                        <TextView style="@style/SpecLabel" android:text="@string/diag_ram" />
+                        <TextView android:id="@+id/spec_ram" style="@style/SpecValue" />
+                    </LinearLayout>
 
-                <LinearLayout style="@style/SpecRow">
-                    <TextView style="@style/SpecLabel" android:text="@string/diag_os" />
-                    <TextView android:id="@+id/spec_os" style="@style/SpecValue" />
-                    <TextView style="@style/SpecLabel" android:text="@string/diag_abi" />
-                    <TextView android:id="@+id/spec_abi" style="@style/SpecValue" />
-                </LinearLayout>
+                    <LinearLayout style="@style/SpecRow">
+                        <TextView style="@style/SpecLabel" android:text="@string/diag_os" />
+                        <TextView android:id="@+id/spec_os" style="@style/SpecValue" />
+                    </LinearLayout>
+                    <LinearLayout style="@style/SpecRow">
+                        <TextView style="@style/SpecLabel" android:text="@string/diag_abi" />
+                        <TextView android:id="@+id/spec_abi" style="@style/SpecValue" />
+                    </LinearLayout>
 
-                <LinearLayout style="@style/SpecRow">
-                    <TextView style="@style/SpecLabel" android:text="@string/diag_storage" />
-                    <TextView android:id="@+id/spec_storage" style="@style/SpecValue" />
-                    <TextView style="@style/SpecLabel" android:text="@string/diag_page" />
-                    <TextView android:id="@+id/spec_page" style="@style/SpecValue" />
-                </LinearLayout>
+                    <LinearLayout style="@style/SpecRow">
+                        <TextView style="@style/SpecLabel" android:text="@string/diag_storage" />
+                        <TextView android:id="@+id/spec_storage" style="@style/SpecValue" />
+                    </LinearLayout>
+                    <LinearLayout style="@style/SpecRow">
+                        <TextView style="@style/SpecLabel" android:text="@string/diag_page" />
+                        <TextView android:id="@+id/spec_page" style="@style/SpecValue" />
+                    </LinearLayout>
+                </GridLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -149,7 +161,7 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- 性能基准 -->
+        <!-- 模型内存估算 -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

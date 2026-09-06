@@ -25,7 +25,7 @@
     <!-- Text (dark) -->
     <color name="text_primary">#E8EBF3</color>
     <color name="text_secondary">#9BA6BB</color>
-    <color name="text_tertiary">#5F6980</color>
+    <color name="text_tertiary">#929FB6</color>
 
     <!-- Status (dark) -->
     <color name="status_success">#34D399</color>

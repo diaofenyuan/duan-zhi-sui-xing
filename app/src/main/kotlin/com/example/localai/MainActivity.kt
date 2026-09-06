@@ -1,5 +1,7 @@
 package com.example.localai
 
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.activity.OnBackPressedCallback
@@ -16,6 +18,15 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 
 /** 单 Activity 宿主：底部 Tab 使用 show/hide 保留状态；二级页使用返回栈。 */
 class MainActivity : AppCompatActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        // 遵循产品的 150% 字体上限，仅覆盖本 Activity 的资源，不改动系统设置。
+        val config = newBase.resources.configuration
+        val base = if (config.fontScale > 1.5f) {
+            newBase.createConfigurationContext(Configuration(config).apply { fontScale = 1.5f })
+        } else newBase
+        super.attachBaseContext(base)
+    }
 
     private lateinit var bottomNav: BottomNavigationView
 
