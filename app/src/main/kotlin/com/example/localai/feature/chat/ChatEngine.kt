@@ -2,11 +2,14 @@ package com.example.localai.feature.chat
 
 import com.example.localai.model.ChatMessage
 
-/**
- * 对话引擎抽象（P3）：演示模式（MockChatEngine）与真实本地推理
- * （RealChatEngine）共用同一回调协议，聊天页不感知差异。
- */
+/** 对话引擎协议：生成事件与模型资源状态分别通知，空闲时也能反映进程退出。 */
 interface ChatEngine {
+
+    enum class ModelState { UNLOADED, LOADING, LOADED, GENERATING, RELEASING, ERROR }
+
+    fun modelState(): ModelState = if (isRunning()) ModelState.GENERATING else ModelState.UNLOADED
+
+    fun setModelStateListener(listener: (() -> Unit)?) {}
 
     interface StreamListener {
         /** 首个片段到达前触发一次，用于展示"正在思考"。 */

@@ -42,6 +42,7 @@ class RealChatEngineLifecycleTest {
     }
     @After fun tearDown() {
         services.forEach { it.loadGate?.countDown() }
+        services.forEach { it.releaseGate?.countDown() }
         engine.release()
     }
     private fun await(condition: () -> Boolean) {
@@ -56,6 +57,59 @@ class RealChatEngineLifecycleTest {
         services.add(service)
         context.connections.last().onServiceConnected(name, service)
         return service
+    }
+
+    @Test fun modelStateWaitsForNativeReleaseAndObservesIdleCrash() {
+        val states = mutableListOf<ChatEngine.ModelState>()
+        engine.setModelStateListener { states.add(engine.modelState()) }
+        assertEquals(ChatEngine.ModelState.UNLOADED, engine.modelState())
+        engine.start(history, Recorder())
+        assertEquals(ChatEngine.ModelState.LOADING, engine.modelState())
+        val service = bind()
+        await { service.callbacks.size == 1 }
+        assertEquals(ChatEngine.ModelState.GENERATING, engine.modelState())
+        service.callbacks.single().onFinished(NativeSession.FINISH_END)
+        await { !engine.isRunning() }
+        assertEquals(ChatEngine.ModelState.LOADED, engine.modelState())
+        val gate = CountDownLatch(1)
+        service.releaseGate = gate
+        engine.release()
+        await { service.releaseEntered.count == 0L }
+        assertEquals(ChatEngine.ModelState.RELEASING, engine.modelState())
+        assertEquals(ChatEngine.ModelState.RELEASING, states.last())
+        gate.countDown()
+        await { engine.modelState() == ChatEngine.ModelState.UNLOADED }
+        assertEquals(1, service.releases)
+        assertFalse(service.releasedOnMain)
+
+        engine.start(history, Recorder())
+        val next = bind()
+        await { next.callbacks.size == 1 }
+        next.callbacks.single().onFinished(NativeSession.FINISH_END)
+        await { !engine.isRunning() }
+        context.connections.last().onServiceDisconnected(name)
+        await { engine.modelState() == ChatEngine.ModelState.ERROR }
+        assertEquals(ChatEngine.ModelState.ERROR, states.last())
+    }
+
+    @Test fun oldReleaseConfirmationDoesNotOverrideNewLoadingState() {
+        engine.start(history, Recorder())
+        val service = bind()
+        await { service.callbacks.size == 1 }
+        service.callbacks.single().onFinished(NativeSession.FINISH_END)
+        await { !engine.isRunning() }
+        service.releaseGate = CountDownLatch(1)
+        engine.release()
+        await { service.releaseEntered.count == 0L }
+        engine.start(history, Recorder())
+        val next = bind(FakeService().apply { loadGate = CountDownLatch(1) })
+        service.releaseGate!!.countDown()
+        await { next.loadEntered.count == 0L }
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(ChatEngine.ModelState.LOADING, engine.modelState())
+        next.loadGate!!.countDown()
+        await { next.callbacks.size == 1 }
+        assertEquals(ChatEngine.ModelState.GENERATING, engine.modelState())
     }
 
     @Test fun stopBeforeBindingFinishesImmediatelyAndNeverGenerates() {

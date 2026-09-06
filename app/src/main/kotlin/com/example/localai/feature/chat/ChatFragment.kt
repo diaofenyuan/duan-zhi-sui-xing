@@ -42,6 +42,8 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     private lateinit var inputView: EditText
     private lateinit var btnSend: MaterialButton
     private lateinit var modelTitle: TextView
+    private lateinit var modelStateText: TextView
+    private lateinit var btnUnloadModel: MaterialButton
     private lateinit var statusDot: View
 
     private var streamingBot: ChatMessage? = null
@@ -102,6 +104,12 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         btnSend = view.findViewById(R.id.btn_send)
         modelTitle = view.findViewById(R.id.text_model)
         statusDot = view.findViewById(R.id.status_dot)
+        modelStateText = view.findViewById(R.id.text_model_state)
+        btnUnloadModel = view.findViewById(R.id.btn_unload_model)
+        observeModelState()
+        btnUnloadModel.setOnClickListener {
+            if (!generating && engine.modelState() == ChatEngine.ModelState.LOADED) engine.release()
+        }
 
         btnSend.setOnClickListener {
             if (generating) {
@@ -169,6 +177,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         checkpointPending = false
         draft = inputView.text.toString()
         interruptGeneration()
+        engine.setModelStateListener(null)
         messagesView.adapter = null
         super.onDestroyView()
     }
@@ -332,6 +341,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         val installed = installedModelInfos()
         if (installed.isEmpty()) {
             currentModelId = ""
+            engine.setModelStateListener(null)
             engine.release()
             engine = UnavailableChatEngine()
             return
@@ -343,8 +353,10 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         interruptGeneration()
         currentModelId = modelId
         prefs().edit().putString(KEY_MODEL, modelId).apply()
+        engine.setModelStateListener(null)
         engine.release()
         engine = ChatEngineProvider.create(requireContext(), modelId)
+        observeModelState()
         refreshHeader()
         if (announce) {
             val model = installedModelInfo(modelId)
@@ -354,30 +366,33 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         }
     }
 
-    private fun refreshHeader() {
-        if (currentModelId.isEmpty()) {
-            modelTitle.setText(R.string.chat_no_model)
-            setStatusDot(R.color.status_warn)
-            return
+    private fun observeModelState() {
+        val observed = engine
+        observed.setModelStateListener {
+            if (view != null && engine === observed) refreshHeader()
         }
-        val approved = resolveApproved()
-        val state = if (generating) getString(R.string.chat_generating)
-        else getString(R.string.chat_ready)
-        val label = engine.modeLabel()
-        if (approved != null) {
-            modelTitle.text = approved.displayName + " · " + label + " · " + state
-        } else {
-            val model = installedModelInfo(currentModelId)
-            if (model == null) {
-                modelTitle.setText(R.string.chat_no_model)
-            } else {
-                modelTitle.text = model.name + " · " + label + " · " + state
-            }
-        }
-        setStatusDot(if (resolveApproved() != null) R.color.status_success else R.color.status_warn)
     }
 
-    /** 头部状态点：按语义着色（就绪绿 / 未安装琥珀）。 */
+    private fun refreshHeader() {
+        val approved = resolveApproved()
+        val state = engine.modelState()
+        modelTitle.text = approved?.displayName ?: getString(R.string.chat_no_model)
+        modelStateText.visibility = if (approved != null) View.VISIBLE else View.GONE
+        btnUnloadModel.visibility = modelStateText.visibility
+        modelStateText.setText(when (state) {
+            ChatEngine.ModelState.UNLOADED -> R.string.chat_model_unloaded
+            ChatEngine.ModelState.LOADING -> R.string.chat_model_loading
+            ChatEngine.ModelState.LOADED -> R.string.chat_model_loaded
+            ChatEngine.ModelState.GENERATING -> R.string.chat_generating
+            ChatEngine.ModelState.RELEASING -> R.string.chat_model_releasing
+            ChatEngine.ModelState.ERROR -> R.string.chat_model_error
+        })
+        btnUnloadModel.isEnabled = approved != null && !generating && state == ChatEngine.ModelState.LOADED
+        setStatusDot(if (approved != null && state in setOf(ChatEngine.ModelState.LOADED,
+                ChatEngine.ModelState.GENERATING)) R.color.status_success else R.color.status_warn)
+    }
+
+    /** 绿色仅代表模型已加载，下载完成本身不代表推理已就绪。 */
     private fun setStatusDot(colorRes: Int) {
         statusDot.setBackgroundResource(R.drawable.bg_dot)
         statusDot.backgroundTintList = android.content.res.ColorStateList.valueOf(

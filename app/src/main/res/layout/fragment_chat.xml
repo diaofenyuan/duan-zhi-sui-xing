@@ -59,6 +59,31 @@
             android:contentDescription="@string/picker_title" />
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/pad_screen"
+        android:paddingEnd="10dp">
+
+        <TextView
+            android:id="@+id/text_model_state"
+            style="@style/Text.App.BodySec"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:accessibilityLiveRegion="polite" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_unload_model"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/chat_unload_model" />
+    </LinearLayout>
+
     <!-- 消息区 -->
     <FrameLayout
         android:layout_width="match_parent"

@@ -9,7 +9,7 @@ import com.example.localai.feature.settings.InferencePolicy
 import com.example.localai.model.ChatMessage
 
 /**
- * 真实本地推理引擎：把完整会话历史组织为 SmolLM ChatML 提示，
+ * 真实本地推理引擎：把完整会话历史组织为批准模型使用的 ChatML 提示，
  * 经 InferenceClient 驱动独立推理进程，转发流式事件。
  */
 class RealChatEngine(context: Context, private val approved: ApprovedModels.Approved) : ChatEngine {
@@ -21,6 +21,20 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
     private var pendingPrompt: String? = null
     private var generation = 0L
     private var loadedParameters: InferencePolicy.Parameters? = null
+    private var releasing = false
+    private var modelStateListener: (() -> Unit)? = null
+
+    override fun setModelStateListener(listener: (() -> Unit)?) { modelStateListener = listener }
+
+    override fun modelState(): ChatEngine.ModelState = when {
+        releasing -> ChatEngine.ModelState.RELEASING
+        client.getState() == InferenceClient.STATE_BINDING ||
+            client.getState() == InferenceClient.STATE_LOADING -> ChatEngine.ModelState.LOADING
+        client.getState() == InferenceClient.STATE_RUNNING -> ChatEngine.ModelState.GENERATING
+        client.getState() == InferenceClient.STATE_READY -> ChatEngine.ModelState.LOADED
+        client.getState() == InferenceClient.STATE_CRASHED -> ChatEngine.ModelState.ERROR
+        else -> ChatEngine.ModelState.UNLOADED
+    }
 
     fun client(): InferenceClient = client
 
@@ -34,6 +48,7 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
             return
         }
         val currentGeneration = ++generation
+        releasing = false
         this.listener = listener
         val parameters = InferencePolicy.current(appContext, approved)
         val trimmed = ChatHistoryTrimmer.truncate(history, parameters.contextLength)
@@ -47,6 +62,8 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
         if (!running || generation != currentGeneration) return
         val events = object : InferenceClient.Events {
             override fun onStateChanged(state: Int) {
+                if (generation != currentGeneration) return
+                modelStateListener?.invoke()
                 if (state == InferenceClient.STATE_READY && running && generation == currentGeneration) {
                     val queued: String?
                     synchronized(this@RealChatEngine) {
@@ -72,6 +89,7 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
                 val l = this@RealChatEngine.listener
                 this@RealChatEngine.listener = null
                 l?.onFinished(reason == NativeSession.FINISH_STOPPED)
+                modelStateListener?.invoke()
             }
 
             override fun onError(code: Int, message: String) {
@@ -81,6 +99,7 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
                 val l = this@RealChatEngine.listener
                 this@RealChatEngine.listener = null
                 l?.onError(code, message)
+                modelStateListener?.invoke()
             }
         }
         if (client.getState() == InferenceClient.STATE_READY && loadedParameters == parameters) {
@@ -91,6 +110,7 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
             loadedParameters = parameters
             client.restart(request, events)
         }
+        modelStateListener?.invoke()
     }
 
     @Synchronized
@@ -109,12 +129,21 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
 
     @Synchronized
     override fun release() {
-        generation++
+        val releasedGeneration = ++generation
+        releasing = releasing || modelState() in setOf(ChatEngine.ModelState.LOADING,
+            ChatEngine.ModelState.LOADED, ChatEngine.ModelState.GENERATING)
         running = false
         pendingPrompt = null
         listener = null
         loadedParameters = null
-        client.release()
+        client.release {
+            // 旧释放确认不得覆盖用户已开始的下一轮加载状态。
+            if (generation == releasedGeneration) {
+                releasing = false
+                modelStateListener?.invoke()
+            }
+        }
+        modelStateListener?.invoke()
     }
 
     override fun isRealInference(): Boolean = true

@@ -110,6 +110,12 @@
     <string name="chat_empty_sub">所有计算都在这台手机上完成，对话内容不会离开你的设备。</string>
     <string name="chat_ready">已就绪</string>
     <string name="chat_generating">生成中…</string>
+    <string name="chat_model_unloaded">已下载 · 发送时加载</string>
+    <string name="chat_model_loading">正在加载模型…</string>
+    <string name="chat_model_loaded">已加载 · 占用运行内存</string>
+    <string name="chat_model_releasing">正在释放运行内存…</string>
+    <string name="chat_model_error">推理进程已退出 · 发送可重试</string>
+    <string name="chat_unload_model">释放模型</string>
     <string name="chat_no_model">未安装模型 · 请先在市场下载</string>
     <string name="chat_mode_real">本地推理</string>
     <string name="chat_mode_demo">演示模式</string>

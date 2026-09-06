@@ -37,6 +37,8 @@ class InferenceClientLifecycleTest {
         val callbacks = CopyOnWriteArrayList<IInferenceCallback>()
         val loadEntered = CountDownLatch(1)
         var loadGate: CountDownLatch? = null
+        var releaseGate: CountDownLatch? = null
+        val releaseEntered = CountDownLatch(1)
         var loadCode = NativeSession.OK
         @Volatile var releases = 0
         @Volatile var releasedOnMain = false
@@ -52,6 +54,8 @@ class InferenceClientLifecycleTest {
         }
         override fun stop(): Int = NativeSession.OK
         override fun releaseSession() {
+            releaseEntered.countDown()
+            check(releaseGate?.await(5, TimeUnit.SECONDS) != false)
             releasedOnMain = Looper.myLooper() == Looper.getMainLooper()
             releases++
         }
@@ -83,6 +87,7 @@ class InferenceClientLifecycleTest {
 
     @After fun tearDown() {
         services.forEach { it.loadGate?.countDown() }
+        services.forEach { it.releaseGate?.countDown() }
         client.release()
     }
 

@@ -198,10 +198,12 @@ class InferenceClient(context: Context) {
     }
 
     @Synchronized
-    fun release() {
+    fun release(onReleased: (() -> Unit)? = null) {
         events = null
         connection?.let { retire(it) }
         state = STATE_RELEASED
+        // 在串行释放任务之后确认完成，不能把断开 UI 引用当作 Native 已释放。
+        if (onReleased != null) binderIo.execute { main.post { onReleased() } }
     }
 
     fun getState(): Int = state

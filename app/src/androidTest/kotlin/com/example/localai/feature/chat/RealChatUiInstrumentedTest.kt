@@ -1,6 +1,7 @@
 package com.example.localai.feature.chat
 
 import android.widget.EditText
+import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.localai.MainActivity
@@ -43,6 +44,55 @@ class RealChatUiInstrumentedTest {
             }
             assertTrue("页面推理未在期限内结束", completed)
             assertTrue("页面未显示真实中文回答", chinese)
+            var messageCount = 0
+            scenario.onActivity { activity ->
+                val chat = activity.supportFragmentManager.findFragmentByTag("chat") as ChatFragment
+                val view = chat.requireView()
+                assertEquals(activity.getString(R.string.chat_model_loaded),
+                    view.findViewById<TextView>(R.id.text_model_state).text.toString())
+                val adapter = chat.javaClass.getDeclaredField("adapter").apply { isAccessible = true }.get(chat) as MessageAdapter
+                messageCount = adapter.itemCount
+                view.findViewById<EditText>(R.id.input).setText("请再用一句中文介绍你能做什么。")
+                val unload = view.findViewById<android.view.View>(R.id.btn_unload_model)
+                assertTrue(unload.isEnabled)
+                unload.performClick()
+                assertFalse(unload.isEnabled)
+                assertEquals(activity.getString(R.string.chat_model_releasing),
+                    view.findViewById<TextView>(R.id.text_model_state).text.toString())
+            }
+            val releaseDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
+            var released = false
+            while (!released && System.nanoTime() < releaseDeadline) {
+                scenario.onActivity { activity ->
+                    val chat = activity.supportFragmentManager.findFragmentByTag("chat") as ChatFragment
+                    released = chat.requireView().findViewById<TextView>(R.id.text_model_state).text.toString() ==
+                        activity.getString(R.string.chat_model_unloaded)
+                }
+                if (!released) Thread.sleep(50)
+            }
+            assertTrue("Native 释放后页面没有更新", released)
+            scenario.onActivity { activity ->
+                val chat = activity.supportFragmentManager.findFragmentByTag("chat") as ChatFragment
+                assertTrue("释放不能删除已下载模型", ApprovedModels.isInstalled(activity, ApprovedModels.QWEN_05B.modelId))
+                val adapter = chat.javaClass.getDeclaredField("adapter").apply { isAccessible = true }.get(chat) as MessageAdapter
+                assertEquals("释放不能删除聊天正文", messageCount, adapter.itemCount)
+                assertFalse(chat.requireView().findViewById<EditText>(R.id.input).text.isEmpty())
+                chat.requireView().findViewById<android.view.View>(R.id.btn_send).performClick()
+            }
+            val reloadDeadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3)
+            var reloaded = false
+            while (!reloaded && System.nanoTime() < reloadDeadline) {
+                scenario.onActivity { activity ->
+                    val chat = activity.supportFragmentManager.findFragmentByTag("chat") as ChatFragment
+                    val adapter = chat.javaClass.getDeclaredField("adapter").apply { isAccessible = true }.get(chat) as MessageAdapter
+                    val answers = adapter.items().filterIsInstance<ChatMessage>().filter { it.role == ChatMessage.ROLE_BOT }
+                    assertFalse("重新加载后推理失败", answers.any { it.text.startsWith("生成失败：") })
+                    val running = chat.javaClass.getDeclaredField("generating").apply { isAccessible = true }.getBoolean(chat)
+                    reloaded = !running && answers.size == 2 && answers.last().text.any { it in '\u4e00'..'\u9fff' }
+                }
+                if (!reloaded) Thread.sleep(100)
+            }
+            assertTrue("释放后未能重新加载并回答", reloaded)
         }
     }
 }
