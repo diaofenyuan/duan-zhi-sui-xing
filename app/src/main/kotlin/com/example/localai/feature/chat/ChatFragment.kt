@@ -571,7 +571,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             if (o is ChatMessage) {
                 val text = o.text
                 if (text.isNotEmpty()) {
-                    return if (text.length > 24) text.substring(0, 24) else text
+                    return ConversationText.title(text)
                 }
             }
         }

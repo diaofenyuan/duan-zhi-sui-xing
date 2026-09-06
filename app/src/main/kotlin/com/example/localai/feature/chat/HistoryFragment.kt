@@ -15,6 +15,7 @@ import com.example.localai.common.Fmt
 import com.example.localai.common.widget.EmptyStateView
 import com.example.localai.data.ServiceLocator
 import com.example.localai.data.room.ConversationEntity
+import com.example.localai.feature.download.DownloadRepository
 import java.util.ArrayList
 
 /** 会话历史页：Room 持久化的真实会话列表；点击恢复、删除、空态。 */
@@ -25,6 +26,10 @@ class HistoryFragment : Fragment() {
     private var emptyView: EmptyStateView? = null
     private var repository: ChatRepository? = null
     private val listener = ChatRepository.Listener { refresh() }
+    private val catalogListener = object : DownloadRepository.Listener {
+        override fun onDownloadsChanged() {}
+        override fun onCatalogChanged() { refresh() }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -45,12 +50,14 @@ class HistoryFragment : Fragment() {
         }
         refresh()
         repository?.register(listener)
+        ServiceLocator.downloads()?.register(catalogListener)
         repository?.refresh()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         repository?.unregister(listener)
+        ServiceLocator.downloads()?.unregister(catalogListener)
         listView = null
         emptyView = null
     }
@@ -73,7 +80,9 @@ class HistoryFragment : Fragment() {
         if (entity.modelId == null || entity.modelId.isEmpty()) {
             return "本地模型"
         }
-        return entity.modelId
+        return ServiceLocator.downloads()?.catalogView()?.models
+            ?.firstOrNull { it.modelId == entity.modelId }?.displayName
+            ?.takeIf { it.isNotBlank() } ?: entity.modelId
     }
 
     private inner class SessionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -91,7 +100,7 @@ class HistoryFragment : Fragment() {
                 .setBackgroundResource(PickerAdapter.grad(position % 4))
             val iconText = itemView.findViewById<TextView>(R.id.text_icon)
             val title = if (session.title == null || session.title.isEmpty()) "会话" else session.title
-            iconText.text = Character.toUpperCase(title[0]).toString()
+            iconText.text = ConversationText.initial(title)
             itemView.findViewById<TextView>(R.id.text_title).text = title
             itemView.findViewById<TextView>(R.id.text_meta).text =
                 getString(R.string.session_meta2_fmt,
@@ -107,7 +116,7 @@ class HistoryFragment : Fragment() {
             itemView.findViewById<View>(R.id.btn_more).setOnClickListener {
                 AlertDialog.Builder(requireContext())
                     .setTitle(title)
-                    .setMessage(R.string.dialog_clear_sessions_msg)
+                    .setMessage(R.string.dialog_delete_session_msg)
                     .setPositiveButton(R.string.action_delete) { _, _ ->
                         repository?.let {
                             it.deleteConversation(session.id) { error ->

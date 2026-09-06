@@ -135,6 +135,7 @@
     <string name="empty_history_title">还没有会话记录</string>
     <string name="empty_history_sub">与模型的每次对话都会自动保存在这里，仅存本机。</string>
     <string name="dialog_clear_sessions_title">清空全部会话？</string>
+    <string name="dialog_delete_session_msg">仅删除当前选中的会话及其草稿，其他会话和已安装模型不受影响。此操作不可恢复。</string>
     <string name="dialog_clear_sessions_msg">将删除保存在本机的所有对话记录，此操作不可恢复。</string>
     <string name="toast_sessions_cleared">会话已清空</string>
 
