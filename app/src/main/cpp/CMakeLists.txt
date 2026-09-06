@@ -23,6 +23,12 @@ set(GGML_CCACHE          OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(engine_llama)
 
+# 调试 APK 也要使用优化后的推理内核，否则长输入预填充严重变慢。
+# 保留调试符号和断言，JNI 边界继续使用默认调试选项，方便定位生命周期问题。
+foreach(inference_target llama ggml ggml-base ggml-cpu)
+    target_compile_options(${inference_target} PRIVATE $<$<CONFIG:Debug>:-O2>)
+endforeach()
+
 # ---- JNI 封装层（S006 建立，P3 接入真实推理）----
 # 链接 llama/ggml 目标与 Android log（logcat 诊断输出）。
 add_library(ai_jni SHARED ai_jni/native_session.cpp)

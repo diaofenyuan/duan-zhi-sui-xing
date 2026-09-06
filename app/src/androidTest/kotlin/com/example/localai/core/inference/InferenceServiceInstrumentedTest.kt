@@ -28,14 +28,16 @@ private const val TIMEOUT_SEC = 90L
 /**
  * P3 仪器化验收：独立推理进程的错误回调、重复 stop/release、
  * 服务杀死后的 ENGINE_CRASHED 与重启恢复。
- * 真实模型用例依赖批准模型文件已安装到设备（qa/fixtures/approved-model.json），
- * 文件缺失时以 Assume 跳过。
+ * 优先使用已安装的 Qwen，兼容旧 SmolLM 测试文件；均未安装时以 Assume 跳过。
  */
 @RunWith(AndroidJUnit4::class)
 class InferenceServiceInstrumentedTest {
 
     private lateinit var context: Context
     private var client: InferenceClient? = null
+    private val approved: ApprovedModels.Approved
+        get() = if (ApprovedModels.isInstalled(context, ApprovedModels.QWEN_05B.modelId))
+            ApprovedModels.QWEN_05B else ApprovedModels.SMOLLM_135M
 
     @Before
     fun setUp() {
@@ -100,20 +102,20 @@ class InferenceServiceInstrumentedTest {
     }
 
     private fun approvedRequest(): InferenceRequest {
-        return ApprovedModels.requestFor(context, ApprovedModels.SMOLLM_135M, "test-approved")
+        return ApprovedModels.requestFor(context, approved, "test-approved")
     }
 
     /** 限定输出上限的批准模型请求：模拟器性能波动下仍能在时限内结束。 */
     private fun smallApprovedRequest(maxNewTokens: Int): InferenceRequest {
-        val a = ApprovedModels.SMOLLM_135M
+        val a = approved
         return InferenceRequest("test-approved", a.modelId, a.version,
             ApprovedModels.modelFile(context, a).absolutePath,
             a.contextLength, a.threadCount, a.temperature, a.topP, maxNewTokens)
     }
 
     private fun assumeApprovedInstalled() {
-        Assume.assumeTrue("批准模型文件未安装，跳过（qa/fixtures/approved-model.json）",
-            ApprovedModels.isInstalled(context, ApprovedModels.SMOLLM_135M.modelId))
+        Assume.assumeTrue("需要先安装 Qwen 或 SmolLM 批准模型",
+            ApprovedModels.isInstalled(context, approved.modelId))
     }
 
     private fun writeGarbageModel(): File {
