@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.localai.BuildConfig
+import com.example.localai.MainActivity
 import com.example.localai.R
 import com.example.localai.common.Fmt
 import com.example.localai.data.ServiceLocator
@@ -96,6 +97,10 @@ class SettingsFragment : Fragment() {
                 }
                 .setNegativeButton(R.string.action_cancel, null)
                 .show()
+        }
+
+        view.findViewById<View>(R.id.row_privacy).setOnClickListener {
+            (activity as? MainActivity)?.push(PrivacyFragment())
         }
 
         // 关于：开源许可证

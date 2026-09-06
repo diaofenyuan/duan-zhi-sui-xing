@@ -252,17 +252,15 @@
             android:layout_marginEnd="@dimen/pad_screen">
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="16dp">
+                android:id="@+id/row_privacy"
+                style="@style/TapRow">
 
                 <LinearLayout style="@style/SwitchTextCol">
-                    <TextView style="@style/RowTitle" android:text="@string/sw_metrics" />
+                    <TextView style="@style/RowTitle" android:text="@string/privacy_title" />
                     <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/sw_metrics_sub" />
                 </LinearLayout>
 
+                <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
