@@ -32,6 +32,20 @@ class ModelStorageManagerTest {
     }
 
     @Test
+    fun failedCommit_keepsVerifiedSourceForRetry() {
+        val part = newPart("retry", "verified payload".toByteArray())
+        File(tmp.root, "models").mkdirs()
+        File(tmp.root, "models/m1").writeText("阻止目标目录创建")
+        try {
+            storage.install("m1", "1.0", part, "{}".toByteArray(), "sig".toByteArray(), "model.gguf")
+            org.junit.Assert.fail("应模拟安装提交失败")
+        } catch (expected: java.io.IOException) {
+            assertEquals("verified payload", part.readText())
+            assertFalse(storage.isInstalled("m1", "1.0"))
+        }
+    }
+
+    @Test
     fun install_producesCompleteLayout() {
         val manifest = "{\"a\":1}".toByteArray(StandardCharsets.UTF_8)
         val sig = "sig".toByteArray(StandardCharsets.UTF_8)

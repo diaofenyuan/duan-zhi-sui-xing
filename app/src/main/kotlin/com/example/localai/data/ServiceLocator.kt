@@ -1,9 +1,7 @@
 package com.example.localai.data
 
 import android.content.Context
-import com.example.localai.data.network.CatalogClient
 import com.example.localai.data.network.CatalogConfig
-import com.example.localai.data.network.TrustedKeys
 import com.example.localai.data.room.AppDatabase
 import com.example.localai.data.storage.ModelStorageManager
 import com.example.localai.feature.chat.ChatRepository
@@ -31,7 +29,7 @@ class ServiceLocator private constructor(appContext: Context) {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
-        val catalogClient = CatalogClient(CatalogConfig.BASE_URL, httpClient, TrustedKeys.get())
+        val catalogClient = CatalogConfig.create(appContext, httpClient)
 
         downloadWorker = Executors.newSingleThreadExecutor { r ->
             Thread(r, "localai-download").apply { isDaemon = true }
@@ -46,7 +44,7 @@ class ServiceLocator private constructor(appContext: Context) {
             database.downloadDao(), database.modelDao(), storage,
             catalogClient, downloadCoordinator)
         downloadCoordinator.attachListener { downloadRepository.onCoordinatorChanged() }
-        chatRepository = ChatRepository(database.conversationDao(), database.messageDao())
+        chatRepository = ChatRepository(database)
     }
 
     companion object {

@@ -58,6 +58,12 @@ class ModelStorageManager(filesDir: File) {
     fun isInstalled(modelId: String, version: String): Boolean =
         File(modelDir(modelId, version), "install.ok").exists()
 
+    fun isInstalled(modelId: String, version: String, fileName: String?, expectedBytes: Long): Boolean {
+        if (fileName.isNullOrEmpty() || expectedBytes <= 0 || !isInstalled(modelId, version)) return false
+        val file = modelFile(modelId, version, fileName)
+        return file.isFile && file.length() == expectedBytes
+    }
+
     /**
      * 原子安装：part 文件 -> staging -> 写入 manifest/sig/install.ok -> rename 到目标。
      * 目标已存在（同版本重装）时旧目录先退避，失败自动回滚。
@@ -73,9 +79,8 @@ class ModelStorageManager(filesDir: File) {
         var backup: File? = null
         try {
             val gguf = File(staging, fileName)
-            if (!moveInto(partFile, gguf)) {
-                throw IOException("模型文件移入暂存目录失败")
-            }
+            // 提交前保留下载源；进程在 staging 阶段终止时仍可从源文件重新安装。
+            linkOrCopy(partFile, gguf)
             writeBytes(File(staging, "manifest.json"), manifestBytes)
             writeBytes(File(staging, "manifest.sig"), sigBytes)
             writeBytes(File(staging, "install.ok"), "ok\n".toByteArray(StandardCharsets.US_ASCII))
@@ -98,6 +103,7 @@ class ModelStorageManager(filesDir: File) {
             if (!staging.renameTo(target)) {
                 throw IOException("安装 rename 失败")
             }
+            partFile.delete()
             if (backup != null) {
                 deleteRecursively(backup)
             }
@@ -139,17 +145,14 @@ class ModelStorageManager(filesDir: File) {
     }
 
     companion object {
-        private fun moveInto(source: File, dest: File): Boolean {
-            if (source.renameTo(dest)) {
-                return true
-            }
-            // 跨文件系统场景（测试环境）：复制 + 删除
-            return try {
-                java.nio.file.Files.copy(source.toPath(), dest.toPath())
-                source.delete()
-                true
+        private fun linkOrCopy(source: File, dest: File) {
+            try {
+                // 应用私有目录通常位于同一文件系统，硬链接避免双倍模型空间。
+                java.nio.file.Files.createLink(dest.toPath(), source.toPath())
             } catch (e: IOException) {
-                false
+                java.nio.file.Files.copy(source.toPath(), dest.toPath())
+            } catch (e: UnsupportedOperationException) {
+                java.nio.file.Files.copy(source.toPath(), dest.toPath())
             }
         }
 

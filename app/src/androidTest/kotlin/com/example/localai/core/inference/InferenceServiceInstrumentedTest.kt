@@ -134,9 +134,7 @@ class InferenceServiceInstrumentedTest {
     private fun readServicePid(): Int {
         val pidHolder = intArrayOf(-1)
         val latch = CountDownLatch(1)
-        val ok = context.bindService(
-            Intent(context, InferenceService::class.java),
-            object : ServiceConnection {
+        val connection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
                     try {
                         pidHolder[0] = IInferenceService.Stub.asInterface(binder).getPid()
@@ -148,14 +146,18 @@ class InferenceServiceInstrumentedTest {
 
                 override fun onServiceDisconnected(name: ComponentName?) {
                 }
-            }, Context.BIND_AUTO_CREATE)
+            }
+        val ok = context.bindService(
+            Intent(context, InferenceService::class.java), connection, Context.BIND_AUTO_CREATE)
         if (!ok) {
             return -1
         }
-        if (!latch.await(5, TimeUnit.SECONDS)) {
-            return -1
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) return -1
+            return pidHolder[0]
+        } finally {
+            context.unbindService(connection)
         }
-        return pidHolder[0]
     }
 
     @Test
@@ -230,10 +232,9 @@ class InferenceServiceInstrumentedTest {
 
         val pid = readServicePid()
         assertTrue("service pid not found", pid > 0)
-        Process.killProcess(pid) // 同 UID 发送 SIGKILL，模拟推理进程崩溃
-
         val crash = Recorder()
         client!!.setEvents(crash)
+        Process.killProcess(pid) // 先注册事件再杀进程，避免快设备漏接死亡回调。
         assertTrue("expected ENGINE_CRASHED", crash.error.await(TIMEOUT_SEC, TimeUnit.SECONDS))
         assertEquals(InferenceClient.ERR_ENGINE_CRASHED, crash.errorCode.get())
 

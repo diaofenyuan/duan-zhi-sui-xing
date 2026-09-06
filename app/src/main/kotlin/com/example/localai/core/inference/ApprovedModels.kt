@@ -7,8 +7,7 @@ import java.io.File
 import java.util.ArrayList
 
 /**
- * P3 批准的推理模型注册表（qa/fixtures/approved-model.json 的代码镜像）。
- * 只有列表中的模型允许进入真实推理路径；其它模型继续走演示模式。
+ * 已验证模板与运行参数的推理模型注册表；未知模型不允许生成模拟回复。
  * 文件按 ModelStorageManager 布局存放：files/models/{modelId}/{version}/{fileName}。
  */
 object ApprovedModels {
@@ -25,7 +24,9 @@ object ApprovedModels {
         @JvmField val threadCount: Int,
         @JvmField val temperature: Float,
         @JvmField val topP: Float,
-        @JvmField val maxNewTokens: Int
+        @JvmField val maxNewTokens: Int,
+        @JvmField val parameterCount: Long = 135_000_000L,
+        @JvmField val languages: List<String> = ModelInfo.langs("英文")
     )
 
     @JvmField
@@ -35,7 +36,13 @@ object ApprovedModels {
         "SmolLM-135M-Instruct", "HuggingFaceTB", "Apache-2.0",
         105_453_984L, 2048, 4, 0.7f, 0.9f, 256)
 
-    private val ALL = arrayOf(SMOLLM_135M)
+    @JvmField
+    val QWEN_05B = Approved(
+        "qwen2.5-0.5b-instruct", "2026.09.1", "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "Qwen2.5 · 中文轻量助手", "Qwen", "Apache-2.0", 491_400_032L,
+        2048, 4, 0.7f, 0.9f, 256, 494_032_768L, ModelInfo.langs("中文", "英文"))
+
+    private val ALL = arrayOf(QWEN_05B, SMOLLM_135M)
 
     @JvmStatic
     fun byId(modelId: String?): Approved? {
@@ -56,12 +63,13 @@ object ApprovedModels {
         return storage.modelFile(approved.modelId, approved.version, approved.fileName)
     }
 
-    /** 模型文件真实存在即视为已安装（不依赖 install.ok 之外的额外状态）。 */
+    /** 完整长度与安装完成标记同时存在，排除断点文件和未完成安装。 */
     @JvmStatic
     fun isInstalled(context: Context, modelId: String?): Boolean {
         val approved = byId(modelId) ?: return false
         val file = modelFile(context, approved)
-        return file.isFile && file.length() > 0
+        return file.isFile && file.length() == approved.sizeBytes &&
+            ModelStorageManager(context.filesDir).isInstalled(approved.modelId, approved.version)
     }
 
     @JvmStatic
@@ -83,10 +91,11 @@ object ApprovedModels {
             }
             result.add(ModelInfo(
                 a.modelId, a.displayName, a.publisher,
-                "0.14B", 0.14, "Q4_K_M", "100 MB", a.sizeBytes,
+                com.example.localai.feature.market.MarketModels.paramsLabel(a.parameterCount),
+                a.parameterCount / 1e9, "Q4_K_M", com.example.localai.common.Fmt.humanBytes(a.sizeBytes), a.sizeBytes,
                 (a.contextLength / 1024).toString() + "K",
-                ModelInfo.TASK_TEXT, ModelInfo.langs("英文"), a.license,
-                "经批准的最小真实 GGUF 模型，用于本地推理链路验收。",
+                ModelInfo.TASK_TEXT, a.languages, a.license,
+                "已安装，可离线运行的本地模型。",
                 ModelInfo.COMPAT_RECOMMENDED, "", 0, 0.0, 0,
                 "2026-08-23", 0, true))
         }

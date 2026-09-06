@@ -89,11 +89,11 @@ class ModelManifest {
         if (parameterCount < 1 || contextLength < 1) {
             return "manifest 参数数量或上下文长度非法"
         }
-        if (filesList == null || filesList.isEmpty()) {
+        if (filesList == null || filesList.size != 1) {
             return "manifest 缺少文件列表"
         }
         for (f in filesList) {
-            if (isBlank(f.name) || f.sizeBytes < 1) {
+            if (f == null || f.name?.matches(Regex("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$")) != true || f.sizeBytes < 1) {
                 return "文件条目缺少 name/sizeBytes"
             }
             val sha = f.sha256
@@ -101,7 +101,7 @@ class ModelManifest {
                 return "文件 ${f.name} 缺少合法 sha256"
             }
             val urls = f.urls
-            if (urls == null || urls.isEmpty()) {
+            if (urls == null || urls.isEmpty() || urls.any { it.isNullOrBlank() }) {
                 return "文件 ${f.name} 缺少下载地址"
             }
         }

@@ -2,11 +2,10 @@ package com.example.localai.feature.chat
 
 import android.content.Context
 import com.example.localai.core.inference.ApprovedModels
-import com.example.localai.mock.MockChatEngine
 
 /**
  * 对话引擎工厂：当前模型是"已安装的批准模型"时启用真实本地推理，
- * 否则回退演示模式（P1 行为保持不变）。
+ * 未安装或不支持的模型返回明确错误，绝不以预设文案冒充模型输出。
  */
 object ChatEngineProvider {
 
@@ -16,6 +15,6 @@ object ChatEngineProvider {
         if (approved != null && ApprovedModels.isInstalled(context, modelId)) {
             return RealChatEngine(context, approved)
         }
-        return MockChatEngine()
+        return UnavailableChatEngine()
     }
 }

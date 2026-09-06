@@ -5,7 +5,7 @@ import android.os.Looper
 import com.example.localai.feature.chat.ChatEngine
 import com.example.localai.model.ChatMessage
 
-/** 模拟流式对话引擎：先延迟（模拟 TTFT），再按小片段回调文本。 */
+/** 仅测试使用的模拟流式引擎，不随 APK 分发。 */
 class MockChatEngine : ChatEngine {
 
     private val handler = Handler(Looper.getMainLooper())

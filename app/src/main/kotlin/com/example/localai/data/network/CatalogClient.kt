@@ -17,7 +17,8 @@ import okhttp3.Request
 class CatalogClient(
     baseUrl: String,
     private val client: OkHttpClient,
-    private val trustStore: TrustStore
+    private val trustStore: TrustStore,
+    private val bundledReader: ((String) -> ByteArray)? = null
 ) {
 
     private val base: String = stripTrailingSlash(baseUrl)
@@ -41,8 +42,15 @@ class CatalogClient(
         }
         return try {
             val catalog = GSON.fromJson(String(json, StandardCharsets.UTF_8), Catalog::class.java)
-            if (catalog == null || catalog.models == null) {
+            if (catalog == null || catalog.schemaVersion != 1L || catalog.models == null) {
                 throw CatalogException(CatalogException.Code.SCHEMA_INVALID, "目录结构非法")
+            }
+            val ids = HashSet<String>()
+            for (entry in catalog.models!!) {
+                if (entry == null || !validIdentifier(entry.modelId) || !validVersion(entry.version) ||
+                    !ids.add(entry.modelId!!)) {
+                    throw CatalogException(CatalogException.Code.SCHEMA_INVALID, "目录模型标识非法或重复")
+                }
             }
             catalog
         } catch (e: CatalogException) {
@@ -61,9 +69,20 @@ class CatalogClient(
     /** 拉取 Manifest 及其签名原始字节（用于安装时随模型落盘）。 */
     @Throws(CatalogException::class)
     fun fetchManifestBundle(modelId: String, version: String): ManifestBundle {
+        if (!validIdentifier(modelId) || !validVersion(version)) {
+            throw CatalogException(CatalogException.Code.SCHEMA_INVALID, "模型标识或版本非法")
+        }
         val basePath = "/v1/models/$modelId/$version"
         val json = fetch("$basePath/manifest.json")
         val sig = fetch("$basePath/manifest.sig")
+        return verifyManifestBundle(modelId, version, json, sig)
+    }
+
+    /** 恢复安装时重新验证本地字节，不依赖网络或曾经验证过的内存状态。 */
+    fun verifyManifestBundle(modelId: String, version: String, json: ByteArray, sig: ByteArray): ManifestBundle {
+        if (json.isEmpty() || json.size > MAX_METADATA_BYTES || sig.size > MAX_METADATA_BYTES) {
+            throw CatalogException(CatalogException.Code.SCHEMA_INVALID, "Manifest 文件大小非法")
+        }
         val code = ManifestVerifier.verify(json, sig, trustStore)
         if (code != ManifestVerifier.Code.OK) {
             throw CatalogException(
@@ -81,6 +100,9 @@ class CatalogClient(
         val problem = manifest.validate()
         if (problem != null) {
             throw CatalogException(CatalogException.Code.SCHEMA_INVALID, problem)
+        }
+        if (manifest.modelId != modelId || manifest.version != version) {
+            throw CatalogException(CatalogException.Code.SCHEMA_INVALID, "Manifest 与请求的模型或版本不一致")
         }
         return ManifestBundle(manifest, json, sig)
     }
@@ -106,6 +128,17 @@ class CatalogClient(
     fun baseUrl(): String = base
 
     private fun fetch(path: String): ByteArray {
+        bundledReader?.let { reader ->
+            return try {
+                reader(path).also {
+                    if (it.isEmpty() || it.size > MAX_METADATA_BYTES) {
+                        throw CatalogException(CatalogException.Code.SCHEMA_INVALID, "内置目录文件大小非法")
+                    }
+                }
+            } catch (e: IOException) {
+                throw CatalogException(CatalogException.Code.NOT_FOUND, "内置模型目录文件缺失", e)
+            }
+        }
         val request = Request.Builder().url(base + path).get().build()
         return try {
             client.newCall(request).execute().use { response ->
@@ -115,7 +148,7 @@ class CatalogClient(
                 if (!response.isSuccessful) {
                     throw CatalogException(CatalogException.Code.HTTP, "HTTP ${response.code}：$path")
                 }
-                val body = response.body?.bytes() ?: ByteArray(0)
+                val body = response.body?.byteStream()?.use { it.readBytesLimited() } ?: ByteArray(0)
                 if (body.isEmpty()) {
                     throw CatalogException(CatalogException.Code.HTTP, "空响应：$path")
                 }
@@ -128,6 +161,23 @@ class CatalogClient(
 
     companion object {
         private val GSON = Gson()
+        private const val MAX_METADATA_BYTES = 1024 * 1024
+        private fun validIdentifier(value: String?) = value?.matches(Regex("^[a-z0-9][a-z0-9._-]{0,63}$")) == true
+        private fun validVersion(value: String?) = value?.matches(Regex("^[0-9A-Za-z_-][0-9A-Za-z._-]{0,31}$")) == true
+
+        private fun java.io.InputStream.readBytesLimited(): ByteArray {
+            val out = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(8192)
+            while (true) {
+                val n = read(buffer)
+                if (n < 0) break
+                if (out.size() + n > MAX_METADATA_BYTES) {
+                    throw CatalogException(CatalogException.Code.SCHEMA_INVALID, "目录文件过大")
+                }
+                out.write(buffer, 0, n)
+            }
+            return out.toByteArray()
+        }
 
         private fun stripTrailingSlash(url: String): String {
             var s = url

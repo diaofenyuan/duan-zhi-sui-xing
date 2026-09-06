@@ -1,0 +1,30 @@
+{
+  "modelId": "qwen2.5-0.5b-instruct",
+  "version": "2026.09.1",
+  "displayName": "Qwen2.5 · 中文轻量助手",
+  "source": { "publisher": "Qwen", "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/tree/9217f5db79a29953eb74d5343926648285ec7e67" },
+  "license": { "spdx": "Apache-2.0", "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/blob/9217f5db79a29953eb74d5343926648285ec7e67/LICENSE" },
+  "format": "gguf",
+  "architecture": "qwen2",
+  "parameterCount": 494032768,
+  "quantization": "Q4_K_M",
+  "contextLength": 2048,
+  "description": "中文与英文轻量指令模型，下载后离线运行。本应用使用 2K 上下文以控制手机内存占用。",
+  "tasks": ["text"],
+  "languages": ["中文", "英文"],
+  "weightStatus": "approved",
+  "chatTemplate": "chatml",
+  "updatedAt": "2026-09-06",
+  "files": [
+    {
+      "name": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "sizeBytes": 491400032,
+      "sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+      "urls": [
+        "https://hf-mirror.com/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+      ]
+    }
+  ],
+  "runtime": { "minAndroidApi": 26, "abis": ["arm64-v8a", "x86_64"], "backends": ["cpu"] }
+}

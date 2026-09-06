@@ -183,9 +183,6 @@
                         <TextView style="@style/RowTitle" android:text="@string/sw_bg_gen" />
                         <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/sw_bg_gen_sub" />
                     </LinearLayout>
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/sw_bg_gen"
-                        style="@style/RowSwitch" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -266,9 +263,6 @@
                     <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/sw_metrics_sub" />
                 </LinearLayout>
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/sw_metrics"
-                    style="@style/RowSwitch" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

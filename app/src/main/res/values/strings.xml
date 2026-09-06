@@ -19,9 +19,10 @@
     <string name="action_close">关闭</string>    
     <string name="action_back">返回</string>
     <string name="action_send">发送消息</string>
+    <string name="action_stop">停止生成</string>
 
     <!-- 市场 -->
-    <string name="market_subtitle">本地大模型 · 完全离线运行</string>
+    <string name="market_subtitle">本地大模型 · 下载后离线运行</string>
     <string name="market_search_hint">搜索模型、任务或厂商</string>
     <string name="filter_all">全部</string>
     <string name="filter_task_text">文本对话</string>
@@ -68,7 +69,7 @@
     <string name="btn_download_fmt">下载（%s）</string>
     <string name="btn_open_chat">开始对话</string>
     <string name="btn_unsupported">当前设备不支持</string>
-    <string name="download_note_fmt">下载前将校验签名、SHA-256 与 GGUF 结构，通过后原子安装</string>
+    <string name="download_note_fmt">下载前验证目录签名，下载后验证文件完整性。下载需要联网，完成后可离线使用。</string>
 
     <!-- 下载管理 -->
     <string name="dl_title">下载管理</string>
@@ -153,26 +154,30 @@
     <string name="settings_ver_fmt">版本 %s</string>
     <string name="group_mode">运行模式</string>
     <string name="mode_auto">自动（推荐）</string>
-    <string name="mode_auto_desc">按设备状态动态平衡速度与功耗</string>
+    <string name="mode_auto_desc">每轮根据系统省电、温度和内存状态选择参数</string>
     <string name="mode_balanced">均衡</string>
-    <string name="mode_balanced_desc">固定中等线程数与上下文长度，表现稳定</string>
+    <string name="mode_balanced_desc">通常采用最多 4 线程和 2K 上下文；高温或内存紧张时降低负载</string>
     <string name="mode_saver">省电</string>
-    <string name="mode_saver_desc">限制线程并降低输出速度，减少发热</string>
+    <string name="mode_saver_desc">最多 2 线程、1K 上下文和较短输出，减少计算量</string>
     <string name="group_inference">推理行为</string>
     <string name="sw_keep_screen">生成时保持屏幕常亮</string>
     <string name="sw_keep_screen_sub">长回复时避免中途熄屏打断阅读</string>
-    <string name="sw_bg_gen">退后台继续生成</string>
-    <string name="sw_bg_gen_sub">受系统限制后台可能被暂停，不承诺不中断</string>
+    <string name="sw_bg_gen">离开页面时保存进度</string>
+    <string name="sw_bg_gen_sub">离开聊天页或切到后台时停止生成并保存已有内容，返回后可继续提问</string>
     <string name="group_storage">存储与数据</string>
-    <string name="row_clear_cache">清理模型缓存</string>
+    <string name="row_clear_cache">清理临时缓存</string>
+    <string name="clear_cache_explanation">清理应用临时文件。已安装模型、下载进度和聊天记录将保留。</string>
+    <string name="cache_measuring">正在计算临时缓存…</string>
+    <string name="cache_measure_failed">暂时无法读取缓存大小</string>
+    <string name="cache_cleanup_partial">；部分文件未能清理，请稍后重试</string>
     <string name="row_clear_cache_val_fmt">当前缓存约 %s</string>
     <string name="row_clear_sessions">清空全部会话</string>
     <string name="group_privacy">隐私</string>
-    <string name="sw_metrics">匿名性能上报</string>
-    <string name="sw_metrics_sub">默认关闭；即使开启也不含任何对话内容</string>
+    <string name="sw_metrics">对话保存在本机</string>
+    <string name="sw_metrics_sub">模型下载需要联网；聊天推理在本机完成，不上传对话或性能数据</string>
     <string name="group_about">关于</string>
     <string name="row_license">开源许可证</string>
     <string name="row_license_sub">Apache-2.0 / MIT 等，详见许可清单</string>
     <string name="license_dialog_title">开源许可证</string>
-    <string name="cache_cleaned_fmt">已清理 %s 缓存（模拟）</string>
+    <string name="cache_cleaned_fmt">已清理 %s 临时缓存</string>
 </resources>

@@ -3,6 +3,12 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+def releaseSigning = new Properties()
+def releaseSigningFile = rootProject.file('.local-signing/release.properties')
+if (releaseSigningFile.isFile()) {
+    releaseSigningFile.withInputStream { releaseSigning.load(it) }
+}
+
 android {
     namespace 'com.example.localai'
     compileSdk Integer.parseInt(libs.versions.compileSdk.get())
@@ -26,9 +32,21 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            if (releaseSigningFile.isFile()) {
+                storeFile rootProject.file(releaseSigning.getProperty('storeFile'))
+                storePassword releaseSigning.getProperty('storePassword')
+                keyAlias releaseSigning.getProperty('keyAlias')
+                keyPassword releaseSigning.getProperty('keyPassword')
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
         }
         debug {
             // 计划 4.1：x86_64 仅用于模拟器/专项测试；发布 ABI 保持 arm64-v8a

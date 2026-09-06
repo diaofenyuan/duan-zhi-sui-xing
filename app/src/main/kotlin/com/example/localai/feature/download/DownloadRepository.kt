@@ -128,9 +128,8 @@ class DownloadRepository(
                         val manifest = catalogClient.fetchManifest(entry.modelId!!, entry.version!!)
                         val file = manifest.primaryFile()
                         val entity = modelDao.getByModelId(entry.modelId)
-                        val installed = entity != null &&
-                                storage.modelFile(entity.modelId, entity.version,
-                                    entity.fileName ?: "").isFile
+                        val installed = entity != null && entity.version == entry.version &&
+                            storage.isInstalled(entity.modelId, entity.version, entity.fileName, file?.sizeBytes ?: 0)
                         items.add(CatalogItem(entry.modelId, entry.version,
                             if (entry.displayName == null) entry.modelId else entry.displayName,
                             if (entry.description == null) manifest.description else entry.description,
@@ -166,23 +165,23 @@ class DownloadRepository(
         val wrapped = DownloadCoordinator.Callback { ok, message ->
             runOnMain { callback.onResult(ok, message) }
         }
-        coordinator.post { coordinator.start(modelId, wrapped) }
+        coordinator.start(modelId, wrapped)
     }
 
     fun pause(taskId: String) {
-        coordinator.post { coordinator.pause(taskId) }
+        coordinator.pause(taskId)
     }
 
     fun resume(taskId: String) {
-        coordinator.post { coordinator.resume(taskId) }
+        coordinator.resume(taskId)
     }
 
     fun retry(taskId: String) {
-        coordinator.post { coordinator.retry(taskId) }
+        coordinator.retry(taskId)
     }
 
     fun cancel(taskId: String) {
-        coordinator.post { coordinator.cancel(taskId) }
+        coordinator.cancel(taskId)
     }
 
     fun deleteModel(modelId: String, version: String, callback: DownloadCoordinator.Callback) {
@@ -240,13 +239,15 @@ class DownloadRepository(
             views.add(TaskView(e, coordinator.speedOf(e.taskId)))
         }
         taskCache = views
-        installedCache = modelDao.all()
+        installedCache = modelDao.all().filter {
+            storage.isInstalled(it.modelId, it.version, it.fileName, it.sizeBytes)
+        }
         // 目录行的 installed 标记同步
         val view = catalogCache
         if (view.isReady()) {
-            val installedIds = HashSet<String>()
+            val installedIds = HashSet<Pair<String, String>>()
             for (m in installedCache) {
-                installedIds.add(m.modelId)
+                installedIds.add(m.modelId to m.version)
             }
             val items = ArrayList<CatalogItem>()
             for (item in view.models) {
@@ -255,7 +256,7 @@ class DownloadRepository(
                     item.sourceUrl, item.sizeBytes, item.quantization, item.parameterCount,
                     item.contextLength, item.tasks, item.languages, item.weightStatus,
                     item.chatTemplate, item.updatedAt, item.minAndroidApi, item.abis,
-                    installedIds.contains(item.modelId)))
+                    installedIds.contains(item.modelId to item.version)))
             }
             view.models = items
         }

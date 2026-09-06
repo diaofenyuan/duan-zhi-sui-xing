@@ -3,8 +3,9 @@ package com.example.localai.feature.chat
 import android.content.Context
 import com.example.localai.core.inference.ApprovedModels
 import com.example.localai.core.inference.InferenceClient
-import com.example.localai.core.inference.InferenceRequest
 import com.example.localai.core.inference.NativeSession
+import com.example.localai.core.inference.InferenceRequest
+import com.example.localai.feature.settings.InferencePolicy
 import com.example.localai.model.ChatMessage
 
 /**
@@ -18,6 +19,8 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
     private var listener: ChatEngine.StreamListener? = null
     private var running = false
     private var pendingPrompt: String? = null
+    private var generation = 0L
+    private var loadedParameters: InferencePolicy.Parameters? = null
 
     fun client(): InferenceClient = client
 
@@ -26,16 +29,25 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
 
     @Synchronized
     override fun start(history: List<ChatMessage>, listener: ChatEngine.StreamListener) {
+        if (running) {
+            listener.onError(NativeSession.ERR_WRONG_STATE, "上一轮生成尚未结束")
+            return
+        }
+        val currentGeneration = ++generation
         this.listener = listener
-        val trimmed = ChatHistoryTrimmer.truncate(history, approved.contextLength)
+        val parameters = InferencePolicy.current(appContext, approved)
+        val trimmed = ChatHistoryTrimmer.truncate(history, parameters.contextLength)
         val prompt = buildPrompt(trimmed.kept)
-        val request = ApprovedModels.requestFor(
-            appContext, approved, "chat-" + System.nanoTime())
+        val request = InferenceRequest("chat-" + System.nanoTime(), approved.modelId, approved.version,
+            ApprovedModels.modelFile(appContext, approved).absolutePath, parameters.contextLength,
+            parameters.threads, approved.temperature, approved.topP, parameters.maxNewTokens)
         running = true
+        pendingPrompt = prompt
         listener.onThinking()
+        if (!running || generation != currentGeneration) return
         val events = object : InferenceClient.Events {
             override fun onStateChanged(state: Int) {
-                if (state == InferenceClient.STATE_READY) {
+                if (state == InferenceClient.STATE_READY && running && generation == currentGeneration) {
                     val queued: String?
                     synchronized(this@RealChatEngine) {
                         queued = pendingPrompt
@@ -48,42 +60,61 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
             }
 
             override fun onToken(batch: String) {
+                if (!running || generation != currentGeneration) return
                 val l = this@RealChatEngine.listener
                 l?.onDelta(batch)
             }
 
             override fun onFinished(reason: Int) {
+                if (!running || generation != currentGeneration) return
                 running = false
+                pendingPrompt = null
                 val l = this@RealChatEngine.listener
+                this@RealChatEngine.listener = null
                 l?.onFinished(reason == NativeSession.FINISH_STOPPED)
             }
 
             override fun onError(code: Int, message: String) {
+                if (!running || generation != currentGeneration) return
                 running = false
+                pendingPrompt = null
                 val l = this@RealChatEngine.listener
+                this@RealChatEngine.listener = null
                 l?.onError(code, message)
             }
         }
-        if (client.getState() == InferenceClient.STATE_READY) {
+        if (client.getState() == InferenceClient.STATE_READY && loadedParameters == parameters) {
+            pendingPrompt = null
+            client.setEvents(events)
             client.start(prompt)
         } else {
-            pendingPrompt = prompt
-            client.connect(request, events)
+            loadedParameters = parameters
+            client.restart(request, events)
         }
     }
 
     @Synchronized
     override fun stop() {
         if (running) {
-            client.stop()
+            if (pendingPrompt != null) {
+                // 加载尚无 Native 生成回调，直接结束本轮并使延迟的 READY 失效。
+                val receiver = listener
+                release()
+                receiver?.onFinished(true)
+            } else {
+                client.stop()
+            }
         }
     }
 
     @Synchronized
     override fun release() {
+        generation++
         running = false
-        client.release()
+        pendingPrompt = null
         listener = null
+        loadedParameters = null
+        client.release()
     }
 
     override fun isRealInference(): Boolean = true

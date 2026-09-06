@@ -23,7 +23,7 @@ import okhttp3.Request
 /**
  * 下载协调器（S015/S016/S017 核心）：
  * 目录解析 -> 断点续传（Range/If-Range，200/206/416/ETag 变化安全处理）->
- * SHA-256 + GGUF 校验 -> 原子安装。全部操作在单线程 worker 执行；
+ * SHA-256 + GGUF 校验 -> 原子安装。传输在 worker 执行，控制线程可打断连接；
  * 进程重启后由 recoverPending() 按 Room 持久化状态恢复。
  * 失败语义：网络中断等可恢复错误置 FAILED 并保留 .part（用户重试即续传）；
  * 哈希/GGUF 错误删除 .part（非法资产不落盘）；非法 Manifest 直接拒绝创建任务。
@@ -38,6 +38,9 @@ class DownloadCoordinator(
     private val control: ExecutorService,
     listener: Listener?
 ) {
+    // 状态提交互斥，网络和哈希计算不持锁；恢复操作排在旧请求退出之后。
+    private val stateLock = Any()
+    @Volatile private var closed = false
 
     fun interface Listener {
         fun onChanged()
@@ -80,8 +83,7 @@ class DownloadCoordinator(
                     return@execute
                 }
                 val installed = modelDao.getByModelId(modelId)?.let { entity ->
-                    storage.modelFile(entity.modelId, entity.version,
-                        entity.fileName ?: "").isFile
+                    storage.isInstalled(entity.modelId, entity.version, entity.fileName, entity.sizeBytes)
                 } ?: false
                 if (installed) {
                     callback.onResult(false, "该模型已安装")
@@ -131,15 +133,11 @@ class DownloadCoordinator(
 
     fun pause(taskId: String) {
         control.execute {
-            // 先置标志并取消在途连接（立刻生效，不被阻塞下载挡住），再落库状态
-            pauseFlags[taskId] = true
-            cancelCall(taskId)
-            val entity = downloadDao.getById(taskId)
-            if (entity == null || !(DownloadState.DOWNLOADING == entity.state)) {
-                pauseFlags.remove(taskId)
-                return@execute
-            }
-            if (entity.transition(DownloadState.PAUSED)) {
+            synchronized(stateLock) {
+                val entity = downloadDao.getById(taskId) ?: return@execute
+                if (!entity.transition(DownloadState.PAUSED)) return@execute
+                pauseFlags[taskId] = true
+                cancelCall(taskId)
                 downloadDao.update(entity)
                 notifyChanged()
             }
@@ -148,54 +146,83 @@ class DownloadCoordinator(
 
     fun resume(taskId: String) {
         control.execute {
-            val entity = downloadDao.getById(taskId)
-            if (entity == null || !(DownloadState.PAUSED == entity.state)) {
-                return@execute
+            worker.execute resume@{
+                synchronized(stateLock) {
+                    val entity = downloadDao.getById(taskId) ?: return@resume
+                    if (entity.state != DownloadState.PAUSED || closed) return@resume
+                    pauseFlags.remove(taskId)
+                    entity.transition(DownloadState.DOWNLOADING)
+                    downloadDao.update(entity)
+                    notifyChanged()
+                }
+                runTask(taskId)
             }
-            pauseFlags.remove(taskId)
-            if (entity.transition(DownloadState.DOWNLOADING)) {
-                downloadDao.update(entity)
-                notifyChanged()
-            }
-            worker.execute { runTask(taskId) }
         }
     }
 
     fun retry(taskId: String) {
         control.execute {
-            val entity = downloadDao.getById(taskId)
-            if (entity == null || !(DownloadState.FAILED == entity.state)) {
-                return@execute
+            worker.execute retry@{
+                val entity = downloadDao.getById(taskId)
+                if (entity == null || entity.state != DownloadState.FAILED || closed) {
+                    return@retry
+                }
+                try {
+                    // 重试重新验证元数据，也补回校验失败时已删除的本地 Manifest。
+                    val bundle = catalogClient.fetchManifestBundle(entity.modelId, entity.version)
+                    val file = bundle.manifest.primaryFile()!!
+                    check(file.name == entity.fileName && file.sizeBytes == entity.totalBytes &&
+                        file.sha256.equals(entity.sha256, ignoreCase = true)) { "模型版本内容已变更，请取消后重新下载" }
+                    storage.persistManifest(taskId, bundle.json, bundle.sig)
+                    val urls = file.urls!!.map { catalogClient.resolveUrl(it)!! }
+                    entity.url = urls[(urls.indexOf(entity.url) + 1) % urls.size]
+                    entity.etag = null
+                } catch (e: Exception) {
+                    synchronized(stateLock) {
+                        if (downloadDao.getById(taskId)?.state == DownloadState.FAILED) {
+                            entity.lastError = "重试失败：" + shortMessage(e)
+                            downloadDao.update(entity)
+                            notifyChanged()
+                        }
+                    }
+                    return@retry
+                }
+                synchronized(stateLock) {
+                    if (downloadDao.getById(taskId)?.state != DownloadState.FAILED || closed) return@retry
+                    pauseFlags.remove(taskId)
+                    entity.lastError = null
+                    entity.transition(DownloadState.DOWNLOADING)
+                    downloadDao.update(entity)
+                    notifyChanged()
+                }
+                runTask(taskId)
             }
-            pauseFlags.remove(taskId)
-            entity.lastError = null
-            if (entity.transition(DownloadState.DOWNLOADING)) {
-                downloadDao.update(entity)
-                notifyChanged()
-            }
-            worker.execute { runTask(taskId) }
         }
     }
 
     fun cancel(taskId: String) {
         control.execute {
-            val entity = downloadDao.getById(taskId)
-            if (entity == null) {
-                return@execute
+            synchronized(stateLock) {
+                val entity = downloadDao.getById(taskId) ?: return@execute
+                pauseFlags[taskId] = true
+                cancelCall(taskId)
+                downloadDao.delete(entity)
+                speeds.remove(taskId)
+                notifyChanged()
             }
-            pauseFlags[taskId] = true
-            cancelCall(taskId)
-            downloadDao.delete(entity)
-            storage.removeDownloadDir(taskId)
-            speeds.remove(taskId)
-            notifyChanged()
+            worker.execute {
+                storage.removeDownloadDir(taskId)
+                pauseFlags.remove(taskId)
+                lastProgressBytes.remove(taskId)
+                lastProgressTime.remove(taskId)
+            }
         }
     }
 
     /** 进程重启恢复：继续非终态任务（VERIFYING/INSTALLING 重新执行；PAUSED 保持）。 */
     fun recoverPending() {
         control.execute {
-            storage.cleanup()
+            worker.execute { storage.cleanup() }
             val pending = downloadDao.recoverable()
             for (entity in pending) {
                 val state = entity.state
@@ -213,6 +240,7 @@ class DownloadCoordinator(
     }
 
     fun shutdown() {
+        closed = true
         for (call in activeCalls.values) {
             call.cancel()
         }
@@ -228,22 +256,23 @@ class DownloadCoordinator(
     // ---------- 内部实现 ----------
 
     private fun runTask(taskId: String) {
-        var entity = downloadDao.getById(taskId)
-        if (entity == null || pauseFlags.containsKey(taskId)) {
-            return
-        }
-        if (DownloadState.QUEUED == entity.state) {
-            entity.transition(DownloadState.DOWNLOADING)
-            downloadDao.update(entity)
-            notifyChanged()
+        synchronized(stateLock) {
+            val entity = downloadDao.getById(taskId) ?: return
+            if (isStopped(taskId)) return
+            if (DownloadState.QUEUED == entity.state) {
+                entity.transition(DownloadState.DOWNLOADING)
+                downloadDao.update(entity)
+                notifyChanged()
+            }
         }
         val part = storage.partFile(taskId)
         try {
-            while (true) {
-                if (pauseFlags.containsKey(taskId)) {
+            // 只允许一次脏偏移重置，异常响应不能造成无限自动请求。
+            repeat(2) {
+                if (isStopped(taskId)) {
                     return
                 }
-                entity = downloadDao.getById(taskId)
+                val entity = downloadDao.getById(taskId)
                 if (entity == null || !(DownloadState.DOWNLOADING == entity.state)) {
                     return
                 }
@@ -253,6 +282,7 @@ class DownloadCoordinator(
                     return
                 }
             }
+            downloadDao.getById(taskId)?.let { fail(it, "服务器无法完成下载，请重试或切换下载地址") }
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
         }
@@ -273,11 +303,18 @@ class DownloadCoordinator(
             }
         }
         val call = httpClient.newCall(builder.build())
-        activeCalls[entity.taskId] = call
+        synchronized(stateLock) {
+            if (isStopped(entity.taskId)) return false
+            activeCalls[entity.taskId] = call
+        }
         try {
             call.execute().use { response ->
                 val code = response.code
                 if (code == 416) {
+                    if (offset == 0L) {
+                        fail(entity, "服务器拒绝从头下载（416），请重试切换地址")
+                        return false
+                    }
                     // 本地偏移超出服务器内容：安全重启（截断重下，不拼接）
                     truncate(part)
                     syncDownloaded(entity, 0)
@@ -293,15 +330,10 @@ class DownloadCoordinator(
                 }
                 val total = response.body?.contentLength() ?: -1
                 if (code == 206) {
-                    val start = parseContentRangeStart(response.header("Content-Range"))
-                    if (start != offset) {
-                        // 服务器未按请求偏移续传（异常）：截断重下
-                        truncate(part)
-                        syncDownloaded(entity, 0)
-                        return false
-                    }
-                    if (total >= 0 && entity.totalBytes > 0 && start + total != entity.totalBytes) {
-                        fail(entity, "服务器文件总长度与 Manifest 不一致")
+                    val range = parseContentRange(response.header("Content-Range"))
+                    if (range == null || range[0] != offset || range[1] != entity.totalBytes - 1 ||
+                        range[2] != entity.totalBytes || (total >= 0 && total != range[1] - range[0] + 1)) {
+                        fail(entity, "服务器续传范围或文件总长度与 Manifest 不一致")
                         return false
                     }
                 } else {
@@ -317,8 +349,13 @@ class DownloadCoordinator(
                 }
                 val etag = response.header("ETag")
                 if (etag != null && etag.isNotEmpty()) {
-                    entity.etag = etag
-                    downloadDao.update(entity)
+                    synchronized(stateLock) {
+                        val fresh = downloadDao.getById(entity.taskId)
+                        if (fresh?.state == DownloadState.DOWNLOADING && !isStopped(entity.taskId)) {
+                            fresh.etag = etag
+                            downloadDao.update(fresh)
+                        }
+                    }
                 }
                 if (Thread.interrupted()) {
                     throw InterruptedException()
@@ -326,10 +363,14 @@ class DownloadCoordinator(
                 if (!streamToFile(response, entity, part)) {
                     return false
                 }
-                return part.length() == entity.totalBytes
+                if (part.length() != entity.totalBytes) {
+                    fail(entity, "下载提前结束，文件长度不足，请重试续传")
+                    return false
+                }
+                return true
             }
         } catch (e: IOException) {
-            if (pauseFlags.containsKey(entity.taskId)) {
+            if (isStopped(entity.taskId)) {
                 return false // 暂停/取消路径：状态已由 pause/cancel 置位
             }
             fail(entity, "网络中断：" + shortMessage(e))
@@ -349,6 +390,11 @@ class DownloadCoordinator(
                     var lastTime = lastProgressTime.getOrDefault(entity.taskId, System.currentTimeMillis())
                     var n = inp.read(buffer)
                     while (n > 0) {
+                        if (isStopped(entity.taskId)) return false
+                        if (n.toLong() > entity.totalBytes - part.length()) {
+                            fail(entity, "下载内容超出 Manifest 大小，已停止接收")
+                            return false
+                        }
                         out.write(buffer, 0, n)
                         val now = System.currentTimeMillis()
                         val written = part.length()
@@ -368,7 +414,7 @@ class DownloadCoordinator(
             }
             return true
         } catch (e: IOException) {
-            if (pauseFlags.containsKey(entity.taskId)) {
+            if (isStopped(entity.taskId)) {
                 return false
             }
             fail(entity, "下载中断：" + shortMessage(e))
@@ -377,92 +423,103 @@ class DownloadCoordinator(
     }
 
     private fun verifyAndInstall(taskId: String) {
-        val entity = downloadDao.getById(taskId)
-        if (entity == null) {
-            return
-        }
-        val part = storage.partFile(taskId)
-        if (!(DownloadState.VERIFYING == entity.state) && !(DownloadState.INSTALLING == entity.state)) {
-            if (!entity.transition(DownloadState.VERIFYING)) {
-                fail(entity, "状态异常，无法进入校验")
-                return
+        val entity = synchronized(stateLock) {
+            val fresh = downloadDao.getById(taskId) ?: return
+            if (isStopped(taskId)) return
+            if (fresh.state != DownloadState.VERIFYING && fresh.state != DownloadState.INSTALLING) {
+                if (!fresh.transition(DownloadState.VERIFYING)) return
+                downloadDao.update(fresh)
+                notifyChanged()
             }
-            downloadDao.update(entity)
-            notifyChanged()
+            fresh
         }
         try {
-            if (!ModelVerifier.sha256Matches(part, entity.sha256)) {
-                storage.removeDownloadDir(taskId)
+            val bundle = catalogClient.verifyManifestBundle(entity.modelId, entity.version,
+                storage.readManifest(taskId), storage.readManifestSig(taskId))
+            val file = bundle.manifest.primaryFile()!!
+            if (file.name != entity.fileName || file.sizeBytes != entity.totalBytes ||
+                !file.sha256.equals(entity.sha256, ignoreCase = true)) {
+                fail(entity, "下载记录与已签名 Manifest 不一致，请取消后重新下载")
+                return
+            }
+            val installed = storage.modelFile(entity.modelId, entity.version, entity.fileName)
+            val committed = entity.state == DownloadState.INSTALLING &&
+                storage.isInstalled(entity.modelId, entity.version) && installed.isFile
+            val part = if (committed) installed else storage.partFile(taskId)
+            if (part.length() != entity.totalBytes || !ModelVerifier.sha256Matches(part, entity.sha256)) {
+                if (!committed) storage.removeDownloadDir(taskId)
                 fail(entity, "SHA-256 校验失败（文件损坏或服务器内容变更）")
                 return
             }
             val probe = ModelVerifier.probeGguf(part)
             if (!probe.ok) {
-                storage.removeDownloadDir(taskId)
+                if (!committed) storage.removeDownloadDir(taskId)
                 fail(entity, probe.reason ?: "")
                 return
             }
-            if (!entity.transition(DownloadState.INSTALLING)) {
-                fail(entity, "状态异常，无法进入安装")
-                return
+            synchronized(stateLock) {
+                val fresh = downloadDao.getById(taskId) ?: return
+                if (isStopped(taskId)) return
+                if (fresh.state != DownloadState.INSTALLING) {
+                    if (!fresh.transition(DownloadState.INSTALLING)) return
+                    downloadDao.update(fresh)
+                    notifyChanged()
+                }
+                // 文件发布和数据库提交与取消互斥；昂贵的哈希校验已在锁外完成。
+                if (!committed) storage.install(fresh.modelId, fresh.version, part,
+                    bundle.json, bundle.sig, fresh.fileName)
+                completeInstall(fresh)
             }
-            downloadDao.update(entity)
-            notifyChanged()
-            installFromPart(entity, part)
-        } catch (e: IOException) {
-            fail(entity, "校验失败：" + shortMessage(e))
+        } catch (e: Exception) {
+            fail(entity, "校验或安装失败：" + shortMessage(e))
         }
     }
 
-    private fun installFromPart(entity: DownloadEntity, part: File) {
-        val manifestBytes: ByteArray
-        val sigBytes: ByteArray
-        try {
-            manifestBytes = storage.readManifest(entity.taskId)
-            sigBytes = storage.readManifestSig(entity.taskId)
-        } catch (e: IOException) {
-            fail(entity, "读取本地 Manifest 失败：" + shortMessage(e))
-            return
-        }
-        try {
-            storage.install(entity.modelId, entity.version, part, manifestBytes, sigBytes, entity.fileName)
-            val model = ModelEntity(entity.modelId, entity.version,
-                if (entity.displayName == null) entity.modelId else entity.displayName,
-                entity.publisher, entity.quantization, entity.licenseSpdx,
-                entity.fileName, entity.totalBytes, entity.parameterCount)
-            modelDao.insert(model)
-            downloadDao.deleteById(entity.taskId)
-            storage.removeDownloadDir(entity.taskId)
-            speeds.remove(entity.taskId)
-            notifyChanged()
-        } catch (e: IOException) {
-            fail(entity, "安装失败：" + shortMessage(e))
-        }
+    private fun completeInstall(entity: DownloadEntity) {
+        val model = ModelEntity(entity.modelId, entity.version,
+            if (entity.displayName == null) entity.modelId else entity.displayName,
+            entity.publisher, entity.quantization, entity.licenseSpdx,
+            entity.fileName, entity.totalBytes, entity.parameterCount)
+        modelDao.insert(model)
+        downloadDao.deleteById(entity.taskId)
+        storage.removeDownloadDir(entity.taskId)
+        speeds.remove(entity.taskId)
+        lastProgressBytes.remove(entity.taskId)
+        lastProgressTime.remove(entity.taskId)
+        notifyChanged()
     }
 
     private fun fail(entity: DownloadEntity, reason: String) {
-        val fresh = downloadDao.getById(entity.taskId)
-        if (fresh == null) {
-            return
+        synchronized(stateLock) {
+            if (isStopped(entity.taskId)) return
+            val fresh = downloadDao.getById(entity.taskId)
+            if (fresh == null) {
+                return
+            }
+            fresh.retryCount++
+            fresh.lastError = reason
+            if (fresh.transition(DownloadState.FAILED)) {
+                downloadDao.update(fresh)
+                notifyChanged()
+            }
         }
-        fresh.retryCount++
-        fresh.lastError = reason
-        if (fresh.transition(DownloadState.FAILED)) {
+    }
+
+    private fun syncDownloaded(entity: DownloadEntity, bytes: Long) {
+        synchronized(stateLock) {
+            val fresh = downloadDao.getById(entity.taskId)
+            if (fresh == null || !(DownloadState.DOWNLOADING == fresh.state)) {
+                return
+            }
+            fresh.bytesDownloaded = bytes
+            fresh.updatedAt = System.currentTimeMillis()
             downloadDao.update(fresh)
             notifyChanged()
         }
     }
 
-    private fun syncDownloaded(entity: DownloadEntity, bytes: Long) {
-        val fresh = downloadDao.getById(entity.taskId)
-        if (fresh == null || !(DownloadState.DOWNLOADING == fresh.state)) {
-            return
-        }
-        fresh.bytesDownloaded = bytes
-        fresh.updatedAt = System.currentTimeMillis()
-        downloadDao.update(fresh)
-        notifyChanged()
-    }
+    private fun isStopped(taskId: String) =
+        closed || Thread.currentThread().isInterrupted || pauseFlags.containsKey(taskId)
 
     private fun cancelCall(taskId: String) {
         val call = activeCalls[taskId]
@@ -479,17 +536,11 @@ class DownloadCoordinator(
         }
     }
 
-    private fun parseContentRangeStart(contentRange: String?): Long {
-        if (contentRange == null || !contentRange.startsWith("bytes ")) {
-            return -1
-        }
-        return try {
-            val spec = contentRange.substring("bytes ".length)
-            val dash = spec.indexOf('-')
-            java.lang.Long.parseLong(spec.substring(0, dash))
-        } catch (e: RuntimeException) {
-            -1
-        }
+    private fun parseContentRange(contentRange: String?): LongArray? {
+        val match = Regex("bytes ([0-9]+)-([0-9]+)/([0-9]+)").matchEntire(contentRange ?: "") ?: return null
+        val values = match.groupValues.drop(1).map { it.toLongOrNull() ?: return null }
+        if (values[0] > values[1] || values[1] >= values[2]) return null
+        return values.toLongArray()
     }
 
     private fun findEntry(catalog: Catalog?, modelId: String): Catalog.Entry? {

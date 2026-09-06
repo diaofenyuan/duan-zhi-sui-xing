@@ -717,3 +717,77 @@
   - 存量 Java 清点：`app/src/main/java` 仅剩 13 个红线区文件（`data/room/` 10 + `core/inference/NativeSession/InferenceRequest/InferenceStats` 3）；`app/src/test`、`app/src/androidTest` 无 `.java` 残留。
 - 风险/阻塞：`connectedDebugAndroidTest` 需模拟器 + 已安装批准模型（真实模型 4 项依赖批准模型文件，缺失时以 Assume 跳过；2 项错误路径测试不依赖模型）。见下条记录。
 - 下一阶段依赖：Kotlin 迁移全部完成；P5/P6 在 Kotlin 代码库上继续。
+
+### 2026-09-06 15:45 | 持续发布质量优化 | IN_PROGRESS
+
+- 用户当前目标：持续优化至可交付；优先提供 APK 安装，无自有服务器或域名，需要独立可用。此持续目标取代旧计划的一阶段一对话停止约定，整体尚未验收完成。
+- 已修复：`ChatRepository` 使用同一个 Room 数据库事务保存标题与消息，正确回填新会话主键、复制流式消息快照、删除最后一条消息时清理会话、拒绝复活已删除会话；`ServiceLocator` 同步注入数据库；`HistoryFragment` 移除刷新回调再次查询造成的无限循环并清理视图引用；详情页改为视图缺失时安全返回。
+- 回归证据：先在原实现执行 `:app:testDebugUnitTest --tests '*ChatRepositoryTest'`，7 项中 5 项失败；修复后 7 项通过。新增 SQLite trigger 故障注入覆盖替换消息中途失败、新会话首条写入失败，验证事务回滚。
+- 综合验证：`gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:testReleaseUnitTest --offline --console=plain` 成功；Debug/Release 各 105 项测试，0 失败、0 错误、0 跳过；Lint 0 错误、136 警告。Lint 首次缺少本地依赖，已通过现有阿里云仓库在线补齐。
+- 构建结果：`app/build/outputs/apk/release/app-release-unsigned.apk`，11,363,405 字节。`apksigner verify` 确认未签名（缺失 META-INF/MANIFEST.MF），不是可分发候选包，未提交或发布。
+- 后续必须处理：目录固定为模拟器宿主 `10.0.2.2:8090`；可信密钥仍是开发密钥；市场多数模型为演示载荷，`ChatEngineProvider` 对未安装/未批准模型回退模拟回复。需要落实无自建服务的真实模型获取、校验、许可证展示和推理流程。
+- 已发现待修链路：`ChatFragment.retryFrom` 删除了待重试的用户消息；新建/加载会话和切换模型未隔离旧生成回调，视图重建丢失当前消息；`RealChatEngine.stop` 未清除加载期间的 pendingPrompt；`InferenceClient.release` 同步 Binder 调用可能阻塞主线程且未清理旧回调。下载控制/工作线程间存在状态覆盖与取消竞态，异常 416/Content-Range 响应没有重试上限；设置页部分开关未作用于运行行为，清缓存按钮仅弹提示。
+- 尚未完成：上述功能修复、无障碍警告筛查、独立安装签名、运行时端到端、Native 停止/崩溃恢复/低内存和设备验证。不能以本轮测试通过宣称整个软件无 bug 或达到上架标准。
+
+### 2026-09-06 16:00 | 推理生命周期与聊天交互修复 | IN_PROGRESS
+
+- 本轮为实际进展，整体发布目标仍未完成。用户选择仍为无自建服务器、优先独立可用 APK。
+- `InferenceClient`：绑定和生成轮次分别隔离，释放后忽略旧回调，死亡/断连只报一次，加载失败解绑可重试；Native 释放移到共享串行 Binder 线程，与下一次加载有序执行，避免 UI 阻塞和反复创建线程。每次解绑清理死亡监听。
+- `RealChatEngine`：加载前/加载中停止立即结束本轮，清理 pendingPrompt，READY 不再复活已停止任务；复用连接时更新事件接收者，每轮回调只交给当前 listener。
+- `ChatFragment`：重试保留用户问题；新建/切换模型/打开历史时隔离旧生成；异步保存按会话隔离并合并连续写入，旧 id 不覆盖新会话；历史页返回保留同一 Fragment 的消息和草稿；删除操作重新校验消息位置，生成中禁止修改列表；空输出清除思考占位；空输入禁用发送并提供“停止生成”无障碍标签。退场动画期间先在 onPause 中停止生成。
+- JVM 回归：`InferenceClientLifecycleTest` 新增 6 项先全部失败，修复后全过；`RealChatEngineLifecycleTest` 新增 4 项，先复现 2 项加载停止失败，修复后全过。Debug/Release 单测各 115 项，0 失败、0 错误、0 跳过；最终 onPause 调整后又执行完整 Debug 单测、Lint 和 Release 构建通过。
+- 实际 Android 验证：在现有模拟器安装本次 Debug APK；初次 `connectedDebugAndroidTest` 由于无模型跳过 4 项，因此未作为 Native 完成证据。随后部署现有批准 GGUF（105,453,984 字节），两端 SHA-256 与批准记录一致，用 `adb shell am instrument` 执行 `InferenceServiceInstrumentedTest`，6 项全部通过、无跳过，耗时 31.737 秒，覆盖真实生成、停止、重复释放、独立进程死亡与重启。测试自身修复了读取 PID 的绑定泄漏及先杀进程后注册监听的竞态。
+- Android 页面回归：`ChatFragmentInstrumentedTest` 5 项，先发现 1 项退场动画期间旧消息仍写入；修复 onPause 时机后 5 项全过（7.132 秒）。其中重试用例直接调用菜单最终处理入口，其余覆盖实际页面按钮、返回栈、消息和草稿；不是完整生产用户端到端验收。
+- 验证命令：`gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:testReleaseUnitTest :app:assembleRelease --offline --console=plain`；`gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest --offline --console=plain`；上述两个仪器化测试类通过 `am instrument -w -r -e class ...` 执行。Release 仍未签名，尚不可分发。
+- 下一步重点：实现不依赖 `10.0.2.2` 的正式真实模型目录/获取，去除产品中的模拟回复和演示载荷，签名与安装验证。还需解决 Activity 配置重建/进程死亡的会话恢复（本轮仅证明同一 Fragment 返回栈保留）、下载状态竞态/无限重试、设置空实现、运行降级和真实 ARM64 设备验收。
+
+### 2026-09-06 | 独立模型目录、真实中文推理与签名候选包 | IN_PROGRESS
+
+- 依据用户已明确选择：无服务器/域名，优先独立可用 APK。本轮实际修改与运行验证构成进展，整体目标继续。
+- 产品目录改为读取 `app/src/main/assets/catalog/v1/` 内置资产，继续验证 Ed25519 签名；不再请求开发电脑。新增独立目录公钥，移除开发 Fixture 公钥；`.gitattributes` 禁止签名资产自动转换换行，避免 Windows 检出后签名失效。元数据限制 1 MB，验证目录模型 id/版本/唯一性、Manifest 对应关系和安全文件名。
+- 接入 Qwen 官方 `Qwen/Qwen2.5-0.5B-Instruct-GGUF`，固定 revision `9217f5db79a29953eb74d5343926648285ec7e67`；Q4_K_M 文件 491,400,032 字节，SHA-256 `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db`。官方 Hugging Face API 与实际下载哈希一致；模型页标注中文支持、Apache-2.0。完整模型许可证随 APK 附带并在设置页可读。手机运行参数限定 2K 上下文以控制内存，不把上游最大上下文当作本机已测能力。
+- 下载优先国内 HTTPS 镜像，保留官方 HTTPS 地址；点击失败任务“重试”时切换到下一个签名地址并重新获取、验证和保存 Manifest；修复哈希失败删除 sidecar 后无法重试的问题。仓库的暂停/恢复/取消直接进入控制线程，不再排到长下载后面。其余下载状态竞态与异常 Range 上限仍待后续修复。
+- `MockChatEngine`、`ReplyComposer` 移到 test 源集，APK 不再包含模拟回复；未安装/失效模型返回不可用状态；选择器仅展示引擎支持且完成安装的模型，检查完整长度与 install.ok，移除安装模型规格写死为 0.1B 的映射。Qwen 已接入真实 ChatML 推理，SmolLM 保留作已有 Native 验收兼容。
+- 真实网络验收：`StandaloneModelInstrumentedTest` 显式参数 `allowModelDownload=true`，通过产品 `DownloadRepository.enqueue` 下载、校验、安装 Qwen，再调用真实 Native 推理并断言输出包含中文。首轮未预置 Qwen 权重，1 项通过，52.144 秒；此证据覆盖真实模型安装路径，不是 adb 拷贝模型。
+- 离线验收：记录并临时关闭模拟器飞机模式相关网络/Wi-Fi/移动数据；测试确认 `ConnectivityManager.activeNetwork == null`，重新加载内置目录并真实生成中文，随后执行 5 项聊天页面回归；6 项全部通过、无跳过，28.498 秒。网络设置在 finally 中恢复，确认飞机模式恢复 disabled。
+- 自动化：新增 3 项内置目录签名/运行配置/篡改与路径检查，新增 1 项损坏下载修复重试；Debug/Release 各 119 项，0 失败、0 错误、0 跳过。Lint 0 错误、135 警告；Release 构建通过。
+- APK 专用签名身份已创建（RSA 3072，PKCS12），Gradle 从 `.local-signing/release.properties` 读取；目录及其口令文件被 Git 忽略，未输出私钥或口令。后续必须保留 `.local-signing/` 以保持升级签名一致，不得重建覆盖。模型目录签名 seed 在既有 ignored keys 路径，不进入 APK。
+- 候选产物：`app/build/outputs/apk/release/app-release.apk`，11,378,116 字节，SHA-256 `e5095b1a7bd35618b2e092c99e108b5fe277fc4669e3bf93017eba8006ab0abe`。`apksigner verify --verbose` 通过（v2、1 signer）；`zipalign -c -P 16 4` 通过；解析 APK 中全部 5 个 ARM64 ELF 的 LOAD 段，均至少 16 KB 对齐；检查 APK 不含 MockChatEngine、ReplyComposer、seed/p12/口令文件，包含已签名目录。
+- 尚未完成：专用签名 Release APK 独立安装/升级回归（当前模拟器装的是 Debug 签名，未为了换签名卸载其数据）；Activity/进程重建恢复、下载竞态/重试上限、设置空实现、隐私/第三方完整声明、低内存/热降级、实际 ARM64 设备验收。当前模拟器提供 `libndk_translation.so`，可另建隔离环境检验 ARM64 候选，但不能冒充 ARM 真机性能。签名包是待验收候选，不是正式发布通过证明。
+
+### 2026-09-06 | 下载异常恢复与当前 Android Studio 虚拟机验收 | IN_PROGRESS
+
+- 用户新增约束：软件必须在当前已打开的 Android Studio 虚拟机测试。已确认并始终使用 `emulator-5554`（sdk_gphone16k_x86_64），覆盖安装 Debug APK，保留已有应用数据、模型和签名；未另建虚拟机或卸载应用。
+- 本轮先复现 7 项失败：零偏移 416、空响应、超长未知长度响应会重复请求；206 忽略声明总长度；快速暂停/恢复时旧请求 IOException 污染新状态；INSTALLING 带 part 恢复失败；文件已发布但数据库未提交时恢复失败。
+- 修复：状态提交互斥，恢复/重试排在旧请求退出后；取消后的目录清理等待旧工作退出，校验后再次确认任务有效再安装；进度/ETag 不再覆盖暂停状态。脏 Range 仅允许一次重置，严格验证范围起止与总长度，未知长度流限制写入上限并拒绝提前结束。
+- 安装恢复：重新验证本地 Manifest 签名与任务内容，处理 INSTALLING 幂等恢复，以及文件已提交后补齐数据库。staging 在提交前保留源文件，优先硬链接、不支持时复制，安装失败保留完整源供重试；新增存储提交失败保留源的回归。
+- 自动化：Debug/Release 各 127 项单元测试，0 失败、0 错误、0 跳过；Lint 0 错误、135 警告；Debug、androidTest、专用签名 Release 构建成功，Release 的 apksigner v2 验证通过。`git -c core.safecrlf=false diff --check` 通过。
+- 当前虚拟机：新增 DownloadDeviceInstrumentedTest 使用隔离的测试目录与内存数据库，真实 HTTPS 下载暂停、立即恢复、取消通过；用已安装 Qwen 权重验证 Android 文件提交前后恢复。首轮测试准备步骤的硬链接被 Android 拒绝（不是产品安装步骤失败），测试增加复制回退后该项补跑通过，6.71 秒；测试目录已清理，现有模型未被更改。
+- 当前虚拟机：RealChatUiInstrumentedTest 从实际页面发送按钮进入真实模型推理，断言中文回答且没有生成错误；5 项既有聊天页面交错回归通过。以上首次合计 8 项中 7 通过、1 测试准备失败，失败项已补跑通过，不隐瞒首轮失败。
+- 断网补充验收：同一虚拟机临时断开网络，StandaloneModelInstrumentedTest 明确断言 activeNetwork 为空、校验完整 Qwen 哈希并真实中文推理；RealChatUiInstrumentedTest 同时验证离线页面回答，2 项均通过，无跳过，18.543 秒。网络设置在 finally 中恢复。
+- 后续继续：Activity/进程重建的聊天恢复、设置空实现、低内存等日常使用异常与完整第三方声明；市场/下载入队的安装判断仍仅检查文件存在，需与聊天端的长度和 install.ok 条件一致。专用签名 Release 尚未直接覆盖当前 Debug 签名应用，不能称正式发布验收完成；持续目标保持进行中。
+### 2026-09-06 | 聊天重建与进程恢复 | IN_PROGRESS
+
+- 当前 Android Studio 虚拟机 `emulator-5554` 先复现 `recreationKeepsPartialAnswerDraftAndModel` 失败：Activity 重建丢失消息/草稿；修复后该项和其余页面回归、真实中文页面推理共 7 项通过，无跳过，28.093 秒。
+- 数据库增加单行 `chat_session` 保存编辑 token、会话主键、模型和草稿，正文继续保存在既有 messages 表。相同 token 的连续快照在事务内复用主键，旧页面未收到回调时不会重复创建历史；草稿和正文一起提交，生成期间定期保存，离开页面保存。正文不放进 Android 状态 Bundle，避免长会话超过系统传输限制。
+- 页面初次创建异步恢复当前编辑状态；读取失败保持只读并提供重试，避免空状态覆盖旧会话。历史加载直接读取会话元数据，不再依赖尚未刷新好的缓存获取模型。删除历史/清空历史同时清除对应编辑状态。
+- Room 1→2 采用显式增量迁移，不清空旧表。新增旧版导出 schema 迁移回归，验证历史标题/正文、模型和下载记录保留；测试准备对缺省 indices 的解析曾失败，修正后通过。当前模拟器覆盖升级后原 Qwen 模型仍可真实推理。
+- 新增 4 项仓库回归覆盖连续快照主键复用、纯草稿恢复、草稿和正文事务回滚、删除历史同步清理编辑状态；加上迁移用例，Debug/Release 各 132 项单元测试，0 失败/错误/跳过。Debug、androidTest、签名 Release 构建通过，Lint 通过。
+- 实际进程恢复：同一虚拟机分两阶段运行 `processRestartRestoresSavedChat`，prepare 进程 PID 25690 保存测试消息和草稿，结束应用后 verify 进程 PID 25784 重新打开页面，断言两条正文、草稿和真实推理引擎恢复；两个阶段分别通过，1.529/1.403 秒。此测试显式指定 processRestorePhase，普通整类执行会跳过该外部驱动场景。
+- 整体仍在进行：下一步处理设置页面的空实现、安装状态判断一致性，以及删除当前历史后的页面状态同步。Release 候选尚未完成正式发布验收，继续使用用户当前虚拟机测试。
+### 2026-09-06 | 设置真实清理、删除同步与安装状态 | IN_PROGRESS
+
+- 设置的“清理模型缓存”原来把已安装模型体积当作缓存，仅提示“模拟清理”。现改为“清理临时缓存”，后台统计和清理 cacheDir，保留模型、下载断点和聊天数据库；不跟随符号链接，按实际成功删除字节反馈，失败文件明确提示。清空历史仅在数据库操作完成后显示成功，删除失败可见。
+- 聊天仓库增加删除事件，返回栈中的聊天页同步清除已删除正文/草稿并使旧生成回调失效。工作线程记录删除的编辑 token，拒绝没有回填主键的迟到快照重新创建已删除历史；新增该竞态和删除事务失败回归。
+- 安装状态判断统一检查 install.ok、实际文件和完整长度；目录按模型及版本匹配，损坏记录不再阻止重新下载。新增“不完整已安装记录可重装”管线回归。
+- 当前 Android Studio 虚拟机 emulator-5554 覆盖安装后，设置页真实按钮清理临时文件并保留 Qwen、删除测试会话后返回聊天页无残留、真实中文聊天共 3 项通过，19.423 秒，无跳过。删除用例仅删除其新建测试会话，未清空现有用户历史。
+- Debug/Release 各 136 项单元测试通过，0 失败/错误/跳过；Lint 0 错误、135 警告；签名 Release 构建和 diff --check 通过。
+- 后续仍需落实运行模式、常亮和后台生成设置（目前只有偏好存储）、匿名上报开关与独立使用方案的一致性，以及完整声明和发布候选验收。持续目标未完成。
+### 2026-09-06 | 运行设置生效与 GitHub 提交约定 | IN_PROGRESS
+
+- 用户新要求：每完成一个优化步骤，验证后提交并推送 GitHub，使用简短中文说明。当前分支 main，远端 origin 为 diaofenyuan/duan-zhi-sui-xing；此前连续优化尚未提交，本次一并形成可回溯基线。签名私钥/口令和目录 seed 保持 Git 忽略。
+- 运行策略接入真实推理：每轮读取模式、可用 CPU、系统省电、温度和内存压力；均衡通常最多 4 线程/2K 上下文，省电最多 2 线程/1K 上下文/128 输出 token；高温或低内存时限制负载。历史裁剪采用本轮实际上下文，参数变化通过重新绑定加载生效。新增模式切换用例曾复现 connect 忽略已有连接，改为 restart 后通过。
+- 常亮设置仅在聊天生成且页面可见时生效，结束/离开时解除；show/hide 导航离开聊天也停止并保存。修复点击单选圆点不写入模式的问题。移除未实现的后台生成和匿名上报开关，页面展示实际前台保存和本地隐私行为；后台持续推理未实现，也未宣称支持。
+- 当前 Android Studio 虚拟机 emulator-5554：设置圆点改变实际参数、生成时常亮及离开后解除、真实中文页面推理共 3 项通过，23.793 秒，无跳过。测试后恢复原设置值。
+- Debug/Release 各 139 项单元测试通过，0 失败/错误/跳过；Lint 0 错误、133 警告；Debug、androidTest、签名 Release 构建通过。
+- 用户更新整体目标：模型部署功能可参考 LM Studio。已查官方文档 https://lmstudio.ai/docs/app/advanced/import-model 与 https://lmstudio.ai/docs/cli/local-models/load，后续对照模型导入、加载参数、内存估算和释放体验，结合 Android 设备能力落实；这不是宣称已支持任意 GGUF 或桌面 GPU 功能。整体发布验收继续。

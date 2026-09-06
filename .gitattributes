@@ -1,0 +1,2 @@
+# 签名覆盖原始字节，检出时不得自动转换换行符。
+app/src/main/assets/catalog/** -text

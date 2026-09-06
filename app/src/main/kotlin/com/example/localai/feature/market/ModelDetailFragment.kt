@@ -94,14 +94,14 @@ class ModelDetailFragment : Fragment() {
         if (view == null || !isAdded) {
             return
         }
-        val view = view!!
+        val view = view ?: return
 
         // 头图
         val codeTask = item.tasks?.contains(ModelInfo.TASK_CODE) == true
         val tag = view.findViewById<TextView>(R.id.hero_tag)
         tag.text = if (codeTask) "代码助手" else "文本对话"
         val status = view.findViewById<TextView>(R.id.hero_status)
-        status.text = if (item.isApproved()) "已批准权重" else "演示载荷"
+        status.text = if (item.isApproved()) "离线模型" else "模型不可用"
         status.visibility = View.VISIBLE
         val statusBg = if (item.isApproved()) R.color.status_success_container else R.color.status_warn_container
         val statusText = if (item.isApproved()) R.color.status_success else R.color.status_warn
@@ -182,7 +182,7 @@ class ModelDetailFragment : Fragment() {
             action.setText(R.string.btn_open_chat)
             note.text = if (item.isApproved())
                 "已安装 · 点击开始本地对话"
-            else "已安装 · 演示载荷，对话为演示模式"
+            else "此模型不可用于对话，请重新下载支持的模型"
             action.setOnClickListener {
                 if (activity is MainActivity) {
                     (activity as MainActivity).openChatWithModel(item.modelId!!)

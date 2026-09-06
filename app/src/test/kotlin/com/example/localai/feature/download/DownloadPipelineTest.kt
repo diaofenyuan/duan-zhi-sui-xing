@@ -15,8 +15,16 @@ import java.nio.file.Files
 import java.util.Arrays
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BooleanSupplier
 import okhttp3.OkHttpClient
+import okhttp3.Interceptor
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody
+import okio.Buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -61,7 +69,8 @@ class DownloadPipelineTest {
         val db: AppDatabase,
         filesRoot: File,
         server: FixtureHttpServer,
-        keys: FixtureKit.TestKeys
+        keys: FixtureKit.TestKeys,
+        interceptor: Interceptor? = null
     ) : AutoCloseable {
         val storage: ModelStorageManager = ModelStorageManager(filesRoot)
         val worker: ExecutorService = Executors.newSingleThreadExecutor()
@@ -70,13 +79,17 @@ class DownloadPipelineTest {
 
         init {
             val client = CatalogClient(server.baseUrl(), keys.trustStore)
-            val http = OkHttpClient.Builder().build()
+            val http = OkHttpClient.Builder().apply {
+                if (interceptor != null) addInterceptor(interceptor)
+            }.build()
             coordinator = DownloadCoordinator(db.downloadDao(), db.modelDao(), client,
                 storage, http, worker, control, null)
         }
 
         override fun close() {
             coordinator.shutdown()
+            worker.awaitTermination(5, TimeUnit.SECONDS)
+            control.awaitTermination(5, TimeUnit.SECONDS)
             db.close()
         }
     }
@@ -150,6 +163,159 @@ class DownloadPipelineTest {
     }
 
     // ---------- 测试 ----------
+
+    private fun response(chain: Interceptor.Chain, code: Int, bytes: ByteArray,
+                         range: String? = null): Response {
+        val body = object : ResponseBody() {
+            private val buffer = Buffer().write(bytes)
+            override fun contentType() = null
+            override fun contentLength() = -1L
+            override fun source() = buffer
+        }
+        return Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
+            .code(code).message("fixture").body(body).apply {
+                if (range != null) header("Content-Range", range)
+            }.build()
+    }
+
+    private fun rejectBrokenResponse(code: Int, extraBytes: Int = 0, wrongRange: Boolean = false) {
+        val payload = FixtureKit.ggufPayload(MODEL, "qwen2", 64 * 1024)
+        serveModel(MODEL, payload, null, 0)
+        val attempts = AtomicInteger()
+        val env = Env(newMemoryDb(), tmp.root, server, keys, Interceptor { chain ->
+            attempts.incrementAndGet()
+            val body = if (code == 416 || extraBytes < 0) ByteArray(0)
+                else payload + ByteArray(extraBytes)
+            response(chain, code, body,
+                if (wrongRange) "bytes 0-${payload.lastIndex}/${payload.size + 1}" else null)
+        })
+        try {
+            assertEquals("ok", enqueue(env, MODEL))
+            await({ task(env)?.state == DownloadState.FAILED || attempts.get() >= 4 ||
+                env.db.modelDao().getByModelId(MODEL) != null }, "bounded response handling")
+            assertEquals("异常响应必须终止并允许用户重试", DownloadState.FAILED, task(env)?.state)
+            assertTrue("不得无上限请求", attempts.get() <= 2)
+            assertNull(env.db.modelDao().getByModelId(MODEL))
+            assertTrue("流式响应不得写超签名长度",
+                env.storage.partFile(task(env)!!.taskId).length() <= payload.size)
+        } finally {
+            env.close()
+        }
+    }
+
+    @Test fun range416AtZero_failsWithoutLoop() = rejectBrokenResponse(416)
+    @Test fun emptyUnknownLength_failsWithoutLoop() = rejectBrokenResponse(200, extraBytes = -1)
+    @Test fun oversizedUnknownLength_isBounded() = rejectBrokenResponse(200, extraBytes = 8192)
+    @Test fun inconsistentContentRange_isRejected() = rejectBrokenResponse(206, wrongRange = true)
+
+    private fun recoverInstalling(alreadyMoved: Boolean) {
+        val payload = FixtureKit.ggufPayload(MODEL, "qwen2", 64 * 1024)
+        serveModel(MODEL, payload, null, 0)
+        val env = Env(newMemoryDb(), tmp.root, server, keys)
+        try {
+            val entity = DownloadEntity("interrupted-install", MODEL, VERSION, FILE,
+                "Demo Model", "pub", "Q4_K_M", "Apache-2.0", 1,
+                payload.size.toLong(), FixtureKit.sha256Hex(payload),
+                server.baseUrl() + FixtureKit.filePath(MODEL, VERSION, FILE))
+            entity.state = DownloadState.INSTALLING
+            env.db.downloadDao().insert(entity)
+            val json = server.assetBytes(FixtureKit.manifestPath(MODEL, VERSION))!!
+            val sig = server.assetBytes(FixtureKit.manifestSigPath(MODEL, VERSION))!!
+            env.storage.persistManifest(entity.taskId, json, sig)
+            val part = env.storage.partFile(entity.taskId).apply { writeBytes(payload) }
+            if (alreadyMoved) env.storage.install(MODEL, VERSION, part, json, sig, FILE)
+            env.coordinator.recoverPending()
+            env.control.submit {}.get(5, TimeUnit.SECONDS)
+            env.worker.submit {}.get(5, TimeUnit.SECONDS)
+            assertNotNull("安装中断恢复后应补齐数据库记录", env.db.modelDao().getByModelId(MODEL))
+            assertNull(task(env))
+            assertTrue(env.storage.isInstalled(MODEL, VERSION))
+            assertEquals(FixtureKit.sha256Hex(payload),
+                ModelVerifier.sha256Hex(env.storage.modelFile(MODEL, VERSION, FILE)))
+        } finally {
+            env.close()
+        }
+    }
+
+    @Test fun restartInstallingWithPart_completes() = recoverInstalling(false)
+    @Test fun restartAfterFileCommit_completesDatabase() = recoverInstalling(true)
+
+    @Test fun immediateResume_doesNotReceiveOldCallFailure() {
+        val payload = FixtureKit.ggufPayload(MODEL, "qwen2", 64 * 1024)
+        serveModel(MODEL, payload, null, 0)
+        val entered = CountDownLatch(1)
+        val finishOldCall = CountDownLatch(1)
+        val calls = AtomicInteger()
+        val env = Env(newMemoryDb(), tmp.root, server, keys, Interceptor { chain ->
+            if (calls.incrementAndGet() == 1) {
+                entered.countDown()
+                check(finishOldCall.await(5, TimeUnit.SECONDS))
+                throw java.io.IOException("旧请求延迟结束")
+            }
+            chain.proceed(chain.request())
+        })
+        try {
+            assertEquals("ok", enqueue(env, MODEL))
+            assertTrue(entered.await(5, TimeUnit.SECONDS))
+            val id = task(env)!!.taskId
+            env.coordinator.pause(id)
+            env.control.submit {}.get(5, TimeUnit.SECONDS)
+            assertEquals(DownloadState.PAUSED, task(env)!!.state)
+            env.coordinator.resume(id)
+            env.control.submit {}.get(5, TimeUnit.SECONDS)
+            finishOldCall.countDown()
+            env.worker.submit {}.get(5, TimeUnit.SECONDS)
+            assertNotNull("恢复不能被旧连接的 IOException 改成失败", env.db.modelDao().getByModelId(MODEL))
+            assertNull(task(env))
+        } finally {
+            finishOldCall.countDown()
+            env.close()
+        }
+    }
+
+    @Test
+    fun incompleteInstalledRecord_canBeDownloadedAgain() {
+        val payload = FixtureKit.ggufPayload(MODEL, "qwen2", 64 * 1024)
+        serveModel(MODEL, payload, null, 0)
+        val env = Env(newMemoryDb(), tmp.root, server, keys)
+        try {
+            env.db.modelDao().insert(com.example.localai.data.room.ModelEntity(MODEL, VERSION,
+                "Demo Model", "pub", "Q4_K_M", "Apache-2.0", FILE, payload.size.toLong(), 1))
+            val broken = env.storage.modelFile(MODEL, VERSION, FILE)
+            broken.parentFile!!.mkdirs()
+            broken.writeBytes(ByteArray(16))
+            assertEquals("不完整的记录不得阻止重装", "ok", enqueue(env, MODEL))
+            await({ env.storage.isInstalled(MODEL, VERSION, FILE, payload.size.toLong()) }, "repaired install")
+            env.worker.submit {}.get(5, TimeUnit.SECONDS)
+            assertEquals(FixtureKit.sha256Hex(payload), ModelVerifier.sha256Hex(broken))
+            assertNull(task(env))
+        } finally {
+            env.close()
+        }
+    }
+
+    @Test
+    fun corruptedDownloadCanRetryAfterManifestSidecarsWereRemoved() {
+        val payload = FixtureKit.ggufPayload(MODEL, "qwen2", 256 * 1024)
+        serveModel(MODEL, payload, null, 0)
+        val damaged = payload.clone().apply { this[lastIndex] = (this[lastIndex].toInt() xor 1).toByte() }
+        val path = FixtureKit.filePath(MODEL, VERSION, FILE)
+        server.setFile(path, damaged, "\"damaged\"")
+        val env = Env(newMemoryDb(), tmp.root, server, keys)
+        try {
+            assertEquals("ok", enqueue(env, MODEL))
+            awaitTaskState(env, DownloadState.FAILED)
+            val id = task(env)!!.taskId
+            assertFalse(File(env.storage.downloadDir(id), "manifest.json").exists())
+            server.setFile(path, payload, "\"repaired\"")
+            env.coordinator.retry(id)
+            awaitInstalled(env)
+            assertEquals(FixtureKit.sha256Hex(payload),
+                ModelVerifier.sha256Hex(env.storage.modelFile(MODEL, VERSION, FILE)))
+        } finally {
+            env.close()
+        }
+    }
 
     @Test
     fun fullDownload_200_verify_install_success() {
@@ -417,6 +583,8 @@ class DownloadPipelineTest {
             val taskId = task(env)!!.taskId
             env.coordinator.cancel(taskId)
             await({ env.db.downloadDao().getById(taskId) == null }, "task removed")
+            env.control.submit {}.get(5, TimeUnit.SECONDS)
+            env.worker.submit {}.get(5, TimeUnit.SECONDS)
             assertFalse(env.storage.partFile(taskId).exists())
         } finally {
             env.close()

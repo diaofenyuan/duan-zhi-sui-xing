@@ -22,7 +22,6 @@ import com.example.localai.MainActivity
 import com.example.localai.R
 import com.example.localai.core.inference.ApprovedModels
 import com.example.localai.data.ServiceLocator
-import com.example.localai.data.room.ModelEntity
 import com.example.localai.model.ChatMessage
 import com.example.localai.model.ModelInfo
 import com.google.android.material.button.MaterialButton
@@ -30,7 +29,7 @@ import com.google.android.material.snackbar.Snackbar
 import java.util.ArrayList
 
 /**
- * 本地对话页：流式输出（演示/真实推理双引擎）、停止、复制/重试/删除、
+ * 本地对话页：流式推理、停止、复制/重试/删除、
  * 模型切换（真实已安装模型）与会话持久化（Room：新建/自动保存/恢复）。
  */
 class ChatFragment : Fragment(), ChatEngine.StreamListener {
@@ -52,6 +51,30 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     /** 当前会话 id（<=0 表示尚未持久化的新会话）。 */
     private var conversationId = 0L
     private var currentModelId = ""
+    private var streamEpoch = 0L
+    private var conversationEpoch = 0L
+    private var sessionToken = java.util.UUID.randomUUID().toString()
+    private var loadingHistory = false
+    private var draft = ""
+    private var checkpointPending = false
+    private val checkpoint = Runnable {
+        checkpointPending = false
+        if (view != null && !loadingHistory) persistConversation()
+    }
+    private val historyListener = object : ChatRepository.Listener {
+        override fun onConversationsChanged() {}
+        override fun onConversationsDeleted(ids: Set<Long>?) {
+            if (ids == null || conversationId in ids) {
+                // 删除后的迟到生成/保存回调失效；返回栈中的页面也要清除内存正文。
+                streamEpoch++
+                engine.release()
+                generating = false
+                streamingBot = null
+                botPosition = -1
+                startNewConversation()
+            }
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -59,9 +82,12 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        currentModelId = prefs().getString(KEY_MODEL, "") ?: ""
+        val restore = !::adapter.isInitialized
+        if (restore) currentModelId = prefs().getString(KEY_MODEL, "") ?: ""
         engine = ChatEngineProvider.create(requireContext(), currentModelId)
-        adapter = MessageAdapter { message, position -> showMessageMenu(message, position) }
+        if (restore) {
+            adapter = MessageAdapter { message, position -> showMessageMenu(message, position) }
+        }
 
         messagesView = view.findViewById(R.id.messages)
         val lm = LinearLayoutManager(requireContext())
@@ -71,6 +97,8 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
 
         emptyWrap = view.findViewById(R.id.empty_wrap)
         inputView = view.findViewById(R.id.input)
+        // 草稿由数据库和正文一起恢复，避免系统旧的视图状态覆盖异步加载结果。
+        inputView.isSaveEnabled = false
         btnSend = view.findViewById(R.id.btn_send)
         modelTitle = view.findViewById(R.id.text_model)
         statusDot = view.findViewById(R.id.status_dot)
@@ -90,9 +118,11 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             }
 
             override fun afterTextChanged(s: Editable) {
+                draft = s.toString()
                 if (!generating) {
                     refreshSendState(s.toString().trim().isEmpty())
                 }
+                scheduleCheckpoint()
             }
         })
 
@@ -105,7 +135,11 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         view.findViewById<View>(R.id.btn_switch).setOnClickListener { showModelPicker() }
 
         refreshHeader()
-        refreshSendState(true)
+        inputView.setText(draft)
+        refreshSendState(draft.trim().isEmpty())
+        updateEmptyState()
+        ServiceLocator.chat()?.register(historyListener)
+        if (restore) restoreSession()
     }
 
     override fun onResume() {
@@ -117,8 +151,13 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
+        if (hidden && view != null) {
+            interruptGeneration()
+            persistConversation()
+            view?.keepScreenOn = false
+        }
         // Tab 切换走 show/hide，不触发 onResume；重新可见时需刷新模型状态
-        if (!hidden) {
+        if (!hidden && view != null) {
             consumePendingNavigation()
             ensureModelSelected()
             refreshHeader()
@@ -126,8 +165,30 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     override fun onDestroyView() {
-        engine.release()
+        view?.removeCallbacks(checkpoint)
+        checkpointPending = false
+        draft = inputView.text.toString()
+        interruptGeneration()
+        messagesView.adapter = null
         super.onDestroyView()
+    }
+
+    override fun onPause() {
+        // 页面退场动画会延迟 onDestroyView，先终止生成，避免这段时间仍接收旧消息。
+        if (view != null) {
+            view?.keepScreenOn = false
+            view?.removeCallbacks(checkpoint)
+            checkpointPending = false
+            draft = inputView.text.toString()
+            interruptGeneration()
+            if (!loadingHistory) persistConversation()
+        }
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        ServiceLocator.chat()?.unregister(historyListener)
+        super.onDestroy()
     }
 
     private fun consumePendingNavigation() {
@@ -153,27 +214,80 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
 
     private fun loadConversation(id: Long) {
         val repository = ServiceLocator.chat() ?: return
-        repository.loadMessages(id) { messages, _ ->
-            if (!isAdded) {
-                return@loadMessages
+        interruptGeneration()
+        val epoch = ++conversationEpoch
+        loadingHistory = true
+        refreshSendState(inputView.text.toString().trim().isEmpty())
+        repository.loadConversation(id) { session, error ->
+            if (conversationEpoch != epoch) return@loadConversation
+            loadingHistory = false
+            if (session == null || error != null) {
+                this.view?.let { Snackbar.make(it, "会话加载失败，请重试", Snackbar.LENGTH_SHORT).show() }
+            } else {
+                applySession(session)
+                persistConversation()
             }
-            adapter.submit(ArrayList())
-            if (messages != null) {
-                for (m in messages) {
-                    adapter.items().add(m)
-                }
-                adapter.notifyDataSetChanged()
+            if (view != null) {
+                updateEmptyState()
+                refreshHeader()
+                refreshSendState(inputView.text.toString().trim().isEmpty())
             }
-            conversationId = id
-            updateEmptyState()
-            refreshHeader()
         }
     }
 
+    private fun restoreSession() {
+        val repository = ServiceLocator.chat() ?: return
+        val epoch = ++conversationEpoch
+        loadingHistory = true
+        refreshSendState(true)
+        repository.loadSession { session, error ->
+            if (epoch != conversationEpoch) return@loadSession
+            // 读取失败时保持只读，避免空页面的自动保存覆盖尚未成功读取的会话。
+            loadingHistory = error != null
+            if (session != null) applySession(session)
+            if (view != null) {
+                if (error != null) Snackbar.make(requireView(), "恢复会话失败：$error", Snackbar.LENGTH_INDEFINITE)
+                    .setAction("重试") { restoreSession() }.show()
+                updateEmptyState()
+                refreshSendState(inputView.text.toString().trim().isEmpty())
+            }
+        }
+    }
+
+    private fun applySession(session: ChatRepository.Session) {
+        sessionToken = session.token
+        conversationId = session.conversationId
+        currentModelId = session.modelId
+        draft = session.draft
+        adapter.submit(session.messages)
+        if (view != null) {
+            inputView.setText(draft)
+            inputView.setSelection(inputView.text.length)
+            applyModel(currentModelId, false)
+            ensureModelSelected()
+        }
+    }
+
+    private fun scheduleCheckpoint() {
+        if (loadingHistory || checkpointPending || view == null) return
+        checkpointPending = true
+        view?.postDelayed(checkpoint, 500)
+    }
+
     private fun startNewConversation() {
+        interruptGeneration()
+        conversationEpoch++
+        sessionToken = java.util.UUID.randomUUID().toString()
+        loadingHistory = false
         adapter.submit(ArrayList())
         conversationId = 0
-        updateEmptyState()
+        draft = ""
+        if (view != null) {
+            inputView.setText("")
+            updateEmptyState()
+            refreshSendState(true)
+        }
+        persistConversation()
     }
 
     private fun showModelPicker() {
@@ -188,26 +302,9 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             .show(parentFragmentManager, "picker")
     }
 
-    /** 真实已安装模型：Room installed_models ∪ 批准模型文件存在。 */
+    /** 选择器只展示已完成校验安装且引擎支持的模型。 */
     private fun installedModelInfos(): List<ModelInfo> {
-        val result = ArrayList<ModelInfo>()
-        val installed = ServiceLocator.downloads()?.installed() ?: ArrayList<ModelEntity>()
-        for (entity in installed) {
-            result.add(entityToInfo(entity))
-        }
-        if (ApprovedModels.isInstalled(requireContext(), ApprovedModels.SMOLLM_135M.modelId)) {
-            var present = false
-            for (m in result) {
-                if (m.id == ApprovedModels.SMOLLM_135M.modelId) {
-                    present = true
-                    break
-                }
-            }
-            if (!present) {
-                result.add(approvedToInfo())
-            }
-        }
-        return result
+        return ApprovedModels.installedAsModelInfos(requireContext())
     }
 
     private fun installedModelInfo(modelId: String): ModelInfo? {
@@ -219,37 +316,31 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         return null
     }
 
-    private fun entityToInfo(entity: ModelEntity): ModelInfo {
-        return ModelInfo(
-            entity.modelId, if (entity.displayName == null) entity.modelId else entity.displayName,
-            if (entity.publisher == null) "" else entity.publisher,
-            "0.1B", 0.1, if (entity.quantization == null) "" else entity.quantization,
-            "0 MB", entity.sizeBytes, "1K", ModelInfo.TASK_TEXT,
-            ModelInfo.langs("英文"), if (entity.licenseSpdx == null) "" else entity.licenseSpdx,
-            "", ModelInfo.COMPAT_RECOMMENDED, "", 0, 0.0, 0, "", 0, true)
-    }
-
-    private fun approvedToInfo(): ModelInfo {
-        return ApprovedModels.installedAsModelInfos(requireContext())[0]
-    }
-
     private fun setCurrentModel(modelId: String) {
+        if (modelId == currentModelId) return
+        startNewConversation()
         applyModel(modelId, true)
+        persistConversation()
     }
 
     /** 从未选过模型时自动选中第一个已安装模型，避免已安装却提示"未安装模型"。 */
     private fun ensureModelSelected() {
-        if (currentModelId.isNotEmpty()) {
+        if (ApprovedModels.isInstalled(requireContext(), currentModelId)) {
+            if (!engine.isRealInference()) applyModel(currentModelId, false)
             return
         }
         val installed = installedModelInfos()
         if (installed.isEmpty()) {
+            currentModelId = ""
+            engine.release()
+            engine = UnavailableChatEngine()
             return
         }
         applyModel(installed[0].id, false)
     }
 
     private fun applyModel(modelId: String, announce: Boolean) {
+        interruptGeneration()
         currentModelId = modelId
         prefs().edit().putString(KEY_MODEL, modelId).apply()
         engine.release()
@@ -303,6 +394,11 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     private fun refreshSendState(emptyInput: Boolean) {
+        view?.keepScreenOn = generating && !isHidden && isResumed &&
+            com.example.localai.feature.settings.InferencePolicy.keepScreenOn(requireContext())
+        inputView.isEnabled = !loadingHistory
+        btnSend.isEnabled = generating || (!emptyInput && !loadingHistory)
+        btnSend.contentDescription = getString(if (generating) R.string.action_stop else R.string.action_send)
         btnSend.setIconResource(if (generating) R.drawable.ic_stop else R.drawable.ic_send)
         btnSend.backgroundTintList = android.content.res.ColorStateList.valueOf(
             ContextCompat.getColor(requireContext(),
@@ -310,11 +406,12 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     private fun sendInput() {
+        if (generating || loadingHistory) return
         val text = inputView.text.toString().trim()
         if (text.isEmpty()) {
             return
         }
-        if (currentModelId.isEmpty()) {
+        if (currentModelId.isEmpty() || resolveApproved() == null) {
             Snackbar.make(messagesView, R.string.picker_empty, Snackbar.LENGTH_SHORT).show()
             return
         }
@@ -324,10 +421,30 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         scrollToBottom()
         updateEmptyState()
 
+        persistConversation()
+
         generating = true
         refreshSendState(false)
         refreshHeader()
-        engine.start(historySnapshot(), this)
+        engine.start(historySnapshot(), generationListener())
+    }
+
+    /** 旧引擎或旧页面排队的回调不得写入新会话。 */
+    private fun generationListener(): ChatEngine.StreamListener {
+        val epoch = ++streamEpoch
+        return object : ChatEngine.StreamListener {
+            private fun active() = epoch == streamEpoch && generating && view != null
+            override fun onThinking() { if (active()) this@ChatFragment.onThinking() }
+            override fun onDelta(delta: String) { if (active()) this@ChatFragment.onDelta(delta) }
+            override fun onFinished(stopped: Boolean) { if (active()) this@ChatFragment.onFinished(stopped) }
+            override fun onError(code: Int, message: String) { if (active()) this@ChatFragment.onError(code, message) }
+        }
+    }
+
+    private fun interruptGeneration() {
+        streamEpoch++
+        engine.release()
+        if (generating) onFinished(true)
     }
 
     /** 当前会话的完整消息列表（含刚加入的用户消息）。 */
@@ -346,6 +463,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         botPosition = adapter.itemCount - 1
         adapter.notifyItemInserted(botPosition)
         scrollToBottom()
+        scheduleCheckpoint()
     }
 
     override fun onDelta(delta: String) {
@@ -365,6 +483,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             adapter.updateLast()
         }
         scrollToBottom()
+        scheduleCheckpoint()
     }
 
     override fun onFinished(stopped: Boolean) {
@@ -373,10 +492,11 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             if (bot != null) {
                 bot.text += "\n（已停止生成）"
                 adapter.updateLast()
-            } else if (botPosition >= 0 && botPosition < adapter.items().size) {
-                adapter.items().removeAt(botPosition)
-                adapter.notifyItemRemoved(botPosition)
             }
+        }
+        if (botPosition >= 0 && adapter.items().getOrNull(botPosition) === MessageAdapter.TYPING) {
+            adapter.items().removeAt(botPosition)
+            adapter.notifyItemRemoved(botPosition)
         }
         streamingBot = null
         botPosition = -1
@@ -405,19 +525,22 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
 
     /** 全量覆盖保存会话（新会话自动创建并回填 id）。 */
     private fun persistConversation() {
+        if (loadingHistory) return
         val repository = ServiceLocator.chat() ?: return
-        repository.saveConversation(conversationId, currentModelId, deriveTitle(), historySnapshot(),
+        val epoch = conversationEpoch
+        if (view != null) draft = inputView.text.toString()
+        repository.saveSession(sessionToken, conversationId, currentModelId, draft, deriveTitle(), historySnapshot(),
             object : ChatRepository.ConversationSavedCallback {
                 override fun onSaved(conversationId: Long) {
+                    if (conversationEpoch != epoch) return
                     this@ChatFragment.conversationId = conversationId
                 }
 
                 override fun onError(message: String?) {
-                    Snackbar.make(requireView(),
-                        "会话保存失败：" + message, Snackbar.LENGTH_SHORT).show()
+                    if (conversationEpoch != epoch) return
+                    view?.let { Snackbar.make(it, "会话保存失败：" + message, Snackbar.LENGTH_SHORT).show() }
                 }
             })
-        repository.refresh()
     }
 
     private fun deriveTitle(): String {
@@ -437,16 +560,20 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         menu.menuInflater.inflate(R.menu.menu_message, menu.menu)
         menu.menu.findItem(R.id.action_retry).isVisible =
             message.role == ChatMessage.ROLE_USER && !generating
+        menu.menu.findItem(R.id.action_delete_msg).isVisible = !generating && !loadingHistory
         menu.setOnMenuItemClickListener { item: MenuItem ->
+            val currentPosition = adapter.items().indexOf(message)
+            if (item.itemId != R.id.action_copy &&
+                (generating || loadingHistory || currentPosition < 0)) return@setOnMenuItemClickListener true
             when (item.itemId) {
                 R.id.action_copy -> copyToClipboard(message.text)
                 R.id.action_delete_msg -> {
-                    adapter.items().removeAt(position)
+                    adapter.items().removeAt(currentPosition)
                     adapter.notifyDataSetChanged()
                     updateEmptyState()
                     persistConversation()
                 }
-                R.id.action_retry -> retryFrom(message, position)
+                R.id.action_retry -> retryFrom(message, currentPosition)
             }
             true
         }
@@ -454,14 +581,16 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     private fun retryFrom(userMessage: ChatMessage, position: Int) {
-        while (adapter.items().size > position) {
+        if (generating || loadingHistory || adapter.items().getOrNull(position) !== userMessage) return
+        // 重试保留被选中的用户问题，仅丢弃该问题之后的内容。
+        while (adapter.items().size > position + 1) {
             adapter.items().removeAt(adapter.items().size - 1)
         }
         adapter.notifyDataSetChanged()
         generating = true
         refreshSendState(false)
         refreshHeader()
-        engine.start(historySnapshot(), this)
+        engine.start(historySnapshot(), generationListener())
     }
 
     private fun copyToClipboard(text: String) {

@@ -20,6 +20,11 @@ import com.google.android.material.materialswitch.MaterialSwitch
 
 /** 设置页：运行模式、推理行为、存储与数据、隐私、关于；配置持久化到 SharedPreferences。 */
 class SettingsFragment : Fragment() {
+    private val storageWorker = java.util.concurrent.Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "localai-cache").apply { isDaemon = true }
+    }
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var clearingCache = false
 
     private lateinit var cardAuto: MaterialCardView
     private lateinit var cardBalanced: MaterialCardView
@@ -48,6 +53,9 @@ class SettingsFragment : Fragment() {
         cardAuto.setOnClickListener(selectAuto)
         cardBalanced.setOnClickListener(selectBalanced)
         cardSaver.setOnClickListener(selectSaver)
+        radioAuto.setOnClickListener(selectAuto)
+        radioBalanced.setOnClickListener(selectBalanced)
+        radioSaver.setOnClickListener(selectSaver)
 
         when (prefs().getString(KEY_MODE, "auto")) {
             "balanced" -> setMode("balanced", radioAuto, radioBalanced, radioSaver)
@@ -56,35 +64,20 @@ class SettingsFragment : Fragment() {
         }
 
         val swKeepScreen = view.findViewById<MaterialSwitch>(R.id.sw_keep_screen)
-        val swBgGen = view.findViewById<MaterialSwitch>(R.id.sw_bg_gen)
-        val swMetrics = view.findViewById<MaterialSwitch>(R.id.sw_metrics)
 
         swKeepScreen.isChecked = prefs().getBoolean(KEY_KEEP_SCREEN, false)
-        swBgGen.isChecked = prefs().getBoolean(KEY_BG_GEN, false)
-        swMetrics.isChecked = prefs().getBoolean(KEY_METRICS, false)
+        prefs().edit().remove("bg_gen").remove("metrics").apply()
 
         swKeepScreen.setOnCheckedChangeListener { _, checked ->
             prefs().edit().putBoolean(KEY_KEEP_SCREEN, checked).apply()
         }
-        swBgGen.setOnCheckedChangeListener { _, checked ->
-            prefs().edit().putBoolean(KEY_BG_GEN, checked).apply()
-        }
-        swMetrics.setOnCheckedChangeListener { _, checked ->
-            prefs().edit().putBoolean(KEY_METRICS, checked).apply()
-        }
 
-        // 存储与数据：真实已安装模型体积
-        val cacheSize = view.findViewById<TextView>(R.id.text_cache_size)
-        cacheSize.text = getString(R.string.row_clear_cache_val_fmt, cacheLabel())
+        refreshCacheSize()
         view.findViewById<View>(R.id.row_clear_cache).setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setTitle(R.string.row_clear_cache)
-                .setMessage(getString(R.string.row_clear_cache_val_fmt, cacheLabel()))
-                .setPositiveButton(R.string.action_ok) { _, _ ->
-                    android.widget.Toast.makeText(requireContext(),
-                        getString(R.string.cache_cleaned_fmt, cacheLabel()),
-                        android.widget.Toast.LENGTH_SHORT).show()
-                }
+                .setMessage(R.string.clear_cache_explanation)
+                .setPositiveButton(R.string.action_ok) { _, _ -> clearTemporaryCache() }
                 .setNegativeButton(R.string.action_cancel, null)
                 .show()
         }
@@ -94,10 +87,12 @@ class SettingsFragment : Fragment() {
                 .setTitle(R.string.dialog_clear_sessions_title)
                 .setMessage(R.string.dialog_clear_sessions_msg)
                 .setPositiveButton(R.string.action_delete) { _, _ ->
-                    ServiceLocator.chat()?.clearAll()
-                    android.widget.Toast.makeText(requireContext(),
-                        R.string.toast_sessions_cleared,
-                        android.widget.Toast.LENGTH_SHORT).show()
+                    val app = requireContext().applicationContext
+                    ServiceLocator.chat()?.clearAll { error ->
+                        android.widget.Toast.makeText(app,
+                            error?.let { "清空失败：$it" } ?: app.getString(R.string.toast_sessions_cleared),
+                            android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 }
                 .setNegativeButton(R.string.action_cancel, null)
                 .show()
@@ -107,7 +102,8 @@ class SettingsFragment : Fragment() {
         view.findViewById<View>(R.id.row_license).setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setTitle(R.string.license_dialog_title)
-                .setMessage(licenseSummary())
+                .setMessage(licenseSummary() + "\n\nQwen2.5 模型许可证\n\n" +
+                    requireContext().assets.open("licenses/Qwen2.5-LICENSE.txt").bufferedReader().use { it.readText() })
                 .setPositiveButton(R.string.action_close, null)
                 .show()
         }
@@ -132,14 +128,61 @@ class SettingsFragment : Fragment() {
             if (selected) R.color.md_primary else R.color.outline)
     }
 
-    /** 已安装模型真实体积（Room installed_models 汇总）。 */
-    private fun cacheLabel(): String {
-        val downloads = ServiceLocator.downloads() ?: return "0 MB"
-        return Fmt.humanBytes(downloads.installedBytes())
+    override fun onResume() {
+        super.onResume()
+        refreshCacheSize()
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden) refreshCacheSize()
+    }
+
+    override fun onDestroy() {
+        storageWorker.shutdown()
+        super.onDestroy()
+    }
+
+    private fun refreshCacheSize() {
+        val target = view ?: return
+        if (clearingCache) return
+        val cache = TemporaryCache(requireContext().cacheDir)
+        target.findViewById<TextView>(R.id.text_cache_size).setText(R.string.cache_measuring)
+        storageWorker.execute {
+            val result = cache.measure()
+            mainHandler.post {
+                if (view !== target || clearingCache) return@post
+                target.findViewById<TextView>(R.id.text_cache_size).text =
+                    if (result.failures == 0) getString(R.string.row_clear_cache_val_fmt, Fmt.humanBytes(result.bytes))
+                    else getString(R.string.cache_measure_failed)
+            }
+        }
+    }
+
+    private fun clearTemporaryCache() {
+        if (clearingCache) return
+        val app = requireContext().applicationContext
+        val target = view ?: return
+        val row = target.findViewById<View>(R.id.row_clear_cache)
+        clearingCache = true
+        row.isEnabled = false
+        storageWorker.execute {
+            val result = TemporaryCache(app.cacheDir).clear()
+            mainHandler.post {
+                clearingCache = false
+                val message = app.getString(R.string.cache_cleaned_fmt, Fmt.humanBytes(result.bytes)) +
+                    if (result.failures == 0) "" else app.getString(R.string.cache_cleanup_partial)
+                android.widget.Toast.makeText(app, message, android.widget.Toast.LENGTH_SHORT).show()
+                if (view === target) {
+                    row.isEnabled = true
+                    refreshCacheSize()
+                }
+            }
+        }
     }
 
     private fun licenseSummary(): String {
-        return "端智随行 P4 版\n\n" +
+        return "端智随行 " + BuildConfig.VERSION_NAME + "\n\n" +
                 "· Material Components — Apache-2.0\n" +
                 "· AndroidX（AppCompat / RecyclerView / Core / Room / Work）— Apache-2.0\n" +
                 "· llama.cpp / ggml — MIT\n" +
@@ -153,10 +196,8 @@ class SettingsFragment : Fragment() {
         requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     companion object {
-        private const val PREFS = "localai_settings"
-        private const val KEY_MODE = "mode"
-        private const val KEY_KEEP_SCREEN = "keep_screen"
-        private const val KEY_BG_GEN = "bg_gen"
-        private const val KEY_METRICS = "metrics"
+        private const val PREFS = InferencePolicy.PREFS
+        private const val KEY_MODE = InferencePolicy.KEY_MODE
+        private const val KEY_KEEP_SCREEN = InferencePolicy.KEY_KEEP_SCREEN
     }
 }

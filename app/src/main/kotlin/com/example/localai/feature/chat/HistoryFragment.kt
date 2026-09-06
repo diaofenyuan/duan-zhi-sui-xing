@@ -45,16 +45,18 @@ class HistoryFragment : Fragment() {
         }
         refresh()
         repository?.register(listener)
+        repository?.refresh()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         repository?.unregister(listener)
+        listView = null
+        emptyView = null
     }
 
     private fun refresh() {
         repository?.let {
-            it.refresh()
             sessions.clear()
             sessions.addAll(it.conversations())
         }
@@ -98,20 +100,22 @@ class HistoryFragment : Fragment() {
             itemView.findViewById<TextView>(R.id.text_preview).text = ""
 
             itemView.setOnClickListener {
-                android.util.Log.d("p4history", "item clicked id=" + session.id)
                 if (activity is MainActivity) {
                     (activity as MainActivity).openConversation(session.id)
                 }
             }
             itemView.findViewById<View>(R.id.btn_more).setOnClickListener {
-                android.util.Log.d("p4history", "more clicked id=" + session.id)
                 AlertDialog.Builder(requireContext())
                     .setTitle(title)
                     .setMessage(R.string.dialog_clear_sessions_msg)
                     .setPositiveButton(R.string.action_delete) { _, _ ->
                         repository?.let {
-                            it.deleteConversation(session.id)
-                            refresh()
+                            it.deleteConversation(session.id) { error ->
+                                if (error != null) view?.let { target ->
+                                    com.google.android.material.snackbar.Snackbar.make(target,
+                                        "删除失败：$error", com.google.android.material.snackbar.Snackbar.LENGTH_LONG).show()
+                                }
+                            }
                         }
                     }
                     .setNegativeButton(R.string.action_cancel, null)

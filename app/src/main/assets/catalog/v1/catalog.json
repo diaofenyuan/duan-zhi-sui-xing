@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-06T08:00:00Z",
+  "models": [
+    {
+      "modelId": "qwen2.5-0.5b-instruct",
+      "version": "2026.09.1",
+      "displayName": "Qwen2.5 · 中文轻量助手",
+      "description": "适合中文日常问答、简短改写和离线交流。约 469 MB，下载完成后无需联网。小模型能力有限，请核实重要信息。"
+    }
+  ]
+}

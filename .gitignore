@@ -25,3 +25,5 @@ backend/fixtures/media/
 # uiautomator ¡Ÿ ± dump
 ui_dump.xml
 
+
+.local-signing/
