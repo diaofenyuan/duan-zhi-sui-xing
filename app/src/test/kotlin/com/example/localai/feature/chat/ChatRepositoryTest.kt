@@ -283,11 +283,13 @@ class ChatRepositoryTest {
     fun failedReplacementKeepsPreviousConversationAndMessages() {
         val id = save(0, "原始标题", sampleMessages())
         // 在第二条消息落库时注入 SQLite 故障，验证整次保存可以回滚。
-        database.openHelper.writableDatabase.execSQL("""
-            CREATE TRIGGER reject_message BEFORE INSERT ON messages
-            WHEN NEW.content = '拒绝写入'
-            BEGIN SELECT RAISE(ABORT, 'injected write failure'); END
-        """.trimIndent())
+        for (operation in listOf("INSERT", "UPDATE")) {
+            database.openHelper.writableDatabase.execSQL("""
+                CREATE TRIGGER reject_message_$operation BEFORE $operation ON messages
+                WHEN NEW.content = '拒绝写入'
+                BEGIN SELECT RAISE(ABORT, 'injected write failure'); END
+            """.trimIndent())
+        }
         save(id, "不应保存的标题", listOf(
             ChatMessage(ChatMessage.ROLE_USER, "第一条新消息"),
             ChatMessage(ChatMessage.ROLE_BOT, "拒绝写入")
@@ -320,6 +322,75 @@ class ChatRepositoryTest {
         database.conversationDao().deleteById(id)
         save(id, "过期保存", sampleMessages(), succeeds = false)
         assertTrue(database.conversationDao().all().isEmpty())
+    }
+
+    @Test
+    fun streamingSnapshotsOnlyUpdateChangedTail() {
+        val messages = (0 until 80).map {
+            ChatMessage(if (it % 2 == 0) ChatMessage.ROLE_USER else ChatMessage.ROLE_BOT, "第${it}条消息")
+        }
+        val id = save(0, "长会话", messages)
+        val before = database.messageDao().messagesFor(id)
+        trackMessageWrites()
+        repeat(5) {
+            messages.last().text += "中文流式片段🙂"
+            save(id, "长会话", messages)
+        }
+        val after = database.messageDao().messagesFor(id)
+        assertEquals(before.map { it.id }, after.map { it.id })
+        assertEquals(before.map { it.createdAt }, after.map { it.createdAt })
+        assertEquals(messages.map { it.text }, after.map { it.content })
+        assertEquals(listOf(0, 5, 0), messageWriteCounts())
+    }
+
+    @Test
+    fun draftOnlyChangeDoesNotWriteMessages() {
+        repository.saveSession("draft", 0, "m", "原草稿", "标题", sampleMessages(), null)
+        val ready = CountDownLatch(1)
+        repository.loadSession { _, _ -> ready.countDown() }
+        idleUntil(ready)
+        trackMessageWrites()
+        repository.saveSession("draft", 0, "m", "新草稿🙂", "标题", sampleMessages(), null)
+        val saved = CountDownLatch(1)
+        repository.loadSession { session, error ->
+            assertEquals(null, error)
+            assertEquals("新草稿🙂", session!!.draft)
+            saved.countDown()
+        }
+        idleUntil(saved)
+        assertEquals(listOf(0, 0, 0), messageWriteCounts())
+    }
+
+    @Test
+    fun middleDeletionAndRetryTruncationPersistInOrder() {
+        val messages = (0 until 6).map {
+            ChatMessage(if (it % 2 == 0) ChatMessage.ROLE_USER else ChatMessage.ROLE_BOT, "消息$it")
+        }.toMutableList()
+        val id = save(0, "标题", messages)
+        messages.removeAt(1)
+        save(id, "标题", messages)
+        assertEquals(messages.map { it.text }, database.messageDao().messagesFor(id).map { it.content })
+        val retried = messages.take(2) + ChatMessage(ChatMessage.ROLE_BOT, "重新生成（已停止生成）")
+        save(id, "标题", retried)
+        assertEquals(retried.map { it.text }, database.messageDao().messagesFor(id).map { it.content })
+        assertEquals(listOf("user", "user", "bot"), database.messageDao().messagesFor(id).map { it.role })
+    }
+
+    private fun trackMessageWrites() {
+        val db = database.openHelper.writableDatabase
+        db.execSQL("CREATE TABLE message_writes (operation TEXT NOT NULL)")
+        for (operation in listOf("INSERT", "UPDATE", "DELETE")) {
+            db.execSQL("CREATE TRIGGER count_$operation AFTER $operation ON messages " +
+                "BEGIN INSERT INTO message_writes VALUES ('$operation'); END")
+        }
+    }
+
+    private fun messageWriteCounts(): List<Int> = listOf("INSERT", "UPDATE", "DELETE").map { operation ->
+        database.openHelper.readableDatabase.query(
+            "SELECT COUNT(*) FROM message_writes WHERE operation = '$operation'").use {
+            it.moveToFirst()
+            it.getInt(0)
+        }
     }
 
     inner class MessagesCallbackHolder : ChatRepository.MessagesCallback {

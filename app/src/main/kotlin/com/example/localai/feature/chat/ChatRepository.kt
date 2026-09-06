@@ -18,7 +18,7 @@ import java.util.concurrent.Executors
 /**
  * 会话/消息持久化门面（P4）：UI 永远只在主线程调用快照方法；
  * DAO 访问全部在单线程 executor 上执行，完成后主线程回调。
- * 保存语义为「全量覆盖当前会话」（标题 + 消息列表），空白会话不落库。
+ * 接收完整快照，事务内只写入变化的消息；空白会话不落库。
  */
 class ChatRepository(private val database: AppDatabase) {
     private val conversationDao = database.conversationDao()
@@ -114,11 +114,22 @@ class ChatRepository(private val database: AppDatabase) {
         if (!trimmed.isNullOrEmpty()) conv.title = trimmed
         conv.updatedAt = System.currentTimeMillis()
         conversationDao.update(conv)
-        messageDao.deleteForConversation(conv.id)
-        for (message in snapshot) {
-            messageDao.insert(MessageEntity(conv.id,
-                if (message.role == ChatMessage.ROLE_USER) MessageEntity.ROLE_USER else MessageEntity.ROLE_BOT,
-                message.text))
+        // 以事务中的实际记录为基准，保存失败或进程重启后无需恢复额外的内存缓存。
+        // 消息按主键排序，逐位置同步也覆盖中间删除、重试截断和流式尾部更新。
+        val stored = messageDao.messagesFor(conv.id)
+        for ((index, message) in snapshot.withIndex()) {
+            val role = if (message.role == ChatMessage.ROLE_USER) MessageEntity.ROLE_USER else MessageEntity.ROLE_BOT
+            val row = stored.getOrNull(index)
+            if (row == null) {
+                messageDao.insert(MessageEntity(conv.id, role, message.text))
+            } else if (row.role != role || row.content != message.text) {
+                row.role = role
+                row.content = message.text
+                messageDao.update(row)
+            }
+        }
+        if (stored.size > snapshot.size) {
+            messageDao.deleteAfter(conv.id, stored[snapshot.lastIndex].id)
         }
         return conv.id
     }

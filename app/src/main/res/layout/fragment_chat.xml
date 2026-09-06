@@ -140,6 +140,17 @@
                 android:layout_marginTop="6dp"
                 android:text="@string/chat_empty_sub" />
         </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_latest_message"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:minHeight="48dp"
+            android:text="@string/chat_latest_message"
+            android:visibility="gone" />
     </FrameLayout>
 
     <!-- 输入栏 -->

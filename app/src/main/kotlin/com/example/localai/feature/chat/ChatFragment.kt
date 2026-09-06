@@ -38,6 +38,43 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     private lateinit var engine: ChatEngine
 
     private lateinit var messagesView: RecyclerView
+    private lateinit var btnLatestMessage: View
+    private var followLatest = true
+    private var userScrolling = false
+    private val followScroll = Runnable {
+        if (view != null && followLatest && !userScrolling && adapter.itemCount > 0) {
+            val layout = messagesView.layoutManager as LinearLayoutManager
+            val last = layout.findViewByPosition(adapter.itemCount - 1)
+            if (last == null) {
+                messagesView.smoothScrollToPosition(adapter.itemCount - 1)
+            } else {
+                // 单条长回复也必须跟随到底部，不能仅判断最后一项是否已出现在屏幕中。
+                val remaining = layout.getDecoratedBottom(last) - messagesView.height + messagesView.paddingBottom
+                if (remaining > 0) messagesView.smoothScrollBy(0, remaining)
+            }
+        }
+    }
+    private val scrollListener = object : RecyclerView.OnScrollListener() {
+        override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+            if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                userScrolling = true
+                followLatest = false
+                recyclerView.removeCallbacks(followScroll)
+            } else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                if (userScrolling) {
+                    userScrolling = false
+                    followLatest = isNearBottom()
+                }
+                // 从很早的历史跳回时，先定位末条，再对齐超长气泡的底部。
+                if (followLatest) scrollToBottom()
+            }
+            updateLatestButton()
+        }
+
+        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+            updateLatestButton()
+        }
+    }
     private lateinit var emptyWrap: View
     private lateinit var inputView: EditText
     private lateinit var btnSend: MaterialButton
@@ -97,6 +134,9 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         lm.stackFromEnd = true
         messagesView.layoutManager = lm
         messagesView.adapter = adapter
+        messagesView.addOnScrollListener(scrollListener)
+        btnLatestMessage = view.findViewById(R.id.btn_latest_message)
+        btnLatestMessage.setOnClickListener { scrollToBottom(force = true) }
 
         emptyWrap = view.findViewById(R.id.empty_wrap)
         inputView = view.findViewById(R.id.input)
@@ -182,6 +222,9 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         interruptGeneration()
         engine.setModelStateListener(null)
         messagesView.adapter = null
+        messagesView.removeCallbacks(followScroll)
+        messagesView.removeOnScrollListener(scrollListener)
+        userScrolling = false
         super.onDestroyView()
     }
 
@@ -272,11 +315,13 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         currentModelId = session.modelId
         draft = session.draft
         adapter.submit(session.messages)
+        followLatest = true
         if (view != null) {
             inputView.setText(draft)
             inputView.setSelection(inputView.text.length)
             applyModel(currentModelId, false)
             ensureModelSelected()
+            scrollToBottom(force = true)
         }
     }
 
@@ -292,6 +337,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         sessionToken = java.util.UUID.randomUUID().toString()
         loadingHistory = false
         adapter.submit(ArrayList())
+        followLatest = true
         conversationId = 0
         draft = ""
         if (view != null) {
@@ -436,7 +482,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         inputView.setText("")
         adapter.items().add(ChatMessage(ChatMessage.ROLE_USER, text))
         adapter.notifyItemInserted(adapter.itemCount - 1)
-        scrollToBottom()
+        scrollToBottom(force = true)
         updateEmptyState()
 
         persistConversation()
@@ -480,6 +526,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     override fun onThinking() {
+        preserveReadingPosition()
         adapter.items().add(MessageAdapter.TYPING)
         botPosition = adapter.itemCount - 1
         adapter.notifyItemInserted(botPosition)
@@ -488,6 +535,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     override fun onDelta(delta: String) {
+        preserveReadingPosition()
         val bot = streamingBot
         if (bot == null) {
             if (botPosition >= 0 && botPosition < adapter.items().size) {
@@ -508,6 +556,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     override fun onFinished(stopped: Boolean) {
+        preserveReadingPosition()
         if (stopped) {
             val bot = streamingBot
             if (bot != null) {
@@ -528,6 +577,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     override fun onError(code: Int, message: String) {
+        preserveReadingPosition()
         if (code == com.example.localai.core.inference.NativeSession.ERR_INPUT_TOO_LONG && inputView.text.isEmpty()) {
             // 保留正文，并在没有新草稿时恢复输入，便于直接缩短后重发。
             val original = historySnapshot().lastOrNull { it.role == ChatMessage.ROLE_USER }?.text
@@ -549,7 +599,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         persistConversation()
     }
 
-    /** 全量覆盖保存会话（新会话自动创建并回填 id）。 */
+    /** 提交完整快照，由仓库增量写入（新会话自动创建并回填 id）。 */
     private fun persistConversation() {
         if (loadingHistory) return
         val repository = ServiceLocator.chat() ?: return
@@ -620,6 +670,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             adapter.items().removeAt(adapter.items().size - 1)
         }
         adapter.notifyDataSetChanged()
+        scrollToBottom(force = true)
         generating = true
         refreshSendState(false)
         refreshHeader()
@@ -634,12 +685,41 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
 
     private fun updateEmptyState() {
         emptyWrap.visibility = if (adapter.itemCount == 0) View.VISIBLE else View.GONE
+        updateLatestButton()
     }
 
-    private fun scrollToBottom() {
-        messagesView.post {
-            messagesView.smoothScrollToPosition(maxOf(0, adapter.itemCount - 1))
+    private fun isNearBottom(): Boolean {
+        val layout = messagesView.layoutManager as LinearLayoutManager
+        if (adapter.itemCount == 0) return true
+        val last = layout.findViewByPosition(adapter.itemCount - 1) ?: return false
+        val remaining = layout.getDecoratedBottom(last) - messagesView.height + messagesView.paddingBottom
+        return remaining <= 48 * resources.displayMetrics.density
+    }
+
+    private fun preserveReadingPosition() {
+        if (followLatest) return
+        val layout = messagesView.layoutManager as LinearLayoutManager
+        val first = layout.findFirstVisibleItemPosition()
+        val anchor = layout.findViewByPosition(first) ?: return
+        // stackFromEnd 会按长气泡的底边重新定位；锁定顶边偏移才能让新增正文不挤走阅读位置。
+        layout.scrollToPositionWithOffset(first, layout.getDecoratedTop(anchor) - messagesView.paddingTop)
+    }
+
+    private fun updateLatestButton() {
+        btnLatestMessage.visibility = if (!followLatest && adapter.itemCount > 0 &&
+            messagesView.canScrollVertically(1)) View.VISIBLE else View.GONE
+    }
+
+    private fun scrollToBottom(force: Boolean = false) {
+        if (force) {
+            userScrolling = false
+            followLatest = true
+            messagesView.stopScroll()
         }
+        updateLatestButton()
+        // 排队的跟随也受用户滚动状态约束，拖动后不会被迟到的流式回调拉回底部。
+        messagesView.removeCallbacks(followScroll)
+        if (followLatest && !userScrolling) messagesView.postOnAnimation(followScroll)
     }
 
     private fun prefs(): SharedPreferences =

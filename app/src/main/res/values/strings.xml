@@ -206,4 +206,5 @@
     <string name="context_explanation">输入 token 数，0 表示自动。手动值优先于运行模式，实际长度不超过模型上限。较长上下文占用更多内存。保存后在下一轮对话重新加载生效。</string>
     <string name="gpu_explanation">0 表示仅 CPU，-1 表示全部层，也可输入 1～256 指定层数，超过模型总层数时按全部层处理。需要支持 Vulkan 1.2 的 GPU。手机通常共享系统内存，实际 GPU 占用随模型、量化和上下文变化，不能按固定 MB 分配。保存后在下一轮对话重新加载生效。</string>
     <string name="inference_reset">恢复默认</string>
+    <string name="chat_latest_message">回到最新消息</string>
 </resources>
