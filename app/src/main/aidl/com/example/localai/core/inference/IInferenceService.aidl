@@ -11,6 +11,8 @@ interface IInferenceService {
 
     int start(String prompt, IInferenceCallback cb);
 
+    int countTokens(String prompt);
+
     int stop();
 
     InferenceStats getStats();

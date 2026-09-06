@@ -16,6 +16,53 @@ import java.util.concurrent.TimeUnit
 /** 保留实际引擎，从页面发送按钮到中文回答完成，不替换推理实现。 */
 @RunWith(AndroidJUnit4::class)
 class RealChatUiInstrumentedTest {
+    @Test fun oversizedQuestionRestoresDraftAndNextQuestionWorks() {
+        val original = "这是一段必须完整保留、不能静默删除的问题。".repeat(300)
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                assertTrue(ApprovedModels.isInstalled(activity, ApprovedModels.QWEN_05B.modelId))
+                activity.openTab(R.id.nav_chat)
+                val chat = activity.supportFragmentManager.findFragmentByTag("chat") as ChatFragment
+                chat.requireView().findViewById<android.view.View>(R.id.btn_new).performClick()
+                chat.requireView().findViewById<EditText>(R.id.input).setText(original)
+                chat.requireView().findViewById<android.view.View>(R.id.btn_send).performClick()
+            }
+            fun awaitIdle() {
+                val deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3)
+                var idle = false
+                while (!idle && System.nanoTime() < deadline) {
+                    scenario.onActivity { activity ->
+                        val chat = activity.supportFragmentManager.findFragmentByTag("chat") as ChatFragment
+                        idle = !chat.javaClass.getDeclaredField("generating").apply { isAccessible = true }.getBoolean(chat)
+                    }
+                    if (!idle) Thread.sleep(100)
+                }
+                assertTrue("页面未结束本轮", idle)
+            }
+            awaitIdle()
+            scenario.onActivity { activity ->
+                val chat = activity.supportFragmentManager.findFragmentByTag("chat") as ChatFragment
+                val adapter = chat.javaClass.getDeclaredField("adapter").apply { isAccessible = true }.get(chat) as MessageAdapter
+                val messages = adapter.items().filterIsInstance<ChatMessage>()
+                assertEquals(original, messages.first().text)
+                assertTrue(messages.last().text.contains("问题超出模型上下文"))
+                assertEquals(original, chat.requireView().findViewById<EditText>(R.id.input).text.toString())
+                chat.requireView().findViewById<EditText>(R.id.input).setText("请只用一句中文问候我。")
+                chat.requireView().findViewById<android.view.View>(R.id.btn_send).performClick()
+            }
+            awaitIdle()
+            scenario.onActivity { activity ->
+                val chat = activity.supportFragmentManager.findFragmentByTag("chat") as ChatFragment
+                val adapter = chat.javaClass.getDeclaredField("adapter").apply { isAccessible = true }.get(chat) as MessageAdapter
+                val messages = adapter.items().filterIsInstance<ChatMessage>()
+                assertEquals("旧问题原文必须保留", original, messages.first().text)
+                assertEquals(4, messages.size)
+                assertFalse(messages.last().text.startsWith("生成失败："))
+                assertTrue(messages.last().text.any { it in '\u4e00'..'\u9fff' })
+            }
+        }
+    }
+
     @Test fun sendChineseThroughVisibleChat() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->

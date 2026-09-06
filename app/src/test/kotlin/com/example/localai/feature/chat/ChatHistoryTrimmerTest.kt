@@ -1,68 +1,62 @@
 package com.example.localai.feature.chat
 
 import com.example.localai.model.ChatMessage
-import java.util.ArrayList
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 
-/** 上下文裁剪测试（P4）：预算内完整、超预算成对保留、最新消息兜底。 */
+/** 使用可控分词器验证预算边界，真实词表另由当前模拟器覆盖。 */
 class ChatHistoryTrimmerTest {
-
     private fun user(text: String) = ChatMessage(ChatMessage.ROLE_USER, text)
-
     private fun bot(text: String) = ChatMessage(ChatMessage.ROLE_BOT, text)
+    private fun count(prompt: String) = prompt.length
 
-    @Test
-    fun shortHistoryKeptIntact() {
-        val history = ArrayList<ChatMessage>()
-        history.add(user("你好"))
-        history.add(bot("你好，有什么可以帮你？"))
-        val t = ChatHistoryTrimmer.truncate(history, 2048)
-        assertEquals(2, t.kept.size)
-        assertEquals(0, t.droppedCount)
+    @Test fun shortHistoryKeptIntactIncludingTemplateBudget() {
+        val history = listOf(user("你好"), bot("你好"), user("继续"))
+        val exact = RealChatEngine.buildPrompt(history).length
+        val result = ChatHistoryTrimmer.truncate(history, exact, ::count)
+        assertEquals(history, result.kept)
+        assertEquals(0, result.droppedCount)
+        assertFalse(result.inputTooLong)
+        assertTrue(ChatHistoryTrimmer.truncate(history, exact - 1, ::count).droppedCount > 0)
     }
 
-    @Test
-    fun longHistoryTrimmedFromTheFront() {
-        val history = ArrayList<ChatMessage>()
-        // 30 轮，每轮约 100 字符 -> 远超 512 token 预算
-        for (i in 0 until 30) {
-            val sb = StringBuilder()
-            for (j in 0 until 20) {
-                sb.append("字")
-            }
-            val text = "第" + i + "轮：" + sb.toString()
-            history.add(user(text))
-            history.add(bot(text + "的回复内容"))
+    @Test fun longHistoryKeepsContiguousRecentTurns() {
+        val history = listOf(user("旧问题"), bot("旧答复"), user("字".repeat(200)), bot("长答复"), user("最新问题"))
+        val budget = RealChatEngine.buildPrompt(listOf(history.last())).length + 100
+        val result = ChatHistoryTrimmer.truncate(history, budget, ::count)
+        assertEquals(listOf(history.last()), result.kept)
+        assertEquals(4, result.droppedCount)
+        assertEquals(5, history.size)
+    }
+
+    @Test fun latestQuestionIsNeverSilentlyClipped() {
+        val text = "原文😀".repeat(100)
+        val result = ChatHistoryTrimmer.truncate(listOf(user(text)), 100, ::count)
+        assertTrue(result.inputTooLong)
+        assertTrue(result.kept.isEmpty())
+        assertEquals(0, result.droppedCount)
+    }
+
+    @Test fun oversizedTransportInputDoesNotReachBinder() {
+        var called = false
+        val result = ChatHistoryTrimmer.truncate(listOf(user("字".repeat(70_000))), 2048) {
+            called = true
+            1
         }
-        val t = ChatHistoryTrimmer.truncate(history, 512)
-        assertTrue(t.droppedCount > 0)
-        assertTrue(t.kept.size < history.size)
-        // 最后一轮必须保留
-        assertTrue(t.kept[t.kept.size - 1] === history[history.size - 1])
+        assertTrue(result.inputTooLong)
+        assertFalse(called)
     }
 
-    @Test
-    fun latestUserMessageAlwaysKept() {
-        val history = ArrayList<ChatMessage>()
-        for (i in 0 until 10) {
-            history.add(user("这是一条很长的消息" + i))
-        }
-        val t = ChatHistoryTrimmer.truncate(history, 64)
-        assertTrue(t.kept.size >= 1)
-        assertTrue(t.kept[t.kept.size - 1].role == ChatMessage.ROLE_USER)
+    @Test fun orphanAssistantIsNotUsedWithoutItsQuestion() {
+        val history = listOf(bot("已删除问题的答复"), user("新的问题"))
+        val result = ChatHistoryTrimmer.truncate(history, 1024, ::count)
+        assertEquals(listOf(history.last()), result.kept)
+        assertEquals(1, result.droppedCount)
     }
 
-    @Test
-    fun emptyHistoryReturnsEmpty() {
-        val t = ChatHistoryTrimmer.truncate(ArrayList(), 1024)
-        assertTrue(t.kept.isEmpty())
-    }
-
-    @Test
-    fun approxTokensPositive() {
-        assertTrue(ChatHistoryTrimmer.approxTokens("hello world") >= 1)
-        assertTrue(ChatHistoryTrimmer.approxTokens("你好世界") >= 2)
+    @Test fun emptyHistoryReturnsEmpty() {
+        val result = ChatHistoryTrimmer.truncate(emptyList(), 1024, ::count)
+        assertTrue(result.kept.isEmpty())
+        assertEquals(0, result.droppedCount)
     }
 }

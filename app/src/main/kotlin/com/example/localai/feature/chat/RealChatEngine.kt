@@ -51,28 +51,35 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
         releasing = false
         this.listener = listener
         val parameters = InferencePolicy.current(appContext, approved)
-        val trimmed = ChatHistoryTrimmer.truncate(history, parameters.contextLength)
-        val prompt = buildPrompt(trimmed.kept)
+        val snapshot = history.map { ChatMessage(it.role, it.text) }
         val request = InferenceRequest("chat-" + System.nanoTime(), approved.modelId, approved.version,
             ApprovedModels.modelFile(appContext, approved).absolutePath, parameters.contextLength,
             parameters.threads, approved.temperature, approved.topP, parameters.maxNewTokens)
         running = true
-        pendingPrompt = prompt
+        pendingPrompt = ""
         listener.onThinking()
         if (!running || generation != currentGeneration) return
+        val preparePrompt = {
+            client.withTokenizer({ countTokens ->
+                val trimmed = ChatHistoryTrimmer.truncate(snapshot,
+                    parameters.contextLength - parameters.maxNewTokens - 8, countTokens)
+                if (trimmed.inputTooLong) throw NativeSession.NativeException(
+                    NativeSession.ERR_INPUT_TOO_LONG, "input exceeds context budget")
+                trimmed
+            }) { trimmed ->
+                if (running && generation == currentGeneration) {
+                    if (trimmed.droppedCount > 0) this.listener?.onContextTrimmed(trimmed.droppedCount)
+                    pendingPrompt = null
+                    client.start(buildPrompt(trimmed.kept))
+                }
+            }
+        }
         val events = object : InferenceClient.Events {
             override fun onStateChanged(state: Int) {
                 if (generation != currentGeneration) return
                 modelStateListener?.invoke()
                 if (state == InferenceClient.STATE_READY && running && generation == currentGeneration) {
-                    val queued: String?
-                    synchronized(this@RealChatEngine) {
-                        queued = pendingPrompt
-                        pendingPrompt = null
-                    }
-                    if (queued != null) {
-                        client.start(queued)
-                    }
+                    if (pendingPrompt != null) preparePrompt()
                 }
             }
 
@@ -103,9 +110,8 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
             }
         }
         if (client.getState() == InferenceClient.STATE_READY && loadedParameters == parameters) {
-            pendingPrompt = null
             client.setEvents(events)
-            client.start(prompt)
+            preparePrompt()
         } else {
             loadedParameters = parameters
             client.restart(request, events)

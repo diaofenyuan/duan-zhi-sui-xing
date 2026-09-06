@@ -18,6 +18,7 @@ public final class NativeSession implements AutoCloseable {
     public static final int ERR_MODEL_LOAD_FAILED = 1101;
     public static final int ERR_CONTEXT_CREATE_FAILED = 1102;
     public static final int ERR_TOKENIZE_FAILED = 1103;
+    public static final int ERR_INPUT_TOO_LONG = 1104;
 
     /** 结束原因：自然结束（EOS/上限）。 */
     public static final int FINISH_END = 0;
@@ -83,7 +84,16 @@ public final class NativeSession implements AutoCloseable {
         if (listener == null) {
             throw new NullPointerException("listener must not be null");
         }
-        check(nativeStart(handle, prompt, listener), "start");
+        check(nativeStart(handle, prompt.getBytes(java.nio.charset.StandardCharsets.UTF_8), listener), "start");
+    }
+
+    /** 使用已加载模型的真实词表，包含与生成相同的模板特殊 token。 */
+    public synchronized int countTokens(String prompt) {
+        ensureOpen(handle);
+        requireNonEmpty(prompt, "prompt");
+        int count = nativeCountTokens(handle, prompt.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        if (count < 0) check(-count, "countTokens");
+        return count;
     }
 
     /** 请求取消生成（RUNNING -> IDLE）；未在运行时返回 WRONG_STATE。 */
@@ -164,7 +174,9 @@ public final class NativeSession implements AutoCloseable {
                                          int threadCount, float temperature, float topP,
                                          int maxNewTokens);
 
-    private static native int nativeStart(long handle, String prompt, StreamListener listener);
+    private static native int nativeStart(long handle, byte[] prompt, StreamListener listener);
+
+    private static native int nativeCountTokens(long handle, byte[] prompt);
 
     private static native int nativeStop(long handle);
 

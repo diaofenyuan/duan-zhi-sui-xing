@@ -116,6 +116,7 @@
     <string name="chat_model_releasing">正在释放运行内存…</string>
     <string name="chat_model_error">推理进程已退出 · 发送可重试</string>
     <string name="chat_unload_model">释放模型</string>
+    <string name="chat_context_trimmed">本轮仅使用最近的对话，完整历史仍保留在本机</string>
     <string name="chat_no_model">未安装模型 · 请先在市场下载</string>
     <string name="chat_mode_real">本地推理</string>
     <string name="chat_mode_demo">演示模式</string>

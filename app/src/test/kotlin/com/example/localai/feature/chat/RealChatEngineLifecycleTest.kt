@@ -43,6 +43,7 @@ class RealChatEngineLifecycleTest {
     @After fun tearDown() {
         services.forEach { it.loadGate?.countDown() }
         services.forEach { it.releaseGate?.countDown() }
+        services.forEach { it.tokenizeGate?.countDown() }
         engine.release()
     }
     private fun await(condition: () -> Boolean) {
@@ -110,6 +111,20 @@ class RealChatEngineLifecycleTest {
         next.loadGate!!.countDown()
         await { next.callbacks.size == 1 }
         assertEquals(ChatEngine.ModelState.GENERATING, engine.modelState())
+    }
+
+    @Test fun stopDuringTokenCountingNeverStartsDelayedGeneration() {
+        val events = Recorder()
+        engine.start(history, events)
+        val service = bind(FakeService().apply { tokenizeGate = CountDownLatch(1) })
+        await { service.tokenizeEntered.count == 0L }
+        engine.stop()
+        assertEquals(listOf(true), events.finishes)
+        service.tokenizeGate!!.countDown()
+        await { service.releases == 1 }
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        assertTrue(service.callbacks.isEmpty())
+        assertTrue(events.errors.isEmpty())
     }
 
     @Test fun stopBeforeBindingFinishesImmediatelyAndNeverGenerates() {

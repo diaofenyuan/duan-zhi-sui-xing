@@ -40,6 +40,7 @@ constexpr jint EC_INTERNAL = 1099;
 constexpr jint EC_MODEL_LOAD_FAILED = 1101;
 constexpr jint EC_CONTEXT_CREATE_FAILED = 1102;
 constexpr jint EC_TOKENIZE_FAILED = 1103;
+constexpr jint EC_INPUT_TOO_LONG = 1104;
 
 // ---- finish reasons (mirror NativeSession.java) ----
 constexpr jint FINISH_END = 0;
@@ -56,7 +57,7 @@ constexpr int FLUSH_TOKEN_COUNT = 8;
 constexpr int FLUSH_CHAR_COUNT = 64;
 constexpr int FLUSH_INTERVAL_MS = 60;
 
-constexpr int MAX_PROMPT_CHARS = 32 * 1024;
+constexpr int MAX_PROMPT_BYTES = 256 * 1024;
 
 void logInfo(const char * fmt, ...) {
     char buf[512];
@@ -297,10 +298,6 @@ void generationWorker(std::shared_ptr<Session> s, std::string prompt) {
             prompt.size(), static_cast<int>(llama_vocab_eos(vocab)),
             static_cast<int>(llama_vocab_eot(vocab)));
 
-    if (prompt.size() > MAX_PROMPT_CHARS) {
-        prompt = prompt.substr(prompt.size() - MAX_PROMPT_CHARS);
-    }
-
     std::vector<llama_token> tokens(1024);
     int n_tokens = llama_tokenize(vocab, prompt.c_str(), static_cast<int32_t>(prompt.size()),
                                   tokens.data(), static_cast<int32_t>(tokens.size()), true, true);
@@ -317,8 +314,10 @@ void generationWorker(std::shared_ptr<Session> s, std::string prompt) {
 
     {
         const int ctx_size = static_cast<int>(llama_n_ctx(s->ctx));
-        if (static_cast<int>(tokens.size()) > ctx_size - 1) {
-            tokens.erase(tokens.begin(), tokens.begin() + (tokens.size() - (ctx_size - 1)));
+        // 保留完整输入和回复空间，不能静默截断 ChatML 或在解码中途耗尽上下文。
+        if (static_cast<int64_t>(tokens.size()) + s->max_new_tokens > ctx_size) {
+            fail(EC_INPUT_TOO_LONG, "input exceeds context budget");
+            goto done;
         }
     }
 
@@ -538,7 +537,7 @@ Java_com_example_localai_core_inference_NativeSession_nativeLoad(
 
 JNIEXPORT jint JNICALL
 Java_com_example_localai_core_inference_NativeSession_nativeStart(
-        JNIEnv * env, jclass /*clazz*/, jlong handle, jstring prompt, jobject listener) {
+        JNIEnv * env, jclass /*clazz*/, jlong handle, jbyteArray prompt, jobject listener) {
     try {
         auto session = table().acquire(handle);
         if (!session) {
@@ -547,17 +546,19 @@ Java_com_example_localai_core_inference_NativeSession_nativeStart(
         if (prompt == nullptr || listener == nullptr) {
             return EC_NULL_ARGUMENT;
         }
+        const jsize length = env->GetArrayLength(prompt);
+        if (length > MAX_PROMPT_BYTES) return EC_INPUT_TOO_LONG;
         int expected = STATE_READY;
         if (!session->state.compare_exchange_strong(expected, STATE_RUNNING)) {
             return EC_WRONG_STATE;
         }
-        const char * prompt_chars = env->GetStringUTFChars(prompt, nullptr);
-        if (prompt_chars == nullptr) {
+        // Java 明确传标准 UTF-8，避免 Modified UTF-8 将表情等补充平面字符拆坏。
+        std::string prompt_text(static_cast<size_t>(length), '\0');
+        env->GetByteArrayRegion(prompt, 0, length, reinterpret_cast<jbyte *>(prompt_text.data()));
+        if (env->ExceptionCheck()) {
             session->state.store(STATE_READY);
             return EC_INTERNAL;
         }
-        const std::string prompt_text(prompt_chars);
-        env->ReleaseStringUTFChars(prompt, prompt_chars);
 
         if (!installListener(env, session, listener)) {
             session->state.store(STATE_READY);
@@ -577,6 +578,27 @@ Java_com_example_localai_core_inference_NativeSession_nativeStart(
     } catch (...) {
         throwNativeException(env, EC_INTERNAL, "nativeStart unknown error");
         return EC_INTERNAL;
+    }
+}
+
+JNIEXPORT jint JNICALL
+Java_com_example_localai_core_inference_NativeSession_nativeCountTokens(
+        JNIEnv * env, jclass /*clazz*/, jlong handle, jbyteArray prompt) {
+    try {
+        auto session = table().acquire(handle);
+        if (!session) return -EC_INVALID_HANDLE;
+        if (session->state.load() != STATE_READY) return -EC_WRONG_STATE;
+        if (prompt == nullptr) return -EC_NULL_ARGUMENT;
+        const jsize length = env->GetArrayLength(prompt);
+        if (length > MAX_PROMPT_BYTES) return -EC_INPUT_TOO_LONG;
+        std::string text(static_cast<size_t>(length), '\0');
+        env->GetByteArrayRegion(prompt, 0, length, reinterpret_cast<jbyte *>(text.data()));
+        if (env->ExceptionCheck()) return -EC_INTERNAL;
+        const int count = llama_tokenize(llama_model_get_vocab(session->model), text.data(),
+                                        length, nullptr, 0, true, true);
+        return count < 0 ? -count : count;
+    } catch (...) {
+        return -EC_TOKENIZE_FAILED;
     }
 }
 

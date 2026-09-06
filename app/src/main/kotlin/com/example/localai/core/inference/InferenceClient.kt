@@ -148,7 +148,9 @@ class InferenceClient(context: Context) {
             }
             override fun onToken(batch: String) = deliver(false) { receiver?.onToken(batch) }
             override fun onFinished(reason: Int) = deliver(true) { receiver?.onFinished(reason) }
-            override fun onError(code: Int, message: String) = deliver(true) { receiver?.onError(code, message) }
+            override fun onError(code: Int, message: String) = deliver(true) {
+                receiver?.onError(code, if (code == NativeSession.ERR_INPUT_TOO_LONG) describeLoadError(code) else message)
+            }
         }
         binderIo.execute {
             if (connection !== current || round != generation) return@execute
@@ -157,6 +159,35 @@ class InferenceClient(context: Context) {
                 if (code != NativeSession.OK) callback.onError(code, describeLoadError(code))
             } catch (_: RemoteException) {
                 postFor(current) { crash(current) }
+            }
+        }
+    }
+
+    /** 分词及历史选择在 Binder 队列执行，停止或切换后丢弃整个准备结果。 */
+    @Synchronized
+    fun <T> withTokenizer(prepare: ((String) -> Int) -> T, onPrepared: (T) -> Unit) {
+        val current = connection ?: return
+        val service = current.service ?: return
+        val generation = round
+        val receiver = events
+        binderIo.execute {
+            if (connection !== current || round != generation) return@execute
+            try {
+                val result = prepare { prompt ->
+                    if (connection !== current || round != generation) throw java.util.concurrent.CancellationException()
+                    val count = service.countTokens(prompt)
+                    if (count < 0) throw NativeSession.NativeException(-count, "token count failed")
+                    count
+                }
+                postFor(current) { if (round == generation) onPrepared(result) }
+            } catch (_: java.util.concurrent.CancellationException) {
+                // 停止准备后尽快让出队列给 Native 释放。
+            } catch (_: RemoteException) {
+                postFor(current) { crash(current) }
+            } catch (e: NativeSession.NativeException) {
+                postFor(current) {
+                    if (round == generation) receiver?.onError(e.code, describeLoadError(e.code))
+                }
             }
         }
     }
@@ -277,6 +308,7 @@ class InferenceClient(context: Context) {
             NativeSession.ERR_MODEL_LOAD_FAILED -> "模型文件加载失败（文件无效或不兼容）"
             NativeSession.ERR_CONTEXT_CREATE_FAILED -> "推理上下文创建失败（内存不足）"
             NativeSession.ERR_TOKENIZE_FAILED -> "输入文本分词失败"
+            NativeSession.ERR_INPUT_TOO_LONG -> "问题超出模型上下文，请缩短或分段发送；原文已保留"
             NativeSession.ERR_WRONG_STATE -> "推理服务状态异常"
             NativeSession.ERR_ILLEGAL_ARGUMENT -> "模型路径不合法"
             else -> "推理失败（code=$code）"

@@ -38,6 +38,8 @@ class InferenceClientLifecycleTest {
         val loadEntered = CountDownLatch(1)
         var loadGate: CountDownLatch? = null
         var releaseGate: CountDownLatch? = null
+        var tokenizeGate: CountDownLatch? = null
+        val tokenizeEntered = CountDownLatch(1)
         val releaseEntered = CountDownLatch(1)
         var loadCode = NativeSession.OK
         @Volatile var releases = 0
@@ -60,6 +62,11 @@ class InferenceClientLifecycleTest {
             releases++
         }
         override fun getPid(): Int = 123
+        override fun countTokens(prompt: String): Int {
+            tokenizeEntered.countDown()
+            check(tokenizeGate?.await(5, TimeUnit.SECONDS) != false)
+            return prompt.length / 2
+        }
         override fun getStats(): InferenceStats? = null
     }
 
@@ -88,6 +95,7 @@ class InferenceClientLifecycleTest {
     @After fun tearDown() {
         services.forEach { it.loadGate?.countDown() }
         services.forEach { it.releaseGate?.countDown() }
+        services.forEach { it.tokenizeGate?.countDown() }
         client.release()
     }
 

@@ -450,6 +450,9 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         return object : ChatEngine.StreamListener {
             private fun active() = epoch == streamEpoch && generating && view != null
             override fun onThinking() { if (active()) this@ChatFragment.onThinking() }
+            override fun onContextTrimmed(droppedCount: Int) {
+                if (active()) Snackbar.make(messagesView, R.string.chat_context_trimmed, Snackbar.LENGTH_LONG).show()
+            }
             override fun onDelta(delta: String) { if (active()) this@ChatFragment.onDelta(delta) }
             override fun onFinished(stopped: Boolean) { if (active()) this@ChatFragment.onFinished(stopped) }
             override fun onError(code: Int, message: String) { if (active()) this@ChatFragment.onError(code, message) }
@@ -522,6 +525,11 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     override fun onError(code: Int, message: String) {
+        if (code == com.example.localai.core.inference.NativeSession.ERR_INPUT_TOO_LONG && inputView.text.isEmpty()) {
+            // 保留正文，并在没有新草稿时恢复输入，便于直接缩短后重发。
+            val original = historySnapshot().lastOrNull { it.role == ChatMessage.ROLE_USER }?.text
+            if (original != null) inputView.setText(original)
+        }
         if (botPosition >= 0 && botPosition < adapter.items().size) {
             adapter.items().removeAt(botPosition)
             adapter.notifyItemRemoved(botPosition)

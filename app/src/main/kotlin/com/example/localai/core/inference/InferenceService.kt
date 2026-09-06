@@ -116,6 +116,19 @@ class InferenceService : Service() {
             }
         }
 
+        override fun countTokens(prompt: String): Int {
+            synchronized(lock) {
+                val s = session ?: return -NativeSession.ERR_WRONG_STATE
+                return try {
+                    s.countTokens(prompt)
+                } catch (e: NativeSession.NativeException) {
+                    -e.code
+                } catch (_: IllegalStateException) {
+                    -NativeSession.ERR_WRONG_STATE
+                }
+            }
+        }
+
         override fun stop(): Int {
             synchronized(lock) {
                 val s = session
