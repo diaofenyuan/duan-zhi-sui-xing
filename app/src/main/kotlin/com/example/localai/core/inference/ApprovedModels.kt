@@ -26,7 +26,10 @@ object ApprovedModels {
         @JvmField val topP: Float,
         @JvmField val maxNewTokens: Int,
         @JvmField val parameterCount: Long = 135_000_000L,
-        @JvmField val languages: List<String> = ModelInfo.langs("英文")
+        @JvmField val languages: List<String> = ModelInfo.langs("英文"),
+        @JvmField val maxContextLength: Int = contextLength,
+        @JvmField val quantization: String = "Q4_K_M",
+        @JvmField val task: String = ModelInfo.TASK_TEXT
     )
 
     @JvmField
@@ -39,10 +42,39 @@ object ApprovedModels {
     @JvmField
     val QWEN_05B = Approved(
         "qwen2.5-0.5b-instruct", "2026.09.1", "qwen2.5-0.5b-instruct-q4_k_m.gguf",
-        "Qwen2.5 · 中文轻量助手", "Qwen", "Apache-2.0", 491_400_032L,
-        2048, 4, 0.7f, 0.9f, 256, 494_032_768L, ModelInfo.langs("中文", "英文"))
+        "Qwen2.5-0.5B-Instruct · Q4_K_M", "Qwen", "Apache-2.0", 491_400_032L,
+        2048, 4, 0.7f, 0.9f, 256, 494_032_768L, ModelInfo.langs("中文", "英文"), 32768)
 
-    private val ALL = arrayOf(QWEN_05B, SMOLLM_135M)
+    private val ALL = arrayOf(QWEN_05B, SMOLLM_135M,
+        Approved("qwen2.5-0.5b-instruct-q8", "2026.09.1", "qwen2.5-0.5b-instruct-q8_0.gguf",
+            "Qwen2.5-0.5B-Instruct · Q8_0", "Qwen", "Apache-2.0", 675710816L,
+            2048, 4, 0.7f, 0.9f, 256, 494032768L, ModelInfo.langs("中文", "英文"),
+            32768, "Q8_0", ModelInfo.TASK_TEXT),
+        Approved("qwen2.5-1.5b-instruct", "2026.09.1", "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+            "Qwen2.5-1.5B-Instruct · Q4_K_M", "Qwen", "Apache-2.0", 1117320736L,
+            2048, 4, 0.7f, 0.9f, 256, 1543714304L, ModelInfo.langs("中文", "英文"),
+            32768, "Q4_K_M", ModelInfo.TASK_TEXT),
+        Approved("qwen2.5-1.5b-instruct-q8", "2026.09.1", "qwen2.5-1.5b-instruct-q8_0.gguf",
+            "Qwen2.5-1.5B-Instruct · Q8_0", "Qwen", "Apache-2.0", 1894532128L,
+            2048, 4, 0.7f, 0.9f, 256, 1543714304L, ModelInfo.langs("中文", "英文"),
+            32768, "Q8_0", ModelInfo.TASK_TEXT),
+        Approved("qwen2.5-coder-0.5b-instruct", "2026.09.1", "qwen2.5-coder-0.5b-instruct-q4_k_m.gguf",
+            "Qwen2.5-Coder-0.5B-Instruct · Q4_K_M", "Qwen", "Apache-2.0", 491400064L,
+            2048, 4, 0.7f, 0.9f, 256, 494032768L, ModelInfo.langs("中文", "英文"),
+            32768, "Q4_K_M", ModelInfo.TASK_CODE),
+        Approved("qwen2.5-coder-0.5b-instruct-q8", "2026.09.1", "qwen2.5-coder-0.5b-instruct-q8_0.gguf",
+            "Qwen2.5-Coder-0.5B-Instruct · Q8_0", "Qwen", "Apache-2.0", 675710848L,
+            2048, 4, 0.7f, 0.9f, 256, 494032768L, ModelInfo.langs("中文", "英文"),
+            32768, "Q8_0", ModelInfo.TASK_CODE),
+        Approved("qwen2.5-coder-1.5b-instruct", "2026.09.1", "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf",
+            "Qwen2.5-Coder-1.5B-Instruct · Q4_K_M", "Qwen", "Apache-2.0", 1117320768L,
+            2048, 4, 0.7f, 0.9f, 256, 1543714304L, ModelInfo.langs("中文", "英文"),
+            32768, "Q4_K_M", ModelInfo.TASK_CODE),
+        Approved("qwen2.5-coder-1.5b-instruct-q8", "2026.09.1", "qwen2.5-coder-1.5b-instruct-q8_0.gguf",
+            "Qwen2.5-Coder-1.5B-Instruct · Q8_0", "Qwen", "Apache-2.0", 1894532160L,
+            2048, 4, 0.7f, 0.9f, 256, 1543714304L, ModelInfo.langs("中文", "英文"),
+            32768, "Q8_0", ModelInfo.TASK_CODE)
+    )
 
     @JvmStatic
     fun byId(modelId: String?): Approved? {
@@ -92,9 +124,10 @@ object ApprovedModels {
             result.add(ModelInfo(
                 a.modelId, a.displayName, a.publisher,
                 com.example.localai.feature.market.MarketModels.paramsLabel(a.parameterCount),
-                a.parameterCount / 1e9, "Q4_K_M", com.example.localai.common.Fmt.humanBytes(a.sizeBytes), a.sizeBytes,
-                (a.contextLength / 1024).toString() + "K",
-                ModelInfo.TASK_TEXT, a.languages, a.license,
+                a.parameterCount / 1e9, a.quantization, com.example.localai.common.Fmt.humanBytes(a.sizeBytes), a.sizeBytes,
+                com.example.localai.feature.market.MarketModels.contextLabel(
+                    com.example.localai.feature.settings.InferencePolicy.current(context, a).contextLength.toLong()),
+                a.task, a.languages, a.license,
                 "已安装，可离线运行的本地模型。",
                 ModelInfo.COMPAT_RECOMMENDED, "", 0, 0.0, 0,
                 "2026-08-23", 0, true))

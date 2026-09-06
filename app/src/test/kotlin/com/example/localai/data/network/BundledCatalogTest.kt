@@ -17,20 +17,23 @@ class BundledCatalogTest {
     @Test fun allBundledModelsAreSignedAndRunnableWithoutCatalogServer() {
         val client = client()
         val entries = client.fetchCatalog().models!!
-        assertTrue(entries.isNotEmpty())
+        assertEquals(8, entries.size)
         for (entry in entries) {
             val manifest = client.fetchManifest(entry.modelId!!, entry.version!!)
             val approved = ApprovedModels.byId(entry.modelId)!!
             assertTrue(manifest.isApproved())
             assertEquals("chatml", manifest.chatTemplate)
-            assertEquals(approved.contextLength.toLong(), manifest.contextLength)
+            assertEquals(approved.maxContextLength.toLong(), manifest.contextLength)
+            assertEquals(approved.quantization, manifest.quantization)
             assertEquals(approved.version, manifest.version)
             assertEquals(approved.fileName, manifest.primaryFile()!!.name)
             assertEquals(approved.sizeBytes, manifest.primaryFile()!!.sizeBytes)
             assertEquals(null, manifest.validate())
             for (url in manifest.primaryFile()!!.urls!!) {
                 assertTrue(url.startsWith("https://"))
-                assertTrue(url.contains("/resolve/9217f5db79a29953eb74d5343926648285ec7e67/"))
+                val revision = manifest.source!!.url!!.substringAfterLast("/tree/")
+                assertTrue(revision.matches(Regex("[0-9a-f]{40}")))
+                assertTrue(url.contains("/resolve/$revision/"))
             }
         }
         assertTrue(File(assets, "licenses/Qwen2.5-LICENSE.txt").readText().contains("Apache License"))

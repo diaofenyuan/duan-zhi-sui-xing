@@ -18,7 +18,8 @@ object MarketModels {
 
     @JvmStatic
     fun map(view: DownloadRepository.CatalogView?,
-            device: CompatibilityEngine.DeviceSnapshot): List<ModelInfo> {
+            device: CompatibilityEngine.DeviceSnapshot,
+            runtimeContext: (DownloadRepository.CatalogItem) -> Long = { minOf(it.contextLength, 2048L) }): List<ModelInfo> {
         if (view == null || view.models == null) {
             return Collections.emptyList()
         }
@@ -27,7 +28,7 @@ object MarketModels {
             val resultCompat = CompatibilityEngine.evaluate(device,
                 CompatibilityEngine.ModelConstraints(
                     item.minAndroidApi, item.abis, item.sizeBytes,
-                    item.contextLength, item.parameterCount), requireDownloadSpace = !item.installed)
+                    runtimeContext(item), item.parameterCount), requireDownloadSpace = !item.installed)
 
             val info = ModelInfo(
                 item.modelId!!, item.displayName!!,

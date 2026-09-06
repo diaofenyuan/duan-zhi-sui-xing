@@ -18,10 +18,18 @@ public final class InferenceRequest implements Parcelable {
     public final float temperature;
     public final float topP;
     public final int maxNewTokens;
+    public final int gpuLayers;
 
     public InferenceRequest(String requestId, String modelId, String version, String modelPath,
                             int contextLength, int threadCount, float temperature, float topP,
                             int maxNewTokens) {
+        this(requestId, modelId, version, modelPath, contextLength, threadCount,
+                temperature, topP, maxNewTokens, 0);
+    }
+
+    public InferenceRequest(String requestId, String modelId, String version, String modelPath,
+                            int contextLength, int threadCount, float temperature, float topP,
+                            int maxNewTokens, int gpuLayers) {
         this.requestId = requestId;
         this.modelId = modelId;
         this.version = version;
@@ -31,6 +39,7 @@ public final class InferenceRequest implements Parcelable {
         this.temperature = temperature;
         this.topP = topP;
         this.maxNewTokens = maxNewTokens;
+        this.gpuLayers = gpuLayers;
     }
 
     protected InferenceRequest(Parcel in) {
@@ -43,6 +52,7 @@ public final class InferenceRequest implements Parcelable {
         temperature = in.readFloat();
         topP = in.readFloat();
         maxNewTokens = in.readInt();
+        gpuLayers = in.readInt();
     }
 
     public static final Creator<InferenceRequest> CREATOR = new Creator<InferenceRequest>() {
@@ -73,5 +83,6 @@ public final class InferenceRequest implements Parcelable {
         dest.writeFloat(temperature);
         dest.writeFloat(topP);
         dest.writeInt(maxNewTokens);
+        dest.writeInt(gpuLayers);
     }
 }

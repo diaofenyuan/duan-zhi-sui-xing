@@ -188,7 +188,7 @@
     "title": "llama.cpp / ggml 与内附代码",
     "summary": "MIT / BSD-2-Clause / Public Domain",
     "components": [],
-    "notice": "本机 CPU 推理引擎，包含 llamafile、xxHash、rotate-bits、SHA 和 YaRN 的归属声明。\n来源：https://github.com/ggml-org/llama.cpp\n本应用的 JNI 封装和构建配置包含本项目修改。",
+    "notice": "本机 CPU / Vulkan 推理引擎，包含 llamafile、xxHash、rotate-bits、SHA 和 YaRN 的归属声明。\n来源：https://github.com/ggml-org/llama.cpp\n本应用的 JNI 封装和构建配置包含本项目修改。",
     "texts": [
       "Native-notices.txt",
       "Unicode.txt"
@@ -213,10 +213,10 @@
     ]
   },
   {
-    "title": "Qwen2.5-0.5B-Instruct",
+    "title": "Qwen2.5 / Qwen2.5-Coder（0.5B、1.5B）",
     "summary": "Apache-2.0 · 单独下载的模型",
     "components": [],
-    "notice": "Qwen 团队。权重不内置于 APK，模型权重、分词器和聊天模板依其自身许可使用。\n来源：https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/tree/9217f5db79a29953eb74d5343926648285ec7e67",
+    "notice": "Qwen 团队。权重不内置于 APK，模型权重、分词器和聊天模板依其自身 Apache-2.0 许可使用。包含 Q4_K_M 与 Q8_0 量化；每个文件的固定版本与来源见模型详情。\n来源：https://huggingface.co/Qwen",
     "texts": [
       "Qwen2.5-LICENSE.txt"
     ]
@@ -228,6 +228,16 @@
     "notice": "HuggingFaceTB。旧版本已安装的模型可能仍保留在本机；权重不内置于 APK。\n来源：https://huggingface.co/HuggingFaceTB/SmolLM-135M-Instruct\nGGUF 转换：https://huggingface.co/second-state/SmolLM-135M-Instruct-GGUF",
     "texts": [
       "Apache-2.0.txt"
+    ]
+  },
+  {
+    "title": "Khronos Vulkan / SPIR-V Headers",
+    "summary": "Apache-2.0 / MIT 等",
+    "components": [],
+    "notice": "The Khronos Group Inc. Vulkan SDK 1.4.341.0 头文件与 SPIR-V 定义。\n来源：https://github.com/KhronosGroup/Vulkan-Headers\nhttps://github.com/KhronosGroup/SPIRV-Headers",
+    "texts": [
+      "Vulkan-Headers-LICENSE.txt",
+      "SPIRV-Headers-LICENSE.txt"
     ]
   }
 ]

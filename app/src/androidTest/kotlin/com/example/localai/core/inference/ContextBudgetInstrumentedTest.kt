@@ -15,6 +15,34 @@ import java.util.concurrent.TimeUnit
 /** 必须使用当前设备已安装的 Qwen，实际覆盖分词、上下文边界和再次生成。 */
 @RunWith(AndroidJUnit4::class)
 class ContextBudgetInstrumentedTest {
+    @Test fun manualContextAndGpuLoadReachNativeBackend() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val model = ApprovedModels.QWEN_05B
+        assertTrue(ApprovedModels.isInstalled(context, model.modelId))
+        val prompt = RealChatEngine.buildPrompt(listOf(ChatMessage(ChatMessage.ROLE_USER, "你好")))
+        for (layers in listOf(0, 8)) {
+            NativeSession().use { session ->
+                try {
+                    session.load(ApprovedModels.modelFile(context, model).absolutePath, 4096, 2, 0.3f, 0.9f, 8, layers)
+                } catch (error: NativeSession.NativeException) {
+                    // 模拟器可能没有支持的 GPU，但必须显式拒绝，不能静默回到 CPU。
+                    if (layers > 0 && error.code == NativeSession.ERR_GPU_UNAVAILABLE) {
+                        android.util.Log.i("InferenceParametersTest", "GPU unavailable was explicitly rejected")
+                        continue
+                    }
+                    throw error
+                }
+                assertEquals(4096, JSONObject(session.stats).getInt("contextLength"))
+                val result = Result()
+                session.start(prompt, result)
+                assertTrue(result.done.await(90, TimeUnit.SECONDS))
+                assertEquals(0, result.error)
+                assertTrue(JSONObject(session.stats).getLong("genTokens") > 0)
+                android.util.Log.i("InferenceParametersTest", "Generated with context=4096, gpuLayers=$layers")
+            }
+        }
+    }
+
     private class Result : NativeSession.StreamListener {
         val done = CountDownLatch(1)
         var error = 0

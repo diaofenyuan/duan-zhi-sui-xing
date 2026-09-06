@@ -16,7 +16,7 @@ class InferenceRequestTest {
     fun request_parcelRoundTrip_preservesFields() {
         val original = InferenceRequest(
             "req-1", "smollm-135m-instruct", "2026.08.1", "/data/x/model.gguf",
-            2048, 4, 0.7f, 0.9f, 256)
+            8192, 4, 0.7f, 0.9f, 256, 12)
 
         val parcel = Parcel.obtain()
         original.writeToParcel(parcel, 0)
@@ -28,7 +28,8 @@ class InferenceRequestTest {
         assertEquals(original.modelId, restored.modelId)
         assertEquals(original.version, restored.version)
         assertEquals(original.modelPath, restored.modelPath)
-        assertEquals(2048, restored.contextLength)
+        assertEquals(8192, restored.contextLength)
+        assertEquals(12, restored.gpuLayers)
         assertEquals(4, restored.threadCount)
         assertEquals(0.7f, restored.temperature, 0.0001f)
         assertEquals(0.9f, restored.topP, 0.0001f)

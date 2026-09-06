@@ -26,6 +26,7 @@ public final class NativeSession implements AutoCloseable {
     public static final int ERR_CONTEXT_CREATE_FAILED = 1102;
     public static final int ERR_TOKENIZE_FAILED = 1103;
     public static final int ERR_INPUT_TOO_LONG = 1104;
+    public static final int ERR_GPU_UNAVAILABLE = 1105;
 
     /** 结束原因：自然结束（EOS/上限）。 */
     public static final int FINISH_END = 0;
@@ -107,7 +108,15 @@ public final class NativeSession implements AutoCloseable {
      */
     public synchronized void load(String modelPath, int contextLength, int threadCount,
                                   float temperature, float topP, int maxNewTokens) {
+        load(modelPath, contextLength, threadCount, temperature, topP, maxNewTokens, 0);
+    }
+
+    public synchronized void load(String modelPath, int contextLength, int threadCount,
+                                  float temperature, float topP, int maxNewTokens, int gpuLayers) {
         ensureOpen(handle);
+        if (gpuLayers < -1 || gpuLayers > 256) {
+            throw new IllegalArgumentException("gpuLayers must be -1 or 0..256");
+        }
         requireNonEmpty(modelPath, "modelPath");
         if (contextLength <= 0) {
             throw new IllegalArgumentException("contextLength must be positive");
@@ -125,7 +134,7 @@ public final class NativeSession implements AutoCloseable {
             throw new IllegalArgumentException("topP must be in (0, 1]");
         }
         check(nativeLoad(handle, modelPath, contextLength, threadCount,
-                temperature, topP, maxNewTokens), "load");
+                temperature, topP, maxNewTokens, gpuLayers), "load");
     }
 
     /** 开始生成（READY -> RUNNING）；prompt 为完整格式化提示。 */
@@ -223,7 +232,7 @@ public final class NativeSession implements AutoCloseable {
 
     private static native int nativeLoad(long handle, String modelPath, int contextLength,
                                          int threadCount, float temperature, float topP,
-                                         int maxNewTokens);
+                                         int maxNewTokens, int gpuLayers);
 
     private static native int nativeStart(long handle, byte[] prompt, StreamBridge listener);
 

@@ -1,0 +1,50 @@
+{
+  "modelId": "qwen2.5-1.5b-instruct",
+  "version": "2026.09.1",
+  "displayName": "Qwen2.5-1.5B-Instruct · Q4_K_M",
+  "source": {
+    "publisher": "Qwen",
+    "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/tree/91cad51170dc346986eccefdc2dd33a9da36ead9"
+  },
+  "license": {
+    "spdx": "Apache-2.0",
+    "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/blob/91cad51170dc346986eccefdc2dd33a9da36ead9/LICENSE"
+  },
+  "format": "gguf",
+  "architecture": "qwen2",
+  "parameterCount": 1543714304,
+  "quantization": "Q4_K_M",
+  "contextLength": 32768,
+  "description": "适合中文问答、改写和日常离线交流。Q4 量化节省存储与内存。默认使用 2K 上下文，可在设置中手动调整，最高 32K；速度取决于设备。",
+  "tasks": [
+    "text"
+  ],
+  "languages": [
+    "中文",
+    "英文"
+  ],
+  "weightStatus": "approved",
+  "chatTemplate": "chatml",
+  "updatedAt": "2026-09-06",
+  "files": [
+    {
+      "name": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "sizeBytes": 1117320736,
+      "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
+      "urls": [
+        "https://hf-mirror.com/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+        "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+      ]
+    }
+  ],
+  "runtime": {
+    "minAndroidApi": 26,
+    "abis": [
+      "arm64-v8a",
+      "x86_64"
+    ],
+    "backends": [
+      "cpu"
+    ]
+  }
+}

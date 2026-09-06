@@ -15,6 +15,8 @@ import com.example.localai.MainActivity
 import com.example.localai.R
 import com.example.localai.core.compatibility.CompatibilityEngine
 import com.example.localai.core.device.DeviceProfiler
+import com.example.localai.core.inference.ApprovedModels
+import com.example.localai.feature.settings.InferencePolicy
 import com.example.localai.data.ServiceLocator
 import com.example.localai.feature.download.DownloadRepository
 import com.example.localai.model.ModelInfo
@@ -123,10 +125,13 @@ class ModelDetailFragment : Fragment() {
         view.findViewById<TextView>(R.id.val_ttft).text = "待测"
 
         // 适配结论（CompatibilityEngine，估算）
+        val runtimeContext = ApprovedModels.byId(item.modelId)?.let {
+            InferencePolicy.current(requireContext(), it).contextLength.toLong()
+        } ?: minOf(item.contextLength, 2048L)
         val constraints = CompatibilityEngine.ModelConstraints(
-            item.minAndroidApi, item.abis, item.sizeBytes, item.contextLength, item.parameterCount)
+            item.minAndroidApi, item.abis, item.sizeBytes, runtimeContext, item.parameterCount)
         val snapshot = deviceSnapshot()
-        val result = CompatibilityEngine.evaluate(snapshot, constraints)
+        val result = CompatibilityEngine.evaluate(snapshot, constraints, requireDownloadSpace = !item.installed)
 
         val compatTitle = view.findViewById<TextView>(R.id.compat_title)
         val compatReason = view.findViewById<TextView>(R.id.compat_reason)
@@ -144,7 +149,7 @@ class ModelDetailFragment : Fragment() {
         val reason = if (result.reasons.isEmpty())
             "硬约束满足，短基准测试通过，内存与温控余量充足（估算值）。"
         else result.reasons.joinToString("；")
-        compatReason.text = reason
+        compatReason.text = "按当前 $runtimeContext tokens 上下文估算。$reason"
 
         // 简介
         view.findViewById<TextView>(R.id.text_desc).text = item.description

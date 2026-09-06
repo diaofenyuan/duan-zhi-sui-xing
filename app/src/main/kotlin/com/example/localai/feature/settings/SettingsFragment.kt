@@ -8,6 +8,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.TextView
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.text.InputType
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -72,6 +75,9 @@ class SettingsFragment : Fragment() {
         swKeepScreen.setOnCheckedChangeListener { _, checked ->
             prefs().edit().putBoolean(KEY_KEEP_SCREEN, checked).apply()
         }
+        refreshInferenceSettings()
+        view.findViewById<View>(R.id.row_context_length).setOnClickListener { editInferenceSetting(false) }
+        view.findViewById<View>(R.id.row_gpu_layers).setOnClickListener { editInferenceSetting(true) }
 
         refreshCacheSize()
         view.findViewById<View>(R.id.row_clear_cache).setOnClickListener {
@@ -107,6 +113,64 @@ class SettingsFragment : Fragment() {
         view.findViewById<View>(R.id.row_license).setOnClickListener {
             (activity as? MainActivity)?.push(LicensesFragment())
         }
+    }
+
+    private fun refreshInferenceSettings() {
+        val target = view ?: return
+        val context = prefs().getInt(InferencePolicy.KEY_CONTEXT, 0)
+        target.findViewById<TextView>(R.id.text_context_length).text = if (context == 0)
+            getString(R.string.context_auto) else getString(R.string.context_value, context)
+        val layers = prefs().getInt(InferencePolicy.KEY_GPU_LAYERS, 0)
+        target.findViewById<TextView>(R.id.text_gpu_layers).text = when (layers) {
+            -1 -> getString(R.string.gpu_all)
+            0 -> getString(R.string.gpu_cpu)
+            else -> getString(R.string.gpu_value, layers)
+        }
+    }
+
+    private fun editInferenceSetting(gpu: Boolean) {
+        val key = if (gpu) InferencePolicy.KEY_GPU_LAYERS else InferencePolicy.KEY_CONTEXT
+        val padding = (24 * resources.displayMetrics.density).toInt()
+        val input = EditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or if (gpu) InputType.TYPE_NUMBER_FLAG_SIGNED else 0
+            setSingleLine(true)
+            setText(prefs().getInt(key, 0).toString())
+            selectAll()
+            hint = getString(if (gpu) R.string.gpu_input_hint else R.string.context_input_hint)
+        }
+        val content = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(padding, padding / 2, padding, 0)
+            addView(TextView(requireContext()).apply {
+                setText(if (gpu) R.string.gpu_explanation else R.string.context_explanation)
+            })
+            addView(input)
+        }
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle(if (gpu) R.string.row_gpu_layers else R.string.row_context_length)
+            .setView(content)
+            .setPositiveButton(R.string.action_ok, null)
+            .setNeutralButton(R.string.inference_reset) { _, _ ->
+                prefs().edit().remove(key).apply()
+                refreshInferenceSettings()
+            }
+            .setNegativeButton(R.string.action_cancel, null).create()
+        dialog.setOnShowListener {
+            // 非法输入保留在对话框内，避免用户以为已经保存。
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val number = input.text.toString().trim().toIntOrNull()
+                val valid = number != null && if (gpu) number in -1..256
+                    else number == 0 || number in InferencePolicy.MIN_CONTEXT..InferencePolicy.MAX_CONTEXT
+                if (!valid) {
+                    input.error = getString(if (gpu) R.string.gpu_input_hint else R.string.context_input_hint)
+                } else {
+                    prefs().edit().putInt(key, number!!).apply()
+                    refreshInferenceSettings()
+                    dialog.dismiss()
+                }
+            }
+        }
+        dialog.show()
     }
 
     private fun setMode(mode: String, auto: RadioButton, balanced: RadioButton, saver: RadioButton) {

@@ -54,7 +54,7 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
         val snapshot = history.map { ChatMessage(it.role, it.text) }
         val request = InferenceRequest("chat-" + System.nanoTime(), approved.modelId, approved.version,
             ApprovedModels.modelFile(appContext, approved).absolutePath, parameters.contextLength,
-            parameters.threads, approved.temperature, approved.topP, parameters.maxNewTokens)
+            parameters.threads, approved.temperature, approved.topP, parameters.maxNewTokens, parameters.gpuLayers)
         running = true
         pendingPrompt = ""
         listener.onThinking()

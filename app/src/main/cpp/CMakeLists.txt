@@ -1,11 +1,8 @@
-# local-ai Native 构建入口（S005）。
-# 只负责把锁定的 llama.cpp 源码树（engine_llama/）以 arm64-v8a CPU/NEON
-# 共享库形式编译出来；JNI 封装层在后续步骤加入，本文件不接任何业务代码。
-# 锁定信息见 docs/native-baseline.md。
+# Android 推理构建入口：CPU/NEON、Vulkan 和 JNI 封装。
 cmake_minimum_required(VERSION 3.22.1)
 project(local_ai_native LANGUAGES C CXX)
 
-# ---- llama.cpp / ggml 构建开关（CPU-only，Android bionic 约束）----
+# ---- llama.cpp / ggml 构建开关（Android bionic 约束）----
 set(BUILD_SHARED_LIBS    ON  CACHE BOOL "" FORCE) # 直接产出 .so 作为本步验证证据
 set(LLAMA_BUILD_COMMON   OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
@@ -20,6 +17,8 @@ set(GGML_OPENMP          OFF CACHE BOOL "" FORCE) # bionic 无 OpenMP
 set(GGML_NATIVE          OFF CACHE BOOL "" FORCE) # 交叉编译禁 -march=native；aarch64 默认启用 NEON
 set(GGML_BACKEND_DL      OFF CACHE BOOL "" FORCE) # 后端静态并入 .so，不拆分运行时加载
 set(GGML_CCACHE          OFF CACHE BOOL "" FORCE)
+set(GGML_VULKAN          ON CACHE BOOL "" FORCE)
+include(vulkan-dependencies.cmake)
 
 add_subdirectory(engine_llama)
 

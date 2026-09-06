@@ -7,6 +7,7 @@ import com.example.localai.core.inference.InferenceClientLifecycleTest.BindingCo
 import com.example.localai.core.inference.InferenceClientLifecycleTest.FakeService
 import com.example.localai.core.inference.NativeSession
 import com.example.localai.model.ChatMessage
+import com.example.localai.feature.settings.InferencePolicy
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -58,6 +59,32 @@ class RealChatEngineLifecycleTest {
         services.add(service)
         context.connections.last().onServiceConnected(name, service)
         return service
+    }
+
+    @Test fun changingManualParametersReloadsBeforeNextTurn() {
+        engine.release()
+        engine = RealChatEngine(context, ApprovedModels.QWEN_05B)
+        val prefs = context.getSharedPreferences(InferencePolicy.PREFS, 0)
+        try {
+            prefs.edit().putInt(InferencePolicy.KEY_CONTEXT, 4096).putInt(InferencePolicy.KEY_GPU_LAYERS, 8).commit()
+            engine.start(history, Recorder())
+            val first = bind()
+            await { first.callbacks.size == 1 }
+            assertEquals(4096, first.requests.single().contextLength)
+            assertEquals(8, first.requests.single().gpuLayers)
+            first.callbacks.single().onFinished(NativeSession.FINISH_END)
+            await { !engine.isRunning() }
+            prefs.edit().putInt(InferencePolicy.KEY_CONTEXT, 8192).putInt(InferencePolicy.KEY_GPU_LAYERS, -1).commit()
+            engine.start(history, Recorder())
+            await { context.connections.size == 2 }
+            val second = bind()
+            await { second.callbacks.size == 1 }
+            assertEquals(8192, second.requests.single().contextLength)
+            assertEquals(-1, second.requests.single().gpuLayers)
+            assertTrue(first.releases > 0)
+        } finally {
+            prefs.edit().remove(InferencePolicy.KEY_CONTEXT).remove(InferencePolicy.KEY_GPU_LAYERS).commit()
+        }
     }
 
     @Test fun modelStateWaitsForNativeReleaseAndObservesIdleCrash() {

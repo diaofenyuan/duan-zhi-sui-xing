@@ -168,6 +168,22 @@
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp">
 
+                <LinearLayout android:id="@+id/row_context_length" style="@style/TapRow">
+                    <LinearLayout style="@style/SwitchTextCol">
+                        <TextView style="@style/RowTitle" android:text="@string/row_context_length" />
+                        <TextView android:id="@+id/text_context_length" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/row_gpu_layers" style="@style/TapRow">
+                    <LinearLayout style="@style/SwitchTextCol">
+                        <TextView style="@style/RowTitle" android:text="@string/row_gpu_layers" />
+                        <TextView android:id="@+id/text_gpu_layers" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
                 <LinearLayout style="@style/SwitchRow">
                     <LinearLayout style="@style/SwitchTextCol">
                         <TextView style="@style/RowTitle" android:text="@string/sw_keep_screen" />

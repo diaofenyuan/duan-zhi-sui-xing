@@ -1,0 +1,1 @@
+{"algorithm":"Ed25519","keyId":"bundled-catalog-2026-09","value":"wEifMaFoYjE67SHA/2BUr0eRdGP6rnmWEW+PsXCxt0hdLBvrnKw4GEoBUxtIULWlJ4GtIKiyYU02NeeqTX2DBg=="}

@@ -16,6 +16,8 @@ import com.example.localai.R
 import com.example.localai.common.widget.EmptyStateView
 import com.example.localai.core.compatibility.CompatibilityEngine
 import com.example.localai.core.device.DeviceProfiler
+import com.example.localai.core.inference.ApprovedModels
+import com.example.localai.feature.settings.InferencePolicy
 import com.example.localai.data.ServiceLocator
 import com.example.localai.feature.download.DownloadRepository
 import com.example.localai.mock.Filters
@@ -208,7 +210,10 @@ class MarketFragment : Fragment() {
         }
 
         all.clear()
-        all.addAll(MarketModels.map(catalogView, deviceSnapshot()))
+        all.addAll(MarketModels.map(catalogView, deviceSnapshot()) { item ->
+            ApprovedModels.byId(item.modelId)?.let { InferencePolicy.current(requireContext(), it).contextLength.toLong() }
+                ?: minOf(item.contextLength, 2048L)
+        })
         heroCard.visibility = if (all.isEmpty()) View.GONE else View.VISIBLE
         if (all.isNotEmpty()) {
             val hero = all[0]

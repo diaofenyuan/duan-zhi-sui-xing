@@ -11,14 +11,14 @@
 | tag 对象 sha（annotated） | `8a35040e02747e136d901793604572c7ca6d0793` |
 | **源码 commit** | **`bb4caa7540188872173c44d161602d9271386413`** |
 | ggml 版本 | 随 v0.2.0 内嵌（ggml/ 子目录，版本 0.21.x，见 `ggml/CMakeLists.txt`） |
-| 本项目 patch 列表 | 空——未修改 engine_llama/ 内任何文件 |
+| 本项目 patch 列表 | Vulkan 特性查询通过现有动态 dispatcher 调用，兼容 Android API 26 链接；Vulkan 1.0 loader 缺少版本查询入口时安全禁用 GPU |
 | 导入方式 | codeload tarball `refs/tags/v0.2.0` 解包去根目录至 `app/src/main/cpp/engine_llama/` |
 | tarball SHA-256 | `72E6C3E70C584F84E61697E449EE388F43458D662EF8F3BD3F6B4A054C947958` |
 
 ## 2. 构建配置
 
 - 工具链：AGP 8.13.2 + NDK r28 (28.2.13676358) + CMake 3.22.1 + Java 17（见 `docs/build-baseline.md`）。
-- ABI：仅 `arm64-v8a`（`app/build.gradle` abiFilters）。
+- ABI：Release 为 `arm64-v8a`；Debug 另外包含 `x86_64`，用于模拟器验证。
 - CMake 入口：`app/src/main/cpp/CMakeLists.txt` → `add_subdirectory(engine_llama)`。
 - 关键开关与理由：
   | 开关 | 值 | 理由 |
@@ -27,9 +27,12 @@
   | `GGML_OPENMP` | OFF | Android bionic 无 OpenMP |
   | `GGML_NATIVE` | OFF | 交叉编译禁 `-march=native`；aarch64 目标默认启用 NEON |
   | `GGML_BACKEND_DL` | OFF | 后端静态并入 .so，不做运行时动态后端加载 |
+  | `GGML_VULKAN` | ON | 支持 GPU 层卸载；运行时需要 Vulkan 1.2 及后端要求的设备特性，不支持时仍可使用 CPU |
   | `LLAMA_BUILD_COMMON/TESTS/TOOLS/EXAMPLES/SERVER/APP` | OFF | 只需要 libllama + ggml 核心 |
   | `LLAMA_BUILD_UI` / `LLAMA_USE_PREBUILT_UI` | OFF | 避免配置期联网拉取 WebUI 资产 |
   | `LLAMA_OPENSSL` | OFF | Android 无 OpenSSL |
+
+2026-09-06：`vulkan-dependencies.cmake` 固定 Vulkan-Headers / SPIRV-Headers 为 SDK 1.4.341.0，并校验下载 SHA-256；首次构建需要联网，着色器编译使用 NDK 自带 `glslc`。Windows 构建需先在同一个终端运行 Visual Studio Build Tools 的 `vcvars64.bat`，让原生主机编译器能构建着色器生成工具，再运行 `gradlew.bat :app:assembleRelease`。设置中的 GPU 层数经 Parcelable、推理服务和 JNI 传给 `n_gpu_layers`：0 为 CPU，-1 为全部层。手动上下文优先于运行模式，按模型上限裁剪；修改后下一轮重新加载。
 
 ## 3. 构建产物（Debug，2026-08-23）
 

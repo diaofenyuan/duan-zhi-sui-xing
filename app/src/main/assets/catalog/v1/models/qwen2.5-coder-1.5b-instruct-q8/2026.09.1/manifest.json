@@ -1,0 +1,51 @@
+{
+  "modelId": "qwen2.5-coder-1.5b-instruct-q8",
+  "version": "2026.09.1",
+  "displayName": "Qwen2.5-Coder-1.5B-Instruct · Q8_0",
+  "source": {
+    "publisher": "Qwen",
+    "url": "https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/tree/f86cb2c1fa58255f8052cc32aeede1b7482d4361"
+  },
+  "license": {
+    "spdx": "Apache-2.0",
+    "url": "https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/blob/f86cb2c1fa58255f8052cc32aeede1b7482d4361/LICENSE"
+  },
+  "format": "gguf",
+  "architecture": "qwen2",
+  "parameterCount": 1543714304,
+  "quantization": "Q8_0",
+  "contextLength": 32768,
+  "description": "适合代码补全、代码解释和编程问答。Q8 量化保留更高权重精度，占用更多存储与内存。默认使用 2K 上下文，可在设置中手动调整，最高 32K；速度取决于设备。",
+  "tasks": [
+    "code",
+    "text"
+  ],
+  "languages": [
+    "中文",
+    "英文"
+  ],
+  "weightStatus": "approved",
+  "chatTemplate": "chatml",
+  "updatedAt": "2026-09-06",
+  "files": [
+    {
+      "name": "qwen2.5-coder-1.5b-instruct-q8_0.gguf",
+      "sizeBytes": 1894532160,
+      "sha256": "507de59046601282ba768a9789900e6ccf60ed93ddf346730b7c68eb0715bc47",
+      "urls": [
+        "https://hf-mirror.com/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/f86cb2c1fa58255f8052cc32aeede1b7482d4361/qwen2.5-coder-1.5b-instruct-q8_0.gguf",
+        "https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/f86cb2c1fa58255f8052cc32aeede1b7482d4361/qwen2.5-coder-1.5b-instruct-q8_0.gguf"
+      ]
+    }
+  ],
+  "runtime": {
+    "minAndroidApi": 26,
+    "abis": [
+      "arm64-v8a",
+      "x86_64"
+    ],
+    "backends": [
+      "cpu"
+    ]
+  }
+}

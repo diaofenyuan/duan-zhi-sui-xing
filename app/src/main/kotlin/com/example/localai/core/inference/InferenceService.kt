@@ -44,7 +44,7 @@ class InferenceService : Service() {
                 val created = NativeSession()
                 try {
                     created.load(request.modelPath, request.contextLength, request.threadCount,
-                        request.temperature, request.topP, request.maxNewTokens)
+                        request.temperature, request.topP, request.maxNewTokens, request.gpuLayers)
                 } catch (e: NativeSession.NativeException) {
                     created.close()
                     Log.w(TAG, "native load failed, code=" + e.code)

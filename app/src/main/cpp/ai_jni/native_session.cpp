@@ -15,6 +15,7 @@
 #include <android/log.h>
 
 #include <llama.h>
+#include <ggml-backend.h>
 
 #include <atomic>
 #include <chrono>
@@ -41,6 +42,7 @@ constexpr jint EC_MODEL_LOAD_FAILED = 1101;
 constexpr jint EC_CONTEXT_CREATE_FAILED = 1102;
 constexpr jint EC_TOKENIZE_FAILED = 1103;
 constexpr jint EC_INPUT_TOO_LONG = 1104;
+constexpr jint EC_GPU_UNAVAILABLE = 1105;
 
 // ---- finish reasons (mirror NativeSession.java) ----
 constexpr jint FINISH_END = 0;
@@ -465,7 +467,7 @@ JNIEXPORT jint JNICALL
 Java_com_example_localai_core_inference_NativeSession_nativeLoad(
         JNIEnv * env, jclass /*clazz*/, jlong handle, jstring model_path,
         jint context_length, jint thread_count, jfloat temperature, jfloat top_p,
-        jint max_new_tokens) {
+        jint max_new_tokens, jint gpu_layers) {
     try {
         auto session = table().acquire(handle);
         if (!session) {
@@ -483,7 +485,7 @@ Java_com_example_localai_core_inference_NativeSession_nativeLoad(
         if (path.empty()) {
             return EC_ILLEGAL_ARGUMENT;
         }
-        if (context_length <= 0 || thread_count <= 0
+        if (context_length <= 0 || thread_count <= 0 || gpu_layers < -1 || gpu_layers > 256
                 || max_new_tokens <= 0 || temperature < 0.0f || top_p <= 0.0f || top_p > 1.0f) {
             return EC_ILLEGAL_ARGUMENT;
         }
@@ -496,7 +498,13 @@ Java_com_example_localai_core_inference_NativeSession_nativeLoad(
         llama_log_set(llamaLogHandler, nullptr);
 
         llama_model_params mparams = llama_model_default_params();
-        mparams.n_gpu_layers = 0; // CPU-only MVP
+        // 显式 GPU 请求必须找到真实设备；不能把不支持的卸载悄悄当作 CPU 成功。
+        if (gpu_layers != 0 && ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU) == nullptr) {
+            llama_backend_free();
+            session->state.store(STATE_IDLE);
+            return EC_GPU_UNAVAILABLE;
+        }
+        mparams.n_gpu_layers = gpu_layers < 0 ? 999 : gpu_layers;
 
         session->model = llama_model_load_from_file(path.c_str(), mparams);
         if (session->model == nullptr) {
@@ -541,7 +549,7 @@ Java_com_example_localai_core_inference_NativeSession_nativeLoad(
         session->top_p = top_p;
         session->max_new_tokens = max_new_tokens;
 
-        logInfo("model loaded: %s (ctx=%d, threads=%d)", path.c_str(), n_ctx, thread_count);
+        logInfo("model loaded: %s (ctx=%d, threads=%d, gpu_layers=%d)", path.c_str(), n_ctx, thread_count, gpu_layers);
         return EC_OK;
     } catch (const std::exception & e) {
         throwNativeException(env, EC_INTERNAL, e.what());
@@ -664,6 +672,8 @@ Java_com_example_localai_core_inference_NativeSession_nativeGetStats(JNIEnv * en
         json += std::to_string(session->ttft_ms.load());
         json += ",\"elapsedMs\":";
         json += std::to_string(session->elapsed_ms.load());
+        json += ",\"contextLength\":";
+        json += std::to_string(session->ctx ? llama_n_ctx(session->ctx) : 0);
         json += "}";
         return env->NewStringUTF(json.c_str());
     } catch (const std::exception & e) {
