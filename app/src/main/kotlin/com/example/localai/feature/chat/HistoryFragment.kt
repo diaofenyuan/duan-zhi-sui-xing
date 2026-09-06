@@ -40,6 +40,7 @@ class HistoryFragment : Fragment() {
         repository = ServiceLocator.chat()
         listView = view.findViewById(R.id.list)
         emptyView = view.findViewById(R.id.empty)
+        emptyView?.setOnActionClickListener { repository?.refresh() }
         listView!!.layoutManager = LinearLayoutManager(requireContext())
         listView!!.adapter = SessionAdapter()
 
@@ -72,8 +73,15 @@ class HistoryFragment : Fragment() {
             return
         }
         lv.adapter!!.notifyDataSetChanged()
-        emptyView?.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
-        lv.visibility = if (sessions.isEmpty()) View.GONE else View.VISIBLE
+        val error = repository?.historyError
+        if (error != null) {
+            emptyView?.setMessages("会话历史加载失败", error, getString(R.string.action_retry))
+        } else {
+            emptyView?.setMessages(getString(R.string.empty_history_title), getString(R.string.empty_history_sub), null)
+        }
+        val showEmpty = error != null || sessions.isEmpty()
+        emptyView?.visibility = if (showEmpty) View.VISIBLE else View.GONE
+        lv.visibility = if (showEmpty) View.GONE else View.VISIBLE
     }
 
     private fun modelLabel(entity: ConversationEntity): String {

@@ -59,6 +59,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     private var loadingHistory = false
     private var draft = ""
     private var checkpointPending = false
+    private var saveErrorBar: Snackbar? = null
     private val checkpoint = Runnable {
         checkpointPending = false
         if (view != null && !loadingHistory) persistConversation()
@@ -173,6 +174,8 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     }
 
     override fun onDestroyView() {
+        saveErrorBar?.dismiss()
+        saveErrorBar = null
         view?.removeCallbacks(checkpoint)
         checkpointPending = false
         draft = inputView.text.toString()
@@ -556,12 +559,19 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             object : ChatRepository.ConversationSavedCallback {
                 override fun onSaved(conversationId: Long) {
                     if (conversationEpoch != epoch) return
+                    saveErrorBar?.dismiss()
+                    saveErrorBar = null
                     this@ChatFragment.conversationId = conversationId
                 }
 
                 override fun onError(message: String?) {
                     if (conversationEpoch != epoch) return
-                    view?.let { Snackbar.make(it, "会话保存失败：" + message, Snackbar.LENGTH_SHORT).show() }
+                    view?.let {
+                        saveErrorBar = Snackbar.make(it, "会话保存失败：" + message, Snackbar.LENGTH_INDEFINITE)
+                            .setAction(R.string.action_retry) {
+                                if (conversationEpoch == epoch) persistConversation()
+                            }.also { bar -> bar.show() }
+                    }
                 }
             })
     }

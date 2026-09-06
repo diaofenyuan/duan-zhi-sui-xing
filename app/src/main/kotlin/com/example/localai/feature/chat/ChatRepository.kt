@@ -2,6 +2,9 @@ package com.example.localai.feature.chat
 
 import android.os.Handler
 import android.os.Looper
+import android.database.sqlite.SQLiteFullException
+import android.database.sqlite.SQLiteDatabaseLockedException
+import android.database.sqlite.SQLiteDatabaseCorruptException
 import com.example.localai.data.room.AppDatabase
 import com.example.localai.data.room.ConversationEntity
 import com.example.localai.data.room.ChatSessionEntity
@@ -46,14 +49,16 @@ class ChatRepository(private val database: AppDatabase) {
                         it.draft = draft
                     })
                 }
-                conversationsCache = conversationDao.all()
-                val saved = cid
-                runOnMain {
-                    for (listener in snapshotListeners()) listener.onConversationsChanged()
-                    callback?.onSaved(saved)
-                }
             } catch (e: RuntimeException) {
-                runOnMain { callback?.onError(e.message) }
+                runOnMain { callback?.onError(errorMessage(e)) }
+                return@execute
+            }
+            // 写入已提交，之后历史列表刷新失败不能误报保存失败并触发重复写入。
+            refreshCache()
+            val saved = cid
+            runOnMain {
+                for (listener in snapshotListeners()) listener.onConversationsChanged()
+                callback?.onSaved(saved)
             }
         }
     }
@@ -74,7 +79,7 @@ class ChatRepository(private val database: AppDatabase) {
                 val snapshot = result
                 runOnMain { callback(snapshot, null) }
             } catch (e: RuntimeException) {
-                runOnMain { callback(null, e.message) }
+                runOnMain { callback(null, errorMessage(e)) }
             }
         }
     }
@@ -91,7 +96,7 @@ class ChatRepository(private val database: AppDatabase) {
                 val snapshot = result
                 runOnMain { callback(snapshot, null) }
             } catch (e: RuntimeException) {
-                runOnMain { callback(null, e.message) }
+                runOnMain { callback(null, errorMessage(e)) }
             }
         }
     }
@@ -148,6 +153,10 @@ class ChatRepository(private val database: AppDatabase) {
     @Volatile
     private var conversationsCache: List<ConversationEntity> = Collections.emptyList()
 
+    @Volatile
+    var historyError: String? = null
+        private set
+
     fun register(listener: Listener) {
         synchronized(listeners) {
             if (!listeners.contains(listener)) {
@@ -165,7 +174,7 @@ class ChatRepository(private val database: AppDatabase) {
 
     fun refresh() {
         executor.execute {
-            conversationsCache = conversationDao.all()
+            refreshCache()
             runOnMain {
                 for (l in snapshotListeners()) {
                     l.onConversationsChanged()
@@ -175,6 +184,28 @@ class ChatRepository(private val database: AppDatabase) {
     }
 
     fun conversations(): List<ConversationEntity> = conversationsCache
+
+    private fun refreshCache() {
+        try {
+            conversationsCache = conversationDao.all()
+            historyError = null
+        } catch (e: RuntimeException) {
+            // 保留最后一次成功快照，并明确暴露失败，避免崩溃或冒充空历史。
+            historyError = errorMessage(e)
+        }
+    }
+
+    private fun errorMessage(error: RuntimeException): String {
+        val causes = generateSequence<Throwable>(error) { it.cause }.take(8).toList()
+        return when {
+            causes.any { it is SQLiteFullException } -> "设备存储空间不足，请先腾出空间后重试"
+            causes.any { it is SQLiteDatabaseLockedException } -> "本机会话暂时忙碌，请稍后重试"
+            causes.any { it is SQLiteDatabaseCorruptException } -> "本机会话数据无法读取，请保留应用数据并联系开发者"
+            error.message == "会话已删除，请新建会话" -> "会话已删除，请新建会话"
+            error.message == "会话不存在或已删除" -> "会话不存在或已删除，请返回历史列表刷新"
+            else -> "暂时无法访问本机会话，请稍后重试"
+        }
+    }
 
     /**
      * 保存会话：conversationId <= 0 时自动创建新会话并回调新 id；
@@ -196,12 +227,12 @@ class ChatRepository(private val database: AppDatabase) {
                 }
             } catch (e: RuntimeException) {
                 callback?.let { cb ->
-                    runOnMain { cb.onError(e.message) }
+                    runOnMain { cb.onError(errorMessage(e)) }
                 }
                 return@execute
             }
             val savedCid = cid
-            conversationsCache = conversationDao.all()
+            refreshCache()
             runOnMain {
                 for (l in snapshotListeners()) {
                     l.onConversationsChanged()
@@ -223,7 +254,7 @@ class ChatRepository(private val database: AppDatabase) {
                 }
                 runOnMain { callback.onResult(result, null) }
             } catch (e: RuntimeException) {
-                runOnMain { callback.onResult(null, e.message) }
+                runOnMain { callback.onResult(null, errorMessage(e)) }
             }
         }
     }
@@ -235,8 +266,8 @@ class ChatRepository(private val database: AppDatabase) {
 
     private fun deleteConversations(ids: Set<Long>?, callback: ((String?) -> Unit)?) {
         executor.execute {
+            var deletedToken: String? = null
             try {
-                var deletedToken: String? = null
                 database.runInTransaction {
                     val session = sessionDao.current()
                     if (ids == null || session?.conversationId in ids) deletedToken = session?.token
@@ -248,17 +279,19 @@ class ChatRepository(private val database: AppDatabase) {
                         sessionDao.clearForConversation(id)
                     }
                 }
-                deletedToken?.let { deletedSessionTokens.add(it) }
-                conversationsCache = conversationDao.all()
-                runOnMain {
-                    for (listener in snapshotListeners()) {
-                        listener.onConversationsDeleted(ids)
-                        listener.onConversationsChanged()
-                    }
-                    callback?.invoke(null)
-                }
             } catch (e: RuntimeException) {
-                runOnMain { callback?.invoke(e.message ?: "数据库写入失败") }
+                runOnMain { callback?.invoke(errorMessage(e)) }
+                return@execute
+            }
+            deletedToken?.let { deletedSessionTokens.add(it) }
+            conversationsCache = if (ids == null) emptyList() else conversationsCache.filter { it.id !in ids }
+            refreshCache()
+            runOnMain {
+                for (listener in snapshotListeners()) {
+                    listener.onConversationsDeleted(ids)
+                    listener.onConversationsChanged()
+                }
+                callback?.invoke(null)
             }
         }
     }
