@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -150,6 +151,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTab(tabId: Int) {
+        if (currentTabId(topStackFragment()) != tabId) dismissKeyboard()
         val fm = supportFragmentManager
         // 从二级页返回时直接清空返回栈
         while (fm.backStackEntryCount > 0) {
@@ -203,6 +205,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 推入二级页面（详情、历史等）。 */
     fun push(fragment: Fragment) {
+        dismissKeyboard()
         val fm = supportFragmentManager
         val tx = fm.beginTransaction()
             .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left,
@@ -211,6 +214,15 @@ class MainActivity : AppCompatActivity() {
             .addToBackStack(null)
             .setPrimaryNavigationFragment(fragment)
         tx.commit()
+    }
+
+    private fun dismissKeyboard() {
+        // show/hide 不会销毁输入框，跳转前清除焦点并收起输入法，避免遮住下一页。
+        currentFocus?.let { focused ->
+            getSystemService(InputMethodManager::class.java)
+                .hideSoftInputFromWindow(focused.windowToken, 0)
+            focused.clearFocus()
+        }
     }
 
     private fun hideAll(tx: FragmentTransaction) {
