@@ -21,19 +21,35 @@
             android:layout_height="8dp"
             android:background="@drawable/bg_dot" />
 
-        <TextView
-            android:id="@+id/text_model"
-            style="@style/Text.App.ItemTitle"
+        <LinearLayout
+            android:id="@+id/model_picker_trigger"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:minHeight="48dp"
+            android:minHeight="56dp"
             android:gravity="center_vertical"
+            android:orientation="vertical"
             android:background="?attr/selectableItemBackground"
-            android:maxLines="1"
-            android:breakStrategy="balanced"
-            android:ellipsize="end" />
+            android:clickable="true"
+            android:focusable="true">
+            <TextView
+                android:id="@+id/text_model"
+                style="@style/Text.App.ItemTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:drawablePadding="4dp"
+                app:drawableEndCompat="@drawable/ic_expand_more" />
+            <TextView
+                android:id="@+id/text_model_state"
+                style="@style/Text.App.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:accessibilityLiveRegion="polite" />
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/btn_new"
@@ -71,15 +87,7 @@
         android:paddingStart="@dimen/pad_screen"
         android:paddingEnd="10dp">
 
-        <TextView
-            android:id="@+id/text_model_state"
-            style="@style/Text.App.BodySec"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:paddingBottom="10dp"
-            android:accessibilityLiveRegion="polite" />
-
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_unload_model"
             style="@style/Widget.Material3.Button.TextButton"
@@ -103,15 +111,18 @@
             android:paddingBottom="8dp" />
 
         <ScrollView android:id="@+id/empty_wrap" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:scrollbars="none">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:padding="32dp">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="12dp" android:paddingEnd="12dp">
-                    <TextView style="@style/Text.App.Headline" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/chat_empty_title" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="@dimen/pad_screen" android:paddingVertical="20dp">
+                <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                    <TextView style="@style/Text.App.Headline" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="26sp" android:textStyle="normal" android:text="@string/chat_empty_title" />
                     <TextView android:id="@+id/empty_subtitle" style="@style/Text.App.BodySec" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="@string/chat_empty_sub" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/prompt_think" style="@style/Widget.App.Button.Outline" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="52dp" android:layout_marginTop="28dp" android:gravity="start|center_vertical" android:text="@string/chat_prompt_think" android:textColor="@color/text_secondary" app:strokeColor="@color/outline" app:icon="@drawable/ic_chat" app:iconTint="@color/text_secondary" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/prompt_write" style="@style/Widget.App.Button.Outline" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="52dp" android:gravity="start|center_vertical" android:text="@string/chat_prompt_write" android:textColor="@color/text_secondary" app:strokeColor="@color/outline" app:icon="@drawable/ic_copy" app:iconTint="@color/text_secondary" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/prompt_todo" style="@style/Widget.App.Button.Outline" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="52dp" android:gravity="start|center_vertical" android:text="提取待办" app:strokeColor="@color/outline" app:icon="@drawable/ic_copy" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_get_model" style="@style/Widget.App.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="52dp" android:layout_marginTop="24dp" android:text="@string/action_goto_market" android:visibility="gone" />
+                    <TextView android:id="@+id/quick_actions_label" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:layout_marginBottom="8dp" android:text="@string/chat_quick_actions" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/prompt_think" style="@style/Widget.App.QuickAction" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/chat_prompt_think" app:icon="@drawable/ic_chat" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/prompt_write" style="@style/Widget.App.QuickAction" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/chat_prompt_write" app:icon="@drawable/ic_copy" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/prompt_todo" style="@style/Widget.App.QuickAction" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/chat_prompt_todo" app:icon="@drawable/ic_check_circle" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_get_model" style="@style/Widget.App.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="52dp" android:layout_marginTop="16dp" android:text="@string/action_goto_market" android:visibility="gone" />
                 </LinearLayout>
+                <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="2" />
             </LinearLayout>
         </ScrollView>
 
@@ -131,23 +142,25 @@
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="18dp"
-        android:layout_marginEnd="18dp"
+        android:layout_marginStart="@dimen/pad_screen"
+        android:layout_marginEnd="@dimen/pad_screen"
         android:layout_marginBottom="10dp"
         android:layout_marginTop="4dp"
-        app:cardCornerRadius="18dp">
+        app:cardCornerRadius="18dp"
+        app:cardBackgroundColor="@color/surface_variant"
+        app:strokeWidth="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="bottom"
-            android:paddingStart="18dp"
+            android:paddingStart="8dp"
             android:paddingEnd="6dp"
             android:paddingTop="5dp"
             android:paddingBottom="5dp">
 
-            <com.google.android.material.button.MaterialButton android:id="@+id/btn_materials" style="@style/Widget.Material3.Button.TextButton" android:layout_width="56dp" android:layout_height="48dp" android:text="资料" android:padding="0dp" android:contentDescription="资料与工作区" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btn_materials" style="@style/Widget.Material3.Button.TextButton" android:layout_width="56dp" android:layout_height="48dp" android:text="资料" android:padding="0dp" android:contentDescription="@string/library_title" />
 
             <EditText
                 android:id="@+id/input"

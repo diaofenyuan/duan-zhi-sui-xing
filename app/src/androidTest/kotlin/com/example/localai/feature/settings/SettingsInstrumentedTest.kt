@@ -66,7 +66,7 @@ class SettingsInstrumentedTest {
         }
     }
 
-    @Test fun radioSelectionChangesEffectiveInferenceLimits() {
+    @Test fun modeDialogSelectionPersistsEffectiveInferenceLimits() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val prefs = context.getSharedPreferences(InferencePolicy.PREFS, android.content.Context.MODE_PRIVATE)
         val previous = prefs.getString(InferencePolicy.KEY_MODE, null)
@@ -74,8 +74,18 @@ class SettingsInstrumentedTest {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 scenario.onActivity { activity ->
                     activity.openTab(R.id.nav_settings)
-                    activity.findViewById<View>(R.id.radio_balanced).performClick()
-                    activity.findViewById<View>(R.id.radio_saver).performClick()
+                    activity.findViewById<View>(R.id.row_run_mode).performClick()
+                }
+                scenario.onActivity {
+                    val list = WindowInspector.getGlobalWindowViews()
+                        .mapNotNull { it.findViewById<android.widget.ListView>(androidx.appcompat.R.id.select_dialog_listview) }
+                        .first { it.isShown }
+                    list.performItemClick(list.getChildAt(2), 2, list.adapter.getItemId(2))
+                }
+                scenario.recreate()
+                scenario.onActivity { activity ->
+                    activity.openTab(R.id.nav_settings)
+                    assertEquals("省电", activity.findViewById<android.widget.TextView>(R.id.text_run_mode).text.toString())
                     assertEquals("saver", prefs.getString(InferencePolicy.KEY_MODE, null))
                     val parameters = InferencePolicy.current(activity, ApprovedModels.QWEN_05B)
                     assertEquals(1024, parameters.contextLength)

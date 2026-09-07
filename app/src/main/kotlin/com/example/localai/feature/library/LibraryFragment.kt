@@ -5,6 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.TextView
+import android.view.Gravity
+import androidx.core.content.ContextCompat
+import com.example.localai.R
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.tabs.TabLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import com.example.localai.MainActivity
@@ -19,6 +25,12 @@ class LibraryFragment : LibraryUi() {
     private lateinit var workspaceButton: com.google.android.material.button.MaterialButton
     private lateinit var content: LinearLayout
     private var importing = false
+    private var showingResults = false
+    private var sources = emptyList<SourceEntity>()
+    private var results = emptyList<TaskResultEntity>()
+    private lateinit var tabs: TabLayout
+    private lateinit var selectionBar: LinearLayout
+    private lateinit var selectionCount: TextView
     private val picker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null && workspaceId > 0) {
             importing = true; message("正在本机提取文字…")
@@ -31,23 +43,75 @@ class LibraryFragment : LibraryUi() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         workspaceId = state?.getLong("workspace") ?: 0
+        showingResults = state?.getBoolean("showing_results") ?: false
         state?.getLongArray("selected")?.forEach { selected.add(it) }
     }
     override fun onSaveInstanceState(out: Bundle) {
         super.onSaveInstanceState(out); out.putLong("workspace", workspaceId); out.putLongArray("selected", selected.toLongArray())
+        out.putBoolean("showing_results", showingResults)
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, state: Bundle?): View {
-        val root = page("资料与工作区")
-        workspaceButton = button("选择工作区") { chooseWorkspace() }
-        body.addView(workspaceButton)
-        body.addView(label("资料、提问和成果保存在本机。勾选资料后开始任务。", secondary = true))
-        val actions = LinearLayout(requireContext())
-        actions.addView(button("导入文件") { if (!importing && workspaceId > 0) picker.launch(arrayOf("text/plain", "application/pdf")) }, LinearLayout.LayoutParams(0, -2, 1f))
-        actions.addView(button("粘贴文字") { paste() }, LinearLayout.LayoutParams(0, -2, 1f))
-        body.addView(actions)
-        body.addView(button("识别图片文字") { (activity as? MainActivity)?.push(OcrFragment.create(workspaceId)) })
+        val root = page(getString(R.string.library_title)) as LinearLayout
+        pageTitle.setTypeface(null, android.graphics.Typeface.BOLD)
+        val toolbar = LinearLayout(requireContext()).apply { gravity = Gravity.CENTER_VERTICAL }
+        workspaceButton = button("选择工作区") { chooseWorkspace() }.apply {
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setIconResource(R.drawable.ic_expand_more)
+            iconGravity = MaterialButton.ICON_GRAVITY_TEXT_END
+        }
+        toolbar.addView(workspaceButton, LinearLayout.LayoutParams(0, -2, 1f))
+        val addButton = MaterialButton(requireContext()).apply {
+            text = getString(R.string.library_add)
+            minHeight = dp(48)
+            cornerRadius = dp(12)
+            setIconResource(R.drawable.ic_add)
+            setOnClickListener { chooseImport() }
+        }
+        toolbar.addView(addButton)
+        body.addView(toolbar)
+        body.addView(label(getString(R.string.library_local_hint), 12f, true))
+        tabs = TabLayout(requireContext()).apply {
+            setBackgroundColor(ContextCompat.getColor(context, R.color.surface))
+            addTab(newTab().setText("资料"))
+            addTab(newTab().setText("已保存"))
+            getTabAt(if (showingResults) 1 else 0)?.select()
+            addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+                override fun onTabSelected(tab: TabLayout.Tab) {
+                    showingResults = tab.position == 1
+                    renderContent()
+                }
+                override fun onTabUnselected(tab: TabLayout.Tab) = Unit
+                override fun onTabReselected(tab: TabLayout.Tab) = Unit
+            })
+        }
+        body.addView(tabs)
         content = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL }
         body.addView(content)
+        // 操作栏留在滚动区外，长资料列表也能直接开始任务。
+        selectionBar = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(4), dp(16), dp(8))
+            setBackgroundColor(ContextCompat.getColor(context, R.color.surface_variant))
+            visibility = View.GONE
+        }
+        val selectionHeader = LinearLayout(requireContext()).apply { gravity = Gravity.CENTER_VERTICAL }
+        selectionCount = label("", 13f)
+        selectionCount.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        selectionHeader.addView(selectionCount, LinearLayout.LayoutParams(0, -2, 1f))
+        selectionHeader.addView(button(getString(R.string.library_clear_selection)) { selected.clear(); renderContent() })
+        selectionBar.addView(selectionHeader)
+        val taskRow = LinearLayout(requireContext())
+        listOf("qa" to "资料问答", "summary" to "摘要", "todo" to "待办").forEach { (kind, name) ->
+            taskRow.addView(button(name) {
+                if (selected.isNotEmpty()) {
+                    (activity as? MainActivity)?.push(TaskFragment.create(kind, workspaceId, selected.toLongArray()))
+                }
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+        }
+        selectionBar.addView(taskRow)
+        root.addView(selectionBar)
         return root
     }
     override fun onResume() { super.onResume(); reload() }
@@ -57,9 +121,11 @@ class LibraryFragment : LibraryUi() {
             result.onSuccess { list ->
                 workspaces = list
                 if (list.none { it.id == workspaceId }) workspaceId = list.first().id
-                workspaceButton.text = list.first { it.id == workspaceId }.title + " ▾"
-                repository.contents(workspaceId) { loaded ->
-                    if (view == null) return@contents
+                workspaceButton.text = list.first { it.id == workspaceId }.title
+                val requestedWorkspace = workspaceId
+                repository.contents(requestedWorkspace) { loaded ->
+                    // 切换工作区后丢弃旧请求，避免旧资料覆盖当前选择。
+                    if (view == null || workspaceId != requestedWorkspace) return@contents
                     loaded.onSuccess { render(it.first, it.second) }.onFailure { failure(it) }
                 }
             }.onFailure { failure(it) }
@@ -83,6 +149,20 @@ class LibraryFragment : LibraryUi() {
             }
         }.show()
     }
+    private fun chooseImport() {
+        if (importing || workspaceId <= 0) return
+        AlertDialog.Builder(requireContext()).setTitle(R.string.library_add)
+            .setItems(arrayOf("导入文件（TXT、PDF）", "粘贴文字", "识别图片文字")) { _, index ->
+                showingResults = false
+                tabs.getTabAt(0)?.select()
+                when (index) {
+                    0 -> picker.launch(arrayOf("text/plain", "application/pdf"))
+                    1 -> paste()
+                    2 -> (activity as? MainActivity)?.push(OcrFragment.create(workspaceId))
+                }
+            }.setNegativeButton("取消", null).show()
+    }
+
     private fun paste() {
         if (workspaceId <= 0) return
         val box = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(24), 0, dp(24), 0) }
@@ -99,14 +179,40 @@ class LibraryFragment : LibraryUi() {
             }
     }
     private fun render(sources: List<SourceEntity>, results: List<TaskResultEntity>) {
-        content.removeAllViews(); selected.retainAll(sources.map { it.id }.toSet())
-        content.addView(label("资料  ·  ${sources.size}", 18f))
-        if (sources.isEmpty()) content.addView(label("还没有资料\n支持 TXT 和文字 PDF，也可以直接粘贴。", secondary = true))
+        this.sources = sources
+        this.results = results
+        selected.retainAll(sources.map { it.id }.toSet())
+        tabs.getTabAt(0)?.text = "资料 ${sources.size}"
+        tabs.getTabAt(1)?.text = "已保存 ${results.size}"
+        renderContent()
+    }
+
+    private fun updateSelection() {
+        selectionCount.text = getString(R.string.library_selected, selected.size)
+        selectionBar.visibility = if (selected.isNotEmpty() && !showingResults) View.VISIBLE else View.GONE
+    }
+
+    private fun renderContent() {
+        content.removeAllViews()
+        updateSelection()
+        if (showingResults) {
+            renderResults()
+            return
+        }
+        content.addView(label(getString(R.string.library_select_hint), 12f, true))
+        if (sources.isEmpty()) {
+            content.addView(label("还没有资料", 20f).apply { setPadding(0, dp(32), 0, dp(8)) })
+            content.addView(label("添加一份文件或文字，把零散信息整理成摘要与清单。", secondary = true))
+        }
         sources.forEach { source ->
             val row = LinearLayout(requireContext()).apply { gravity = android.view.Gravity.CENTER_VERTICAL }
             row.addView(android.widget.CheckBox(requireContext()).apply {
                 contentDescription = "选择 ${source.name}"; isChecked = source.id in selected
-                setOnCheckedChangeListener { _, checked -> if (checked) selected.add(source.id) else selected.remove(source.id) }
+                minWidth = dp(48); minHeight = dp(48)
+                setOnCheckedChangeListener { _, checked ->
+                    if (checked) selected.add(source.id) else selected.remove(source.id)
+                    updateSelection()
+                }
             })
             row.addView(entry(source.name, "${source.charCount} 字 · ${LibraryContent.pages(source).size} 页") {
                 (activity as? MainActivity)?.push(SourceFragment.create(source.id))
@@ -117,15 +223,13 @@ class LibraryFragment : LibraryUi() {
             }
             content.addView(row)
         }
-        val taskRow = LinearLayout(requireContext())
-        listOf("qa" to "资料问答", "summary" to "摘要", "todo" to "待办").forEach { (kind, name) ->
-            taskRow.addView(button(name) {
-                if (selected.isEmpty()) message("请先勾选资料")
-                else (activity as? MainActivity)?.push(TaskFragment.create(kind, workspaceId, selected.toLongArray()))
-            }, LinearLayout.LayoutParams(0, -2, 1f))
+    }
+
+    private fun renderResults() {
+        if (results.isEmpty()) {
+            content.addView(label("还没有整理结果", 20f).apply { setPadding(0, dp(32), 0, dp(8)) })
+            content.addView(label("选择资料后开始任务，摘要、清单和问答结果会保存在这里。", secondary = true))
         }
-        content.addView(taskRow); content.addView(divider()); content.addView(label("已保存  ·  ${results.size}", 18f))
-        if (results.isEmpty()) content.addView(label("摘要、清单和提问结果会留在这里。", secondary = true))
         results.forEach { item ->
             val state = when (item.status) { "complete" -> "已保存"; "limited" -> "达到输出上限，可继续整理"; else -> "草稿 · 可继续编辑" }
             content.addView(entry(item.title.ifBlank { TaskViewModel.kindName(item.kind) }, "${TaskViewModel.kindName(item.kind)} · $state") {

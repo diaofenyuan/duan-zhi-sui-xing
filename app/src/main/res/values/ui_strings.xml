@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_run_mode">运行偏好</string>
+    <string name="settings_device_advice">设备推荐与运行实测</string>
+    <string name="chat_quick_actions">从一件小事开始</string>
+    <string name="chat_prompt_todo">提取待办</string>
+    <string name="library_title">资料库</string>
+    <string name="library_add">添加资料</string>
+    <string name="library_local_hint">资料和整理结果仅保存在本机</string>
+    <string name="library_select_hint">勾选资料，即可提问、整理摘要或提取待办</string>
+    <string name="library_selected">已选 %1$d 份资料</string>
+    <string name="library_clear_selection">取消选择</string>
+</resources>

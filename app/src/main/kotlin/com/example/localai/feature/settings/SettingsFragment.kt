@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -19,8 +18,8 @@ import com.example.localai.MainActivity
 import com.example.localai.R
 import com.example.localai.common.Fmt
 import com.example.localai.data.ServiceLocator
-import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /** 设置页：运行模式、推理行为、存储与数据、隐私、关于；配置持久化到 SharedPreferences。 */
 class SettingsFragment : Fragment() {
@@ -29,10 +28,6 @@ class SettingsFragment : Fragment() {
     }
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var clearingCache = false
-
-    private lateinit var cardAuto: MaterialCardView
-    private lateinit var cardBalanced: MaterialCardView
-    private lateinit var cardSaver: MaterialCardView
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -43,29 +38,8 @@ class SettingsFragment : Fragment() {
         view.findViewById<TextView>(R.id.text_version).text =
             getString(R.string.settings_ver_fmt, BuildConfig.VERSION_NAME)
 
-        cardAuto = view.findViewById(R.id.mode_auto)
-        cardBalanced = view.findViewById(R.id.mode_balanced)
-        cardSaver = view.findViewById(R.id.mode_saver)
-
-        val radioAuto = view.findViewById<RadioButton>(R.id.radio_auto)
-        val radioBalanced = view.findViewById<RadioButton>(R.id.radio_balanced)
-        val radioSaver = view.findViewById<RadioButton>(R.id.radio_saver)
-
-        val selectAuto = View.OnClickListener { setMode("auto", radioAuto, radioBalanced, radioSaver) }
-        val selectBalanced = View.OnClickListener { setMode("balanced", radioAuto, radioBalanced, radioSaver) }
-        val selectSaver = View.OnClickListener { setMode("saver", radioAuto, radioBalanced, radioSaver) }
-        cardAuto.setOnClickListener(selectAuto)
-        cardBalanced.setOnClickListener(selectBalanced)
-        cardSaver.setOnClickListener(selectSaver)
-        radioAuto.setOnClickListener(selectAuto)
-        radioBalanced.setOnClickListener(selectBalanced)
-        radioSaver.setOnClickListener(selectSaver)
-
-        when (prefs().getString(KEY_MODE, "auto")) {
-            "balanced" -> setMode("balanced", radioAuto, radioBalanced, radioSaver)
-            "saver" -> setMode("saver", radioAuto, radioBalanced, radioSaver)
-            else -> setMode("auto", radioAuto, radioBalanced, radioSaver)
-        }
+        refreshRunMode()
+        view.findViewById<View>(R.id.row_run_mode).setOnClickListener { chooseRunMode() }
 
         val swKeepScreen = view.findViewById<MaterialSwitch>(R.id.sw_keep_screen)
 
@@ -184,24 +158,39 @@ class SettingsFragment : Fragment() {
         dialog.show()
     }
 
-    private fun setMode(mode: String, auto: RadioButton, balanced: RadioButton, saver: RadioButton) {
-        prefs().edit().putString(KEY_MODE, mode).apply()
-        val isAuto = "auto" == mode
-        val isBalanced = "balanced" == mode
-        auto.isChecked = isAuto
-        balanced.isChecked = isBalanced
-        saver.isChecked = !isAuto && !isBalanced
-        highlight(cardAuto, isAuto)
-        highlight(cardBalanced, isBalanced)
-        highlight(cardSaver, !isAuto && !isBalanced)
+    private fun refreshRunMode() {
+        val mode = prefs().getString(KEY_MODE, "auto")
+        val label = when (mode) {
+            "balanced" -> R.string.mode_balanced
+            "saver" -> R.string.mode_saver
+            else -> R.string.mode_auto
+        }
+        view?.findViewById<TextView>(R.id.text_run_mode)?.setText(label)
     }
 
-    private fun highlight(card: MaterialCardView, selected: Boolean) {
-        card.strokeWidth = 0
-        card.setCardBackgroundColor(ContextCompat.getColor(requireContext(),
-            if (selected) R.color.md_primary_container else R.color.surface_variant))
-        card.strokeColor = ContextCompat.getColor(requireContext(),
-            if (selected) R.color.md_primary else R.color.outline)
+    private fun chooseRunMode() {
+        val modes = listOf("auto", "balanced", "saver")
+        val titles = listOf(R.string.mode_auto, R.string.mode_balanced, R.string.mode_saver)
+        val descriptions = listOf(R.string.mode_auto_desc, R.string.mode_balanced_desc, R.string.mode_saver_desc)
+        val checked = modes.indexOf(prefs().getString(KEY_MODE, "auto")).coerceAtLeast(0)
+        val labels = titles.indices.map { index ->
+            val title = getString(titles[index])
+            android.text.SpannableString("$title\n${getString(descriptions[index])}").apply {
+                setSpan(android.text.style.RelativeSizeSpan(0.8f), title.length + 1, length, 0)
+                setSpan(android.text.style.ForegroundColorSpan(
+                    ContextCompat.getColor(requireContext(), R.color.text_secondary)), title.length + 1, length, 0)
+            }
+        }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.settings_run_mode)
+            .setSingleChoiceItems(labels, checked) { dialog, index ->
+                // 沿用原来的偏好键，界面收拢不改变推理策略和已有设置。
+                prefs().edit().putString(KEY_MODE, modes[index]).apply()
+                refreshRunMode()
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
     }
 
     override fun onResume() {

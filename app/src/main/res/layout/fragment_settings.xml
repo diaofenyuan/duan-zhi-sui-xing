@@ -3,34 +3,22 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingBottom="28dp">
         <TextView style="@style/Text.App.Headline" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/pad_screen" android:paddingTop="20dp" android:paddingBottom="4dp" android:text="@string/settings_title"/>
         <TextView style="@style/GroupLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/group_mode"/>
-        <com.google.android.material.card.MaterialCardView android:id="@+id/mode_auto" style="@style/ModeCard" app:strokeWidth="0dp">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="10dp">
-                <RadioButton android:id="@+id/radio_auto" style="@style/ModeRadio" android:importantForAccessibility="no"/>
-                <LinearLayout style="@style/ModeTextCol">
-                    <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_auto"/>
-                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/mode_auto_desc"/>
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/pad_screen" android:layout_marginEnd="@dimen/pad_screen">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout android:id="@+id/row_run_mode" style="@style/TapRow" android:minHeight="64dp">
+                    <LinearLayout style="@style/SwitchTextCol">
+                        <TextView style="@style/RowTitle" android:text="@string/settings_run_mode" />
+                        <TextView android:id="@+id/text_run_mode" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" />
+                    </LinearLayout>
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginHorizontal="16dp" android:background="@color/outline" />
+                <LinearLayout android:id="@+id/row_device_advice" style="@style/TapRow" android:minHeight="56dp">
+                    <TextView style="@style/RowTitle" android:layout_width="0dp" android:layout_weight="1" android:text="@string/settings_device_advice" />
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-        <com.google.android.material.card.MaterialCardView android:id="@+id/mode_balanced" style="@style/ModeCard" app:strokeWidth="0dp">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="10dp">
-                <RadioButton android:id="@+id/radio_balanced" style="@style/ModeRadio" android:importantForAccessibility="no"/>
-                <LinearLayout style="@style/ModeTextCol">
-                    <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_balanced"/>
-                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/mode_balanced_desc"/>
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-        <com.google.android.material.card.MaterialCardView android:id="@+id/mode_saver" style="@style/ModeCard" app:strokeWidth="0dp">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="10dp">
-                <RadioButton android:id="@+id/radio_saver" style="@style/ModeRadio" android:importantForAccessibility="no"/>
-                <LinearLayout style="@style/ModeTextCol">
-                    <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_saver"/>
-                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/mode_saver_desc"/>
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-        <com.google.android.material.button.MaterialButton android:id="@+id/row_device_advice" style="@style/Widget.Material3.Button.TextButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="24dp" android:layout_marginEnd="24dp" android:minHeight="48dp" android:text="设备推荐与运行实测" />
         <TextView style="@style/GroupLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/group_inference"/>
         <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/pad_screen" android:layout_marginEnd="@dimen/pad_screen">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">

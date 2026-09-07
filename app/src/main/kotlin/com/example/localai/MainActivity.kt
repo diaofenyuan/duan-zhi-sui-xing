@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -80,6 +83,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         bottomNav = findViewById(R.id.bottom_nav)
+        // 输入时把空间留给内容；保留系统边距的原有分发，避免状态栏或键盘遮挡。
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { _, insets ->
+            val visibility = if (insets.isVisible(WindowInsetsCompat.Type.ime())) View.GONE else View.VISIBLE
+            bottomNav.visibility = visibility
+            findViewById<View>(R.id.nav_divider).visibility = visibility
+            insets
+        }
         bottomNav.setOnItemSelectedListener { item ->
             openTab(item.itemId)
             true

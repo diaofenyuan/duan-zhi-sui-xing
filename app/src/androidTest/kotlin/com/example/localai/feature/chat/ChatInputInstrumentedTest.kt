@@ -31,8 +31,10 @@ class ChatInputInstrumentedTest {
             try {
                 scenario.onActivity { it.findViewById<EditText>(R.id.input).setText(draft) }
                 showKeyboard(scenario)
+                await(scenario) { it.findViewById<View>(R.id.bottom_nav).visibility == View.GONE }
                 scenario.onActivity { it.openTab(R.id.nav_settings) }
                 await(scenario) { !keyboardVisible(it) }
+                await(scenario) { it.findViewById<View>(R.id.bottom_nav).visibility == View.VISIBLE }
                 scenario.onActivity { activity ->
                     activity.openTab(R.id.nav_chat)
                     val input = activity.findViewById<EditText>(R.id.input)

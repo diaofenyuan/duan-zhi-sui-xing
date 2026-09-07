@@ -189,7 +189,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         val compactHeader = resources.configuration.screenWidthDp / resources.configuration.fontScale < 300
         view.findViewById<View>(R.id.btn_new).visibility = if (compactHeader) View.GONE else View.VISIBLE
         view.findViewById<View>(R.id.btn_history).visibility = if (compactHeader) View.GONE else View.VISIBLE
-        modelTitle.setOnClickListener { showModelPicker() }
+        view.findViewById<View>(R.id.model_picker_trigger).setOnClickListener { showModelPicker() }
         view.findViewById<View>(R.id.btn_switch).setOnClickListener { anchor ->
             androidx.appcompat.widget.PopupMenu(requireContext(), anchor).apply {
                 if (compactHeader) {
@@ -468,8 +468,10 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         modelStateText.visibility = if (approved != null) View.VISIBLE else View.GONE
         btnUnloadModel.visibility = View.GONE
         view?.findViewById<View>(R.id.btn_get_model)?.visibility = if (approved == null) View.VISIBLE else View.GONE
-        view?.findViewById<View>(R.id.prompt_think)?.visibility = if (approved != null) View.VISIBLE else View.GONE
-        view?.findViewById<View>(R.id.prompt_write)?.visibility = if (approved != null) View.VISIBLE else View.GONE
+        view?.findViewById<View>(R.id.model_picker_trigger)?.contentDescription = "${modelTitle.text}，切换模型"
+        for (id in listOf(R.id.prompt_think, R.id.prompt_write, R.id.prompt_todo, R.id.quick_actions_label)) {
+            view?.findViewById<View>(id)?.visibility = if (approved != null) View.VISIBLE else View.GONE
+        }
         view?.findViewById<TextView>(R.id.empty_subtitle)?.setText(
             if (approved == null) R.string.chat_get_model else R.string.chat_empty_sub)
         modelStateText.setText(when (state) {

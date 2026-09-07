@@ -17,7 +17,7 @@
     <!-- Surfaces (light) -->
     <color name="app_background">#FFFFFF</color>
     <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F2F5F3</color>
+    <color name="surface_variant">#F6F7F8</color>
     <color name="on_surface">#202725</color>
     <color name="on_surface_variant">#66716D</color>
     <color name="outline">#E2E8E5</color>
