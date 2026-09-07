@@ -525,6 +525,9 @@ Java_com_example_localai_core_inference_NativeSession_nativeLoad(
         cparams.n_ubatch = 512;
         cparams.n_threads = thread_count;
         cparams.n_threads_batch = thread_count;
+        // CPU 档位必须关闭算子与 KV 卸载；仅设 n_gpu_layers=0 仍会启用混合调度。
+        cparams.offload_kqv = gpu_layers != 0;
+        cparams.op_offload = gpu_layers != 0;
         cparams.abort_callback = abortCallback;
         cparams.abort_callback_data = &session->cancel;
 
