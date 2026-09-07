@@ -118,6 +118,7 @@ class TaskFragment : LibraryUi() {
         inputLabel.text = if (record.kind == "qa") "问题" else "原文"
         input.hint = if (record.kind == "qa") "针对所选资料提问" else "输入或粘贴需要处理的文字"
         lengths.visibility = if (record.kind == "summary") View.VISIBLE else View.GONE
+        for (i in 0 until lengths.childCount) lengths.getChildAt(i).isEnabled = !model.running
         if (title.text.toString() != record.title) title.setText(record.title)
         if (input.text.toString() != record.input) input.setText(record.input)
         if (output.text.toString() != record.output) output.setText(record.output)
@@ -128,7 +129,8 @@ class TaskFragment : LibraryUi() {
         workspaceButton.isEnabled = model.ready && !model.running
         workspaceButton.text = "保存位置：${model.workspaceName} ▾"
         sourceText.text = if (model.sources.isEmpty()) "内容仅在本机处理" else "已选择：" + model.sources.joinToString("、") { it.name }
-        status.text = model.status
+        val statusLabel = model.status + if (model.saveState.isBlank() || model.running) "" else "\n${model.saveState}"
+        if (status.text.toString() != statusLabel) status.text = statusLabel
         runButton.isEnabled = model.ready
         runButton.visibility = if (record.kind == "chat") View.GONE else View.VISIBLE
         runButton.text = if (model.running) "停止生成" else if (record.output.isEmpty()) "开始生成" else "重新生成"

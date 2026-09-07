@@ -10,10 +10,10 @@ import com.example.localai.core.inference.ApprovedModels
 object ChatEngineProvider {
 
     @JvmStatic
-    fun create(context: Context, modelId: String?): ChatEngine {
+    fun create(context: Context, modelId: String?, taskMode: Boolean = false): ChatEngine {
         val approved = ApprovedModels.byId(modelId)
         if (approved != null && ApprovedModels.isInstalled(context, modelId)) {
-            return RealChatEngine(context, approved)
+            return RealChatEngine(context, approved, taskMode)
         }
         return UnavailableChatEngine()
     }

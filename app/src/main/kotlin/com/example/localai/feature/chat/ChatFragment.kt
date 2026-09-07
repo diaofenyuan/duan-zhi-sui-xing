@@ -550,6 +550,10 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
                 if (active()) Snackbar.make(messagesView, R.string.chat_context_trimmed, Snackbar.LENGTH_LONG).show()
             }
             override fun onDelta(delta: String) { if (active()) this@ChatFragment.onDelta(delta) }
+            override fun onAdvice(message: String) { if (active()) this@ChatFragment.onAdvice(message) }
+            override fun onOutputLimit() {
+                if (active()) this@ChatFragment.onAdvice("已达到本轮输出长度，可以发送“继续”接着生成。")
+            }
             override fun onFinished(stopped: Boolean) { if (active()) this@ChatFragment.onFinished(stopped) }
             override fun onError(code: Int, message: String) { if (active()) this@ChatFragment.onError(code, message) }
         }

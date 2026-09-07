@@ -12,7 +12,7 @@ import com.example.localai.model.ChatMessage
  * 真实本地推理引擎：把完整会话历史组织为批准模型使用的 ChatML 提示，
  * 经 InferenceClient 驱动独立推理进程，转发流式事件。
  */
-class RealChatEngine(context: Context, private val approved: ApprovedModels.Approved) : ChatEngine {
+class RealChatEngine(context: Context, private val approved: ApprovedModels.Approved, private val taskMode: Boolean = false) : ChatEngine {
 
     private val appContext: Context = context.applicationContext
     private val client = InferenceClient(appContext)
@@ -54,7 +54,7 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
         val snapshot = history.map { ChatMessage(it.role, it.text) }
         val request = InferenceRequest("chat-" + System.nanoTime(), approved.modelId, approved.version,
             ApprovedModels.modelFile(appContext, approved).absolutePath, parameters.contextLength,
-            parameters.threads, approved.temperature, approved.topP, parameters.maxNewTokens, parameters.gpuLayers)
+            parameters.threads, if (taskMode) 0.1f else approved.temperature, approved.topP, parameters.maxNewTokens, parameters.gpuLayers)
         running = true
         pendingPrompt = ""
         listener.onThinking()
@@ -92,15 +92,20 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
 
             override fun onFinished(reason: Int) {
                 if (!running || generation != currentGeneration) return
-                if (reason != NativeSession.FINISH_STOPPED) {
-                    client.readStats { stats -> com.example.localai.feature.settings.DeviceAdvice.record(appContext, approved.modelId, parameters, stats) }
-                }
                 running = false
                 pendingPrompt = null
                 val l = this@RealChatEngine.listener
                 this@RealChatEngine.listener = null
-                l?.onFinished(reason == NativeSession.FINISH_STOPPED)
-                modelStateListener?.invoke()
+                if (reason == NativeSession.FINISH_STOPPED) {
+                    l?.onFinished(true); modelStateListener?.invoke()
+                } else {
+                    client.readStats { stats ->
+                        if (generation != currentGeneration) return@readStats
+                        com.example.localai.feature.settings.DeviceAdvice.record(appContext, approved.modelId, parameters, stats)
+                        if ((stats?.genTokens ?: 0) >= parameters.maxNewTokens) l?.onOutputLimit()
+                        l?.onFinished(false); modelStateListener?.invoke()
+                    }
+                }
             }
 
             override fun onError(code: Int, message: String) {

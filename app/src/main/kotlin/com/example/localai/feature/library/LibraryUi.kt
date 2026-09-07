@@ -61,6 +61,17 @@ abstract class LibraryUi : Fragment() {
         setBackgroundColor(ContextCompat.getColor(context, R.color.outline))
         layoutParams = LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(10); bottomMargin = dp(10) }
     }
+    protected fun entry(title: String, subtitle: String, action: () -> Unit) = LinearLayout(requireContext()).apply {
+        orientation = LinearLayout.VERTICAL
+        minimumHeight = dp(68); setPadding(dp(8), dp(6), dp(8), dp(6))
+        val value = android.util.TypedValue()
+        context.theme.resolveAttribute(android.R.attr.selectableItemBackground, value, true)
+        setBackgroundResource(value.resourceId)
+        isClickable = true; isFocusable = true; contentDescription = "$title，$subtitle"
+        addView(label(title, 16f).apply { setPadding(0, dp(4), 0, dp(2)); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO })
+        addView(label(subtitle, 12f, true).apply { setPadding(0, 0, 0, dp(4)); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO })
+        setOnClickListener { action() }
+    }
     protected fun message(text: String) { context?.let { Toast.makeText(it, text, Toast.LENGTH_LONG).show() } }
     protected fun failure(error: Throwable) = message(error.message?.take(180) ?: "操作失败，请重试")
 }

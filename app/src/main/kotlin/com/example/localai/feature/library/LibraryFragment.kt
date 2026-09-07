@@ -108,9 +108,9 @@ class LibraryFragment : LibraryUi() {
                 contentDescription = "选择 ${source.name}"; isChecked = source.id in selected
                 setOnCheckedChangeListener { _, checked -> if (checked) selected.add(source.id) else selected.remove(source.id) }
             })
-            row.addView(button("${source.name}\n${source.charCount} 字 · ${LibraryContent.pages(source).size} 页") {
+            row.addView(entry(source.name, "${source.charCount} 字 · ${LibraryContent.pages(source).size} 页") {
                 (activity as? MainActivity)?.push(SourceFragment.create(source.id))
-            }.apply { gravity = android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL }, LinearLayout.LayoutParams(0, -2, 1f))
+            }.apply { setOnLongClickListener { row.performLongClick() } }, LinearLayout.LayoutParams(0, -2, 1f))
             row.setOnLongClickListener {
                 AlertDialog.Builder(requireContext()).setTitle("删除“${source.name}”？").setMessage("已保存结果中的引用快照会保留。")
                     .setNegativeButton("取消", null).setPositiveButton("删除") { _, _ -> repository.deleteSource(source.id) { r -> r.onSuccess { if (view != null) reload() }.onFailure { failure(it) } } }.show(); true
@@ -127,10 +127,10 @@ class LibraryFragment : LibraryUi() {
         content.addView(taskRow); content.addView(divider()); content.addView(label("已保存  ·  ${results.size}", 18f))
         if (results.isEmpty()) content.addView(label("摘要、清单和提问结果会留在这里。", secondary = true))
         results.forEach { item ->
-            content.addView(button("${item.title.ifBlank { TaskViewModel.kindName(item.kind) }}\n${if (item.status == "complete") "已保存" else "草稿 · 可继续编辑"}") {
+            val state = when (item.status) { "complete" -> "已保存"; "limited" -> "达到输出上限，可继续整理"; else -> "草稿 · 可继续编辑" }
+            content.addView(entry(item.title.ifBlank { TaskViewModel.kindName(item.kind) }, "${TaskViewModel.kindName(item.kind)} · $state") {
                 (activity as? MainActivity)?.push(TaskFragment.open(item.id))
             }.apply {
-                gravity = android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
                 setOnLongClickListener {
                     AlertDialog.Builder(requireContext()).setTitle("删除此结果？").setNegativeButton("取消", null)
                         .setPositiveButton("删除") { _, _ -> repository.deleteResult(item.id) { r -> r.onSuccess { if (view != null) reload() }.onFailure { failure(it) } } }.show(); true

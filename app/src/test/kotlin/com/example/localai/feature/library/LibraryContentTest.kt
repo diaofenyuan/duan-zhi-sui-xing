@@ -5,6 +5,10 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class LibraryContentTest {
+    @Test fun actionExtractionPreservesDeadlinesAndExcludesCompletedItems() {
+        val statements = LibraryContent.actionStatements("张明负责整理数据，周五提交报告。王红已完成验收。无需准备材料。王红周六准备演示。")
+        assertEquals(listOf("张明负责整理数据，周五提交报告", "王红周六准备演示"), statements.map { it.text })
+    }
     private fun source(id: Long, name: String, pages: List<SourcePage>) = SourceEntity().apply {
         this.id = id; this.name = name; pagesJson = LibraryContent.gson.toJson(pages)
     }

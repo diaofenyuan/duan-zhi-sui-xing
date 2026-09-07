@@ -63,6 +63,15 @@ object LibraryContent {
         .map { it.trim().replace(Regex("^(?:[-*•]|\\d+[.、)）])\\s*(?:\\[[ xX]\\])?\\s*"), "") }
         .filter { it.isNotBlank() }.map { ChecklistItem(it) }.toList()
 
+    fun actionStatements(text: String): List<ChecklistItem> {
+        val action = Regex("负责|需要|务必|请(?:于|在|将|先)|提交|交付|安排|准备|完成|截止|验收|提醒")
+        val negated = Regex("无需|不必|不用|取消|已经完成|已完成|已提交|已验收")
+        return text.split(Regex("[。！？\\n]+"))
+            .map { it.trim().replace(Regex("^[-*•]\\s*"), "") }
+            .filter { it.length in 4..500 && action.containsMatchIn(it) && !negated.containsMatchIn(it) }
+            .distinct().map { ChecklistItem(it) }
+    }
+
     fun export(title: String, output: String, citations: List<Citation>): String = buildString {
         append(title).append("\n\n").append(output)
         if (citations.isNotEmpty()) {

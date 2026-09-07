@@ -24,6 +24,31 @@ import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class LibraryFlowInstrumentedTest {
+    @Test fun interruptedChecklistRestoresStreamCheckpoint() {
+        val repository = ServiceLocator.library()!!
+        val workspace = await<Long> { repository.addWorkspace("中断恢复验收", it) }
+        try {
+            val draft = TaskResultEntity().apply {
+                workspaceId = workspace; kind = "todo"; title = "待办草稿"; status = "running"
+                input = "周四复核报告，周五提交材料"; output = "- 周四复核报告\n- 周五提交材料"
+            }
+            val id = await<Long> { repository.save(draft, it) }
+            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                lateinit var fragment: TaskFragment
+                scenario.onActivity { activity -> fragment = TaskFragment.open(id); activity.push(fragment) }
+                waitFor(scenario) { fragment.isAdded && ViewModelProvider(fragment)[TaskViewModel::class.java].ready }
+                scenario.onActivity {
+                    val model = ViewModelProvider(fragment)[TaskViewModel::class.java]
+                    assertEquals(2, model.items.size)
+                    assertEquals("周四复核报告", model.items.first().text)
+                    assertEquals("interrupted", model.record.status)
+                    model.save()
+                }
+                val saved = await<TaskResultEntity?> { repository.result(id, it) }!!
+                assertTrue(saved.output.contains("周五提交材料"))
+            }
+        } finally { await<Unit> { repository.deleteWorkspace(workspace, it) } }
+    }
     private fun <T> await(start: ((Result<T>) -> Unit) -> Unit): T {
         var result: Result<T>? = null
         val latch = CountDownLatch(1)

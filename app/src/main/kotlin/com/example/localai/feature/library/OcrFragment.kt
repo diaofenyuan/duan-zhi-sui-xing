@@ -50,7 +50,8 @@ class OcrFragment : LibraryUi() {
         })
         body.addView(button("保存为资料") { save() })
         body.addView(button("整理成摘要") {
-            if (model.text.isBlank()) message("请先识别或输入文字")
+            if (model.running) message("请等待识别完成")
+            else if (model.text.isBlank()) message("请先识别或输入文字")
             else (activity as? MainActivity)?.push(TaskFragment.create("summary", workspace, input = model.text))
         })
         return root
@@ -67,6 +68,7 @@ class OcrFragment : LibraryUi() {
         ServiceLocator.library()!!.workspaces { r -> r.onSuccess { spaces -> if (spaces.none { it.id == workspace }) workspace = spaces.first().id }.onFailure { failure(it) } }
     }
     private fun save() {
+        if (model.running) { message("请等待识别完成"); return }
         if (model.text.isBlank() || workspace <= 0) { message("请先识别或输入文字"); return }
         val title = field("资料名称").apply { setText("图片文字") }
         androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("保存识别文字").setView(title)
