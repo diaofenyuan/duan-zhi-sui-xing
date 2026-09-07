@@ -264,5 +264,27 @@
     "texts": [
       "BouncyCastle-LICENSE.txt"
     ]
+  },
+  {
+    "title": "ONNX Runtime",
+    "summary": "MIT 及内附第三方许可",
+    "components": [
+      "com.microsoft.onnxruntime:onnxruntime-android:1.24.3"
+    ],
+    "notice": "Copyright (c) Microsoft Corporation. 用于本机 CPU 图片文字识别。\n来源：https://github.com/microsoft/onnxruntime/tree/v1.24.3",
+    "texts": [
+      "ONNX-Runtime-LICENSE.txt",
+      "ONNX-Runtime-NOTICES.txt"
+    ]
+  },
+  {
+    "title": "PaddleOCR / RapidOCR 中文识别模型",
+    "summary": "Apache-2.0 · 随包提供的 PP-OCRv4 模型",
+    "components": [],
+    "notice": "PaddlePaddle Authors / RapidAI。使用 PP-OCRv4 中文移动端检测与识别模型，RapidOCR 转换为 ONNX。固定版本和 SHA-256 见 ocr/models.json。\n来源：https://github.com/PaddlePaddle/PaddleOCR\nhttps://www.modelscope.cn/models/RapidAI/RapidOCR/tree/v3.9.2",
+    "texts": [
+      "PaddleOCR-LICENSE.txt",
+      "RapidOCR-LICENSE.txt"
+    ]
   }
 ]

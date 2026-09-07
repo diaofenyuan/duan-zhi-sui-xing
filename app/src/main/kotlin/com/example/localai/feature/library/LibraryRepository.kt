@@ -62,6 +62,8 @@ class LibraryRepository(private val context: Context, private val database: AppD
 
     fun importText(workspace: Long, name: String, text: String, callback: (Result<Long>) -> Unit) =
         execute({ insert(workspace, name.ifBlank { "文字资料" }, "text", listOf(SourcePage(1, text))) }, callback)
+    fun importRecognizedText(workspace: Long, name: String, text: String, callback: (Result<Long>) -> Unit) =
+        execute({ insert(workspace, name.ifBlank { "图片文字" }, "ocr", listOf(SourcePage(1, text))) }, callback)
 
     fun importFile(workspace: Long, uri: Uri, callback: (Result<Long>) -> Unit) = execute({
         val resolver = context.contentResolver

@@ -116,6 +116,7 @@ dependencies {
     implementation libs.okhttp
     implementation libs.gson
     implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.24.3'
     implementation libs.androidx.room.runtime
     annotationProcessor libs.androidx.room.compiler
 
@@ -158,3 +159,20 @@ def verifyThirdPartyLicenses = tasks.register('verifyThirdPartyLicenses') {
     }
 }
 tasks.named('preBuild').configure { dependsOn(verifyThirdPartyLicenses) }
+
+def verifyBundledOcrModels = tasks.register('verifyBundledOcrModels') {
+    inputs.dir('src/main/assets/ocr')
+    doLast {
+        def entries = new groovy.json.JsonSlurper().parse(file('src/main/assets/ocr/models.json'), 'UTF-8')
+        entries.each { entry ->
+            def digest = java.security.MessageDigest.getInstance('SHA-256')
+            file("src/main/assets/ocr/${entry.file}").withInputStream { input ->
+                byte[] buffer = new byte[8192]
+                int count
+                while ((count = input.read(buffer)) > 0) digest.update(buffer, 0, count)
+            }
+            if (digest.digest().encodeHex().toString() != entry.sha256) throw new GradleException("OCR 模型校验失败：${entry.file}")
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn(verifyBundledOcrModels) }

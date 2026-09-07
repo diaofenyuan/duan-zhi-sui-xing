@@ -39,7 +39,7 @@ object DeviceAdvice {
         val p = context.getSharedPreferences("localai_measurements", 0)
         if (!p.contains("time")) return "还没有完成的运行记录。完成一次对话或任务后，这里会显示本机实测数据。"
         val model = com.example.localai.core.inference.ApprovedModels.byId(p.getString("model", ""))
-        val time = java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(java.util.Date(p.getLong("time", 0)))
+        val time = java.text.SimpleDateFormat("yyyy年M月d日 HH:mm", java.util.Locale.CHINA).format(java.util.Date(p.getLong("time", 0)))
         return "${model?.displayName ?: "本地模型"}\n$time\n" +
             String.format(java.util.Locale.CHINA, "首字 %.1f 秒 · 总耗时 %.1f 秒\n输出 %d 个 token · 上下文 %d\n首字耗时不含模型加载；这是一次实际运行记录，结果会随输入和设备状态变化。",
                 p.getLong("ttft", 0) / 1000.0, p.getLong("elapsed", 0) / 1000.0, p.getLong("tokens", 0), p.getInt("context", 0))

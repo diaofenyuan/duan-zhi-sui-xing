@@ -168,7 +168,11 @@ class TaskViewModel(app: Application) : AndroidViewModel(app) {
         status = if (stopped) "已停止，保留已生成内容" else "已完成，可继续编辑"
         save(); notifyChanged()
     }
-    fun stop() { if (running) { engine?.stop() ?: run { epoch++; running = false; record.status = "interrupted"; save(); notifyChanged() } } }
+    fun stop() {
+        if (!running) return
+        if (engine?.isRunning() == true) engine?.stop()
+        else { epoch++; running = false; record.status = "interrupted"; status = "已停止"; save(); notifyChanged() }
+    }
     fun leavePage() {
         // 二级页之间共用一个 Native 服务，离开任务时交还资源，防止旧页面释放新任务。
         if (running) {

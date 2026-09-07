@@ -45,6 +45,7 @@ class LibraryFragment : LibraryUi() {
         actions.addView(button("导入文件") { if (!importing && workspaceId > 0) picker.launch(arrayOf("text/plain", "application/pdf")) }, LinearLayout.LayoutParams(0, -2, 1f))
         actions.addView(button("粘贴文字") { paste() }, LinearLayout.LayoutParams(0, -2, 1f))
         body.addView(actions)
+        body.addView(button("识别图片文字") { (activity as? MainActivity)?.push(OcrFragment.create(workspaceId)) })
         content = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL }
         body.addView(content)
         return root

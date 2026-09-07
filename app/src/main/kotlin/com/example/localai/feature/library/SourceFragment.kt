@@ -17,6 +17,7 @@ class SourceFragment : LibraryUi() {
                     citation?.let { body.addView(label("${it.name} · 第 ${it.page} 页", 18f)); body.addView(label(it.excerpt).apply { setTextIsSelectable(true) }) }
                 } else {
                     body.addView(label(source.name, 20f))
+                    if (source.type == "ocr") body.addView(label("来源为图片识别后保存的文字。请结合原图核对，尤其是数字与专有名词。", secondary = true))
                     val pages = LibraryContent.pages(source)
                     val ordered = if (citation == null) pages else pages.sortedBy { if (it.number == citation.page) 0 else it.number }
                     ordered.forEach { page ->
