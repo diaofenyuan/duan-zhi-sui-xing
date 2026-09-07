@@ -89,6 +89,7 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             openTab(R.id.nav_chat)
+            handleShare(intent)
         }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -101,6 +102,45 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShare(intent)
+    }
+
+    private fun handleShare(shared: android.content.Intent?) {
+        if (shared?.action != android.content.Intent.ACTION_SEND) return
+        val text = shared.getCharSequenceExtra(android.content.Intent.EXTRA_TEXT)?.toString().orEmpty()
+        @Suppress("DEPRECATION")
+        val uri = shared.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
+        // 消费一次；恢复界面时不重复打开同一份分享。
+        setIntent(android.content.Intent(this, MainActivity::class.java))
+        if (uri != null && uri.scheme == "content") {
+            val repository = com.example.localai.data.ServiceLocator.library()!!
+            repository.workspaces { spaces -> spaces.onSuccess { list ->
+                repository.importFile(list.first().id, uri) { result -> result.onSuccess {
+                    if (!isFinishing) push(com.example.localai.feature.library.TaskFragment.create("summary", list.first().id, longArrayOf(it)))
+                }.onFailure { android.widget.Toast.makeText(this, it.message ?: "文件导入失败", android.widget.Toast.LENGTH_LONG).show() } }
+            } }
+        } else if (text.isNotBlank()) {
+            if (text.length > 400_000) {
+                android.widget.Toast.makeText(this, "分享内容过长，请拆分后重试", android.widget.Toast.LENGTH_LONG).show(); return
+            }
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("处理分享的文字")
+                .setItems(arrayOf("整理摘要", "解释文字", "润色文字", "保存为资料")) { _, index ->
+                    if (index < 3) push(com.example.localai.feature.library.TaskFragment.create(listOf("summary", "explain", "rewrite")[index], input = text))
+                    else {
+                        val repository = com.example.localai.data.ServiceLocator.library()!!
+                        repository.workspaces { spaces -> spaces.onSuccess { list ->
+                            repository.importText(list.first().id, "分享文字", text) { result -> result.onSuccess {
+                                if (!isFinishing) push(com.example.localai.feature.library.LibraryFragment())
+                            }.onFailure { android.widget.Toast.makeText(this, it.message ?: "保存失败", android.widget.Toast.LENGTH_LONG).show() } }
+                        } }
+                    }
+                }.setNegativeButton("取消", null).show()
+        }
     }
 
     fun openTab(tabId: Int) {

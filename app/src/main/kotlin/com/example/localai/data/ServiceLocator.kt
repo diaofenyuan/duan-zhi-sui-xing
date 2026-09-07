@@ -20,6 +20,7 @@ class ServiceLocator private constructor(appContext: Context) {
     private val downloadWorker: ExecutorService
     private val controlWorker: ExecutorService
     private val chatRepository: ChatRepository
+    private val libraryRepository: com.example.localai.feature.library.LibraryRepository
 
     init {
         val database = AppDatabase.build(appContext)
@@ -45,6 +46,7 @@ class ServiceLocator private constructor(appContext: Context) {
             catalogClient, downloadCoordinator)
         downloadCoordinator.attachListener { downloadRepository.onCoordinatorChanged() }
         chatRepository = ChatRepository(database)
+        libraryRepository = com.example.localai.feature.library.LibraryRepository(appContext, database)
     }
 
     companion object {
@@ -66,6 +68,9 @@ class ServiceLocator private constructor(appContext: Context) {
 
         @JvmStatic
         fun chat(): ChatRepository? = instance?.chatRepository
+
+        @JvmStatic
+        fun library(): com.example.localai.feature.library.LibraryRepository? = instance?.libraryRepository
 
         @JvmStatic
         fun coordinator(): DownloadCoordinator? = instance?.downloadCoordinator

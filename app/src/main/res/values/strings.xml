@@ -212,7 +212,7 @@
     <string name="advanced_title">高级设置</string>
     <string name="advanced_sub">上下文、GPU 与设备诊断</string>
     <string name="action_diagnostics">设备诊断</string>
-    <string name="chat_prompt_think">帮我理清思路</string>
+    <string name="chat_prompt_think">整理摘要</string>
     <string name="chat_prompt_write">润色一段文字</string>
     <string name="chat_prompt_think_text">我想梳理一个问题，请先问我需要解决什么，再帮我一步步分析。</string>
     <string name="chat_prompt_write_text">请帮我润色下面这段文字，保留原意，让表达更自然：

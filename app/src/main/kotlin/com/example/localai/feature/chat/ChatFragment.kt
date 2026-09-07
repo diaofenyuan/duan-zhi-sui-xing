@@ -196,6 +196,10 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
                     }
                 }
                 menu.add(R.string.picker_title).setOnMenuItemClickListener { showModelPicker(); true }
+                menu.add("资料与工作区").setOnMenuItemClickListener {
+                    (activity as? MainActivity)?.push(com.example.localai.feature.library.LibraryFragment()); true
+                }
+                menu.add("保存对话到工作区").setOnMenuItemClickListener { saveToWorkspace(); true }
                 if (!generating && engine.modelState() == ChatEngine.ModelState.LOADED) {
                     menu.add(R.string.model_release_action).setOnMenuItemClickListener { engine.release(); true }
                 }
@@ -205,14 +209,12 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         view.findViewById<View>(R.id.btn_get_model).setOnClickListener {
             (activity as? MainActivity)?.openTab(R.id.nav_market)
         }
-        for ((id, prompt) in listOf(R.id.prompt_think to R.string.chat_prompt_think_text,
-                R.id.prompt_write to R.string.chat_prompt_write_text)) {
+        view.findViewById<View>(R.id.btn_materials).setOnClickListener {
+            (activity as? MainActivity)?.push(com.example.localai.feature.library.LibraryFragment())
+        }
+        for ((id, kind) in listOf(R.id.prompt_think to "summary", R.id.prompt_write to "rewrite", R.id.prompt_todo to "todo")) {
             view.findViewById<View>(id).setOnClickListener {
-                inputView.setText(getString(prompt))
-                inputView.setSelection(inputView.text.length)
-                inputView.requestFocus()
-                requireContext().getSystemService(android.view.inputmethod.InputMethodManager::class.java)
-                    .showSoftInput(inputView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+                (activity as? MainActivity)?.push(com.example.localai.feature.library.TaskFragment.create(kind, input = inputView.text.toString()))
             }
         }
 
@@ -762,6 +764,25 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         // 排队的跟随也受用户滚动状态约束，拖动后不会被迟到的流式回调拉回底部。
         messagesView.removeCallbacks(followScroll)
         if (followLatest && !userScrolling) messagesView.postOnAnimation(followScroll)
+    }
+
+    private fun saveToWorkspace() {
+        val messages = adapter.items().filterIsInstance<ChatMessage>()
+        if (messages.isEmpty()) { Snackbar.make(messagesView, "还没有可保存的对话", Snackbar.LENGTH_SHORT).show(); return }
+        val snapshot = messages.joinToString("\n\n") { (if (it.role == ChatMessage.ROLE_USER) "我：" else "回复：") + it.text }
+        val repository = ServiceLocator.library()!!
+        repository.workspaces { r ->
+            if (view == null) return@workspaces
+            r.onSuccess { spaces -> androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle("保存对话快照")
+                .setItems(spaces.map { it.title }.toTypedArray()) { _, index ->
+                    val result = com.example.localai.data.room.TaskResultEntity().apply {
+                        workspaceId = spaces[index].id; kind = "chat"; title = messages.first().text.take(30)
+                        output = snapshot; originalOutput = snapshot; modelId = currentModelId; status = "complete"
+                    }
+                    repository.save(result) { saved -> if (view != null) Snackbar.make(messagesView,
+                        if (saved.isSuccess) "已保存到工作区" else "保存失败，请重试", Snackbar.LENGTH_LONG).show() }
+                }.show() }
+        }
     }
 
     private fun prefs(): SharedPreferences =

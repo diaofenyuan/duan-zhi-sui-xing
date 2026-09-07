@@ -105,6 +105,8 @@ Gradle 8.14（Apache-2.0）、Android Gradle Plugin 8.13.2（Apache-2.0）、Kot
 
 ## 6. APK 内离线许可清单（2026-09-06）
 
+2026-09-07：资料导入增加 PDFBox-Android 2.0.27.0（Apache-2.0）及其 Bouncy Castle 1.72 传递依赖（MIT 风格许可）。随包清单登记四个新增组件，并附上对应版本的 PDFBox NOTICE 与 Bouncy Castle 原始许可文本。PDF 解析在设备本地执行，不接入 Google 服务。
+
 以 `app/src/main/assets/licenses/index.json` 为当前发布运行时组件与版本清单；本次按 Gradle `releaseRuntimeClasspath` 实际解析的 66 个组件核对，包含间接依赖。早期登记的 WorkManager 未实际引入，JUnit、Robolectric 和构建工具不属于 APK 运行时组件。
 
 设置页可离线分项阅读归属、来源及完整文本，包括 Apache-2.0、MPL-2.0 Public Suffix List 声明、CC0、Native 内附代码许可、所用 NDK LLVM 发行版 NOTICE 和单独下载的模型许可。Native 声明来自当前源码树及对应上游文件；LLVM NOTICE 从 NDK 28.2.13676358 的 `toolchains/llvm/prebuilt/windows-x86_64/NOTICE` 原样复制。Public Suffix List 归属由 OkHttp 4.12.0 JAR 内 `okhttp3/internal/publicsuffix/NOTICE` 确认。

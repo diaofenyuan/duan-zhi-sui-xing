@@ -239,5 +239,30 @@
       "Vulkan-Headers-LICENSE.txt",
       "SPIRV-Headers-LICENSE.txt"
     ]
+  },
+  {
+    "title": "PDFBox-Android",
+    "summary": "Apache-2.0",
+    "components": [
+      "com.tom-roush:pdfbox-android:2.0.27.0"
+    ],
+    "notice": "Tom Roush 与 Apache PDFBox 项目。用于在本机提取 PDF 文字。\n来源：https://github.com/TomRoush/PdfBox-Android/tree/v2.0.27.0",
+    "texts": [
+      "Apache-2.0.txt",
+      "PDFBox-NOTICE.txt"
+    ]
+  },
+  {
+    "title": "Bouncy Castle",
+    "summary": "Bouncy Castle License (MIT)",
+    "components": [
+      "org.bouncycastle:bcprov-jdk15to18:1.72",
+      "org.bouncycastle:bcpkix-jdk15to18:1.72",
+      "org.bouncycastle:bcutil-jdk15to18:1.72"
+    ],
+    "notice": "The Legion of the Bouncy Castle Inc. PDFBox 的密码学依赖。\n来源：https://github.com/bcgit/bc-java/tree/r1rv72",
+    "texts": [
+      "BouncyCastle-LICENSE.txt"
+    ]
   }
 ]
