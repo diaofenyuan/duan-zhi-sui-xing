@@ -13,7 +13,7 @@
         android:gravity="center_vertical"
         android:paddingStart="@dimen/pad_screen"
         android:paddingEnd="10dp"
-        android:paddingTop="14dp">
+        android:paddingTop="12dp">
 
         <View
             android:id="@+id/status_dot"
@@ -28,7 +28,10 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:maxLines="2"
+            android:minHeight="48dp"
+            android:gravity="center_vertical"
+            android:background="?attr/selectableItemBackground"
+            android:maxLines="1"
             android:breakStrategy="balanced"
             android:ellipsize="end" />
 
@@ -57,7 +60,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_tune"
             app:tint="@color/text_secondary"
-            android:contentDescription="@string/picker_title" />
+            android:contentDescription="@string/action_more" />
     </LinearLayout>
 
     <LinearLayout
@@ -74,6 +77,7 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
+            android:paddingBottom="10dp"
             android:accessibilityLiveRegion="polite" />
 
         <com.google.android.material.button.MaterialButton
@@ -98,48 +102,17 @@
             android:clipToPadding="false"
             android:paddingBottom="8dp" />
 
-        <LinearLayout
-            android:id="@+id/empty_wrap"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="24dp">
-
-            <FrameLayout
-                android:layout_width="72dp"
-                android:layout_height="72dp">
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/bg_soft_box" />
-
-                <ImageView
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_robot"
-                    app:tint="@color/md_primary" />
-            </FrameLayout>
-
-            <TextView
-                style="@style/Text.App.Section"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/chat_empty_title" />
-
-            <TextView
-                style="@style/Text.App.BodySec"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:maxWidth="260dp"
-                android:gravity="center"
-                android:layout_marginTop="6dp"
-                android:text="@string/chat_empty_sub" />
-        </LinearLayout>
+        <ScrollView android:id="@+id/empty_wrap" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:scrollbars="none">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:padding="32dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="12dp" android:paddingEnd="12dp">
+                    <TextView style="@style/Text.App.Headline" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/chat_empty_title" />
+                    <TextView android:id="@+id/empty_subtitle" style="@style/Text.App.BodySec" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="@string/chat_empty_sub" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/prompt_think" style="@style/Widget.App.Button.Outline" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:layout_marginTop="28dp" android:gravity="start|center_vertical" android:text="@string/chat_prompt_think" android:textColor="@color/text_secondary" app:strokeColor="@color/outline" app:icon="@drawable/ic_chat" app:iconTint="@color/text_secondary" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/prompt_write" style="@style/Widget.App.Button.Outline" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:gravity="start|center_vertical" android:text="@string/chat_prompt_write" android:textColor="@color/text_secondary" app:strokeColor="@color/outline" app:icon="@drawable/ic_copy" app:iconTint="@color/text_secondary" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btn_get_model" style="@style/Widget.App.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:layout_marginTop="24dp" android:text="@string/action_goto_market" android:visibility="gone" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_latest_message"
@@ -157,11 +130,11 @@
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="18dp"
         android:layout_marginBottom="10dp"
         android:layout_marginTop="4dp"
-        app:cardCornerRadius="26dp">
+        app:cardCornerRadius="18dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -199,6 +172,7 @@
                     android:layout_height="48dp"
                     android:layout_gravity="center"
                     app:icon="@drawable/ic_send"
+                    app:iconTint="@color/md_on_primary"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
                     android:insetLeft="0dp"

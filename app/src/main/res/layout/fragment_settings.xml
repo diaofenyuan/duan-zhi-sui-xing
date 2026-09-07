@@ -1,315 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:scrollbars="none">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingBottom="28dp">
-
-        <TextView
-            style="@style/Text.App.PageTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_title"
-            android:paddingStart="@dimen/pad_screen"
-            android:paddingEnd="@dimen/pad_screen"
-            android:paddingTop="14dp" />
-
-        <!-- 应用信息 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/pad_screen"
-            android:layout_marginEnd="@dimen/pad_screen"
-            android:layout_marginTop="@dimen/gap_sm">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="16dp">
-
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp">
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/grad_a" />
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_sparkle"
-                        app:tint="@android:color/white" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/Text.App.ItemTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/app_name" />
-
-                    <TextView
-                        android:id="@+id/text_version"
-                        style="@style/Text.App.Caption"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 运行模式 -->
-        <TextView
-            style="@style/GroupLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/group_mode" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/mode_auto"
-            style="@style/ModeCard">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="12dp">
-
-                <RadioButton
-                    android:id="@+id/radio_auto"
-                    style="@style/ModeRadio" />
-
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:scrollbars="none">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingBottom="28dp">
+        <TextView style="@style/Text.App.Headline" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/pad_screen" android:paddingTop="20dp" android:paddingBottom="4dp" android:text="@string/settings_title"/>
+        <TextView style="@style/GroupLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/group_mode"/>
+        <com.google.android.material.card.MaterialCardView android:id="@+id/mode_auto" style="@style/ModeCard" app:strokeWidth="0dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="10dp">
+                <RadioButton android:id="@+id/radio_auto" style="@style/ModeRadio" android:importantForAccessibility="no"/>
                 <LinearLayout style="@style/ModeTextCol">
-                    <TextView style="@style/Text.App.ItemTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_auto" />
-                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/mode_auto_desc" />
+                    <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_auto"/>
+                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/mode_auto_desc"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/mode_balanced"
-            style="@style/ModeCard">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="12dp">
-
-                <RadioButton
-                    android:id="@+id/radio_balanced"
-                    style="@style/ModeRadio" />
-
+        <com.google.android.material.card.MaterialCardView android:id="@+id/mode_balanced" style="@style/ModeCard" app:strokeWidth="0dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="10dp">
+                <RadioButton android:id="@+id/radio_balanced" style="@style/ModeRadio" android:importantForAccessibility="no"/>
                 <LinearLayout style="@style/ModeTextCol">
-                    <TextView style="@style/Text.App.ItemTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_balanced" />
-                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/mode_balanced_desc" />
+                    <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_balanced"/>
+                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/mode_balanced_desc"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/mode_saver"
-            style="@style/ModeCard">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="12dp">
-
-                <RadioButton
-                    android:id="@+id/radio_saver"
-                    style="@style/ModeRadio" />
-
+        <com.google.android.material.card.MaterialCardView android:id="@+id/mode_saver" style="@style/ModeCard" app:strokeWidth="0dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="10dp">
+                <RadioButton android:id="@+id/radio_saver" style="@style/ModeRadio" android:importantForAccessibility="no"/>
                 <LinearLayout style="@style/ModeTextCol">
-                    <TextView style="@style/Text.App.ItemTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_saver" />
-                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/mode_saver_desc" />
+                    <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/mode_saver"/>
+                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/mode_saver_desc"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- 推理行为 -->
-        <TextView
-            style="@style/GroupLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/group_inference" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/pad_screen"
-            android:layout_marginEnd="@dimen/pad_screen">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp">
-
-                <LinearLayout android:id="@+id/row_context_length" style="@style/TapRow">
+        <TextView style="@style/GroupLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/group_inference"/>
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/pad_screen" android:layout_marginEnd="@dimen/pad_screen">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout style="@style/TapRow" android:clickable="false" android:focusable="false">
                     <LinearLayout style="@style/SwitchTextCol">
-                        <TextView style="@style/RowTitle" android:text="@string/row_context_length" />
-                        <TextView android:id="@+id/text_context_length" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" />
+                        <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/sw_keep_screen"/>
+                        <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/sw_keep_screen_sub"/>
                     </LinearLayout>
-                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+                    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/sw_keep_screen" style="@style/RowSwitch" android:contentDescription="@string/sw_keep_screen"/>
                 </LinearLayout>
-
-                <LinearLayout android:id="@+id/row_gpu_layers" style="@style/TapRow">
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/pad_screen" android:layout_marginEnd="@dimen/pad_screen" android:layout_marginTop="10dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout android:id="@+id/row_advanced" style="@style/TapRow" android:minHeight="56dp">
                     <LinearLayout style="@style/SwitchTextCol">
-                        <TextView style="@style/RowTitle" android:text="@string/row_gpu_layers" />
-                        <TextView android:id="@+id/text_gpu_layers" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" />
+                        <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/advanced_title"/>
+                        <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/advanced_sub"/>
                     </LinearLayout>
-                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no"/>
                 </LinearLayout>
-
-                <LinearLayout style="@style/SwitchRow">
-                    <LinearLayout style="@style/SwitchTextCol">
-                        <TextView style="@style/RowTitle" android:text="@string/sw_keep_screen" />
-                        <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/sw_keep_screen_sub" />
+                <LinearLayout android:id="@+id/advanced_content" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <LinearLayout android:id="@+id/row_context_length" style="@style/TapRow" android:minHeight="56dp">
+                        <LinearLayout style="@style/SwitchTextCol">
+                            <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/row_context_length"/>
+                            <TextView android:id="@+id/text_context_length" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+                        <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no"/>
                     </LinearLayout>
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/sw_keep_screen"
-                        style="@style/RowSwitch" />
-                </LinearLayout>
-
-                <LinearLayout style="@style/SwitchRow">
-                    <LinearLayout style="@style/SwitchTextCol">
-                        <TextView style="@style/RowTitle" android:text="@string/sw_bg_gen" />
-                        <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/sw_bg_gen_sub" />
+                    <LinearLayout android:id="@+id/row_gpu_layers" style="@style/TapRow" android:minHeight="56dp">
+                        <LinearLayout style="@style/SwitchTextCol">
+                            <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/row_gpu_layers"/>
+                            <TextView android:id="@+id/text_gpu_layers" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+                        <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no"/>
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_diagnostics" style="@style/TapRow" android:minHeight="56dp">
+                        <LinearLayout style="@style/SwitchTextCol">
+                            <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/action_diagnostics"/>
+                        </LinearLayout>
+                        <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no"/>
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- 存储与数据 -->
-        <TextView
-            style="@style/GroupLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/group_storage" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/pad_screen"
-            android:layout_marginEnd="@dimen/pad_screen">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:id="@+id/row_clear_cache"
-                    style="@style/TapRow">
-
+        <TextView style="@style/GroupLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/group_storage"/>
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/pad_screen" android:layout_marginEnd="@dimen/pad_screen">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout android:id="@+id/row_clear_cache" style="@style/TapRow" android:minHeight="56dp">
                     <LinearLayout style="@style/SwitchTextCol">
-                        <TextView style="@style/RowTitle" android:text="@string/row_clear_cache" />
-                        <TextView
-                            android:id="@+id/text_cache_size"
-                            style="@style/Text.App.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp" />
+                        <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/row_clear_cache"/>
+                        <TextView android:id="@+id/text_cache_size" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
                     </LinearLayout>
-
-                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no"/>
                 </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/row_clear_sessions"
-                    style="@style/TapRow">
-
+                <LinearLayout android:id="@+id/row_clear_sessions" style="@style/TapRow" android:minHeight="56dp">
                     <LinearLayout style="@style/SwitchTextCol">
-                        <TextView
-                            style="@style/RowTitle"
-                            android:textColor="@color/status_danger"
-                            android:text="@string/row_clear_sessions" />
+                        <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/row_clear_sessions"/>
                     </LinearLayout>
-
-                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no"/>
+                </LinearLayout>
+                <LinearLayout android:id="@+id/row_privacy" style="@style/TapRow" android:minHeight="56dp">
+                    <LinearLayout style="@style/SwitchTextCol">
+                        <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/privacy_title"/>
+                    </LinearLayout>
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- 隐私 -->
-        <TextView
-            style="@style/GroupLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/group_privacy" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/pad_screen"
-            android:layout_marginEnd="@dimen/pad_screen">
-
-            <LinearLayout
-                android:id="@+id/row_privacy"
-                style="@style/TapRow">
-
-                <LinearLayout style="@style/SwitchTextCol">
-                    <TextView style="@style/RowTitle" android:text="@string/privacy_title" />
-                    <TextView style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/sw_metrics_sub" />
-                </LinearLayout>
-
-                <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 关于 -->
-        <TextView
-            style="@style/GroupLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/group_about" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/pad_screen"
-            android:layout_marginEnd="@dimen/pad_screen">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:id="@+id/row_license"
-                    style="@style/TapRow">
-
+        <TextView style="@style/GroupLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/group_about"/>
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/pad_screen" android:layout_marginEnd="@dimen/pad_screen">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout android:id="@+id/row_license" style="@style/TapRow" android:minHeight="56dp">
                     <LinearLayout style="@style/SwitchTextCol">
-                        <TextView style="@style/RowTitle" android:text="@string/row_license" />
-                        <TextView style="@style/Text.App.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="@string/row_license_sub" />
+                        <TextView style="@style/RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/row_license"/>
                     </LinearLayout>
-
-                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+                    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:importantForAccessibility="no"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+        <TextView android:id="@+id/text_version" style="@style/Text.App.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:paddingTop="24dp"/>
     </LinearLayout>
 </ScrollView>

@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.localai.MainActivity
 import com.example.localai.R
+import com.example.localai.common.ModelDisplay
 import com.example.localai.core.compatibility.CompatibilityEngine
 import com.example.localai.core.device.DeviceProfiler
 import com.example.localai.core.inference.ApprovedModels
@@ -99,7 +100,7 @@ class ModelDetailFragment : Fragment() {
         val view = view ?: return
 
         // 头图
-        val codeTask = item.tasks?.contains(ModelInfo.TASK_CODE) == true
+        val codeTask = item.tasks?.any { it.equals(ModelInfo.TASK_CODE, ignoreCase = true) } == true
         val tag = view.findViewById<TextView>(R.id.hero_tag)
         tag.text = if (codeTask) "代码助手" else "文本对话"
         val status = view.findViewById<TextView>(R.id.hero_status)
@@ -110,7 +111,7 @@ class ModelDetailFragment : Fragment() {
         status.setBackgroundResource(statusBg)
         status.setTextColor(ContextCompat.getColor(requireContext(), statusText))
 
-        view.findViewById<TextView>(R.id.hero_name).text = item.displayName
+        view.findViewById<TextView>(R.id.hero_name).text = ModelDisplay.name(item.displayName ?: item.modelId ?: "")
         view.findViewById<TextView>(R.id.hero_publisher).text =
             (item.publisher ?: "") + " · " + item.updatedAt + " 更新"
         view.findViewById<TextView>(R.id.hero_param).text =

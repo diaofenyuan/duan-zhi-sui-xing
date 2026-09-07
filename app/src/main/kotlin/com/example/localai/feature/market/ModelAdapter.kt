@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.localai.R
+import com.example.localai.common.ModelDisplay
 import com.example.localai.model.ModelInfo
 import java.util.ArrayList
 
@@ -35,15 +36,13 @@ class ModelAdapter(private val listener: OnModelClickListener?) :
     override fun onBindViewHolder(h: VH, position: Int) {
         val model = items[position]
 
-        h.iconBg.setBackgroundResource(gradRes(model.gradIndex))
+        h.iconBg.setBackgroundResource(R.drawable.bg_soft_box)
         h.textIcon.text = model.letter().toString()
-        h.textName.text = model.name
+        h.textName.text = ModelDisplay.name(model.name)
 
         bindCompatBadge(h.badgeCompat, model.compat)
 
-        h.textMeta.text = model.publisher + " · " + model.paramsLabel
-        h.tagCtx.text = "上下文 " + model.contextLabel
-        h.tagSize.text = model.quant
+        h.textMeta.text = model.quant + " · 上下文 " + model.contextLabel
         h.textSize.text = model.sizeLabel
 
         h.itemView.setOnClickListener {
@@ -59,8 +58,6 @@ class ModelAdapter(private val listener: OnModelClickListener?) :
         val textName: TextView = itemView.findViewById(R.id.text_name)
         val badgeCompat: TextView = itemView.findViewById(R.id.badge_compat)
         val textMeta: TextView = itemView.findViewById(R.id.text_meta)
-        val tagCtx: TextView = itemView.findViewById(R.id.tag_ctx)
-        val tagSize: TextView = itemView.findViewById(R.id.tag_size)
         val textSize: TextView = itemView.findViewById(R.id.text_size)
     }
 

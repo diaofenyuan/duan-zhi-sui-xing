@@ -3,8 +3,8 @@
     <string name="app_name">端智随行</string>
 
     <!-- 底部导航 -->
-    <string name="tab_market">市场</string>
-    <string name="tab_chat">聊天</string>
+    <string name="tab_market">模型</string>
+    <string name="tab_chat">对话</string>
     <string name="tab_download">下载</string>
     <string name="tab_diag">诊断</string>
     <string name="tab_settings">设置</string>
@@ -23,7 +23,7 @@
 
     <!-- 市场 -->
     <string name="market_subtitle">本地大模型 · 下载后离线运行</string>
-    <string name="market_search_hint">搜索模型、任务或厂商</string>
+    <string name="market_search_hint">搜索模型</string>
     <string name="filter_all">全部</string>
     <string name="filter_task_text">文本对话</string>
     <string name="filter_task_code">代码助手</string>
@@ -35,15 +35,15 @@
     <string name="filter_size_le2">≤ 2B</string>
     <string name="filter_size_mid">3~8B</string>
     <string name="filter_size_gt8">&gt; 8B</string>
-    <string name="section_recommended">推荐模型</string>
-    <string name="market_count_fmt">共 %d 个模型</string>
+    <string name="section_recommended">全部模型</string>
+    <string name="market_count_fmt">%d 个</string>
     <string name="empty_market_title">没有符合条件的模型</string>
     <string name="empty_market_sub">换个关键词，或清除筛选条件重新浏览</string>
     <string name="action_clear_filters">清除筛选</string>
-    <string name="hero_tag">本周精选</string>
+    <string name="hero_tag">轻量入门</string>
     <string name="hero_title">Qwen3-4B-Instruct</string>
     <string name="hero_desc">中文对话首选 · 32K 上下文 · 实测 14 tok/s</string>
-    <string name="hero_cta">查看详情 →</string>
+    <string name="hero_cta">查看模型</string>
     <string name="compat_recommended">推荐</string>
     <string name="compat_runnable">可运行</string>
     <string name="compat_high">高负载</string>
@@ -69,10 +69,10 @@
     <string name="btn_download_fmt">下载（%s）</string>
     <string name="btn_open_chat">开始对话</string>
     <string name="btn_unsupported">当前设备不支持</string>
-    <string name="download_note_fmt">下载前验证目录签名，下载后验证文件完整性。下载需要联网，完成后可离线使用。</string>
+    <string name="download_note_fmt">下载完成后可离线使用，文件将自动校验。</string>
 
     <!-- 下载管理 -->
-    <string name="dl_title">下载管理</string>
+    <string name="dl_title">下载</string>
     <string name="dl_summary_fmt">%1$d 个进行中 · 可用空间 %2$s</string>
     <string name="dl_section_catalog">模型目录</string>
     <string name="dl_section_active">进行中</string>
@@ -91,9 +91,9 @@
     <string name="dl_state_failed_fmt">失败 · %s</string>
     <string name="storage_title">设备存储</string>
     <string name="storage_text_fmt">已用 %1$s / 共 %2$s · 可用 %3$s</string>
-    <string name="empty_dl_title">暂无内容</string>
-    <string name="empty_dl_sub">点击上方「重试」同步模型目录，或去市场挑选模型</string>
-    <string name="action_goto_market">去市场看看</string>
+    <string name="empty_dl_title">暂无下载任务</string>
+    <string name="empty_dl_sub">挑选一个模型，下载后即可开始对话</string>
+    <string name="action_goto_market">浏览模型</string>
     <string name="snackbar_queued">已加入下载队列（模拟）</string>
     <string name="snackbar_queued_real">已加入下载队列</string>
     <string name="snackbar_view">查看</string>
@@ -105,19 +105,19 @@
     <string name="installed_meta_fmt">%1$s · 安装于 %2$s</string>
 
     <!-- 聊天 -->
-    <string name="chat_input_hint">发送消息给本地模型…</string>
-    <string name="chat_empty_title">开始本地对话</string>
-    <string name="chat_empty_sub">所有计算都在这台手机上完成，对话内容不会离开你的设备。</string>
+    <string name="chat_input_hint">输入消息…</string>
+    <string name="chat_empty_title">有什么想聊的？</string>
+    <string name="chat_empty_sub">从一个问题或想法开始</string>
     <string name="chat_ready">已就绪</string>
     <string name="chat_generating">生成中…</string>
-    <string name="chat_model_unloaded">已下载 · 发送时加载</string>
+    <string name="chat_model_unloaded">发送时自动加载</string>
     <string name="chat_model_loading">正在加载模型…</string>
-    <string name="chat_model_loaded">已加载 · 占用运行内存</string>
+    <string name="chat_model_loaded">就绪</string>
     <string name="chat_model_releasing">正在释放运行内存…</string>
     <string name="chat_model_error">推理进程已退出 · 发送可重试</string>
-    <string name="chat_unload_model">释放模型</string>
+    <string name="chat_unload_model">释放内存</string>
     <string name="chat_context_trimmed">本轮仅使用最近的对话，完整历史仍保留在本机</string>
-    <string name="chat_no_model">未安装模型 · 请先在市场下载</string>
+    <string name="chat_no_model">选择模型</string>
     <string name="chat_mode_real">本地推理</string>
     <string name="chat_mode_demo">演示模式</string>
     <string name="picker_title">切换模型</string>
@@ -160,15 +160,15 @@
 
     <!-- 设置 -->
     <string name="settings_title">设置</string>
-    <string name="settings_ver_fmt">版本 %s</string>
-    <string name="group_mode">运行模式</string>
-    <string name="mode_auto">自动（推荐）</string>
-    <string name="mode_auto_desc">每轮根据系统省电、温度和内存状态选择参数</string>
+    <string name="settings_ver_fmt">端智随行 · %s</string>
+    <string name="group_mode">使用偏好</string>
+    <string name="mode_auto">自动</string>
+    <string name="mode_auto_desc">根据设备状态调整，适合日常使用</string>
     <string name="mode_balanced">均衡</string>
-    <string name="mode_balanced_desc">通常最多 4 线程；自动上下文采用 2K，高温或内存紧张时降低负载</string>
+    <string name="mode_balanced_desc">兼顾回复质量与资源占用</string>
     <string name="mode_saver">省电</string>
-    <string name="mode_saver_desc">最多 2 线程和较短输出；自动上下文采用 1K，手动长度保持不变</string>
-    <string name="group_inference">推理行为</string>
+    <string name="mode_saver_desc">降低运行负载，减少电量消耗</string>
+    <string name="group_inference">对话</string>
     <string name="sw_keep_screen">生成时保持屏幕常亮</string>
     <string name="sw_keep_screen_sub">长回复时避免中途熄屏打断阅读</string>
     <string name="sw_bg_gen">离开页面时保存进度</string>
@@ -195,7 +195,7 @@
     <string name="license_dialog_title">开源许可证</string>
     <string name="cache_cleaned_fmt">已清理 %s 临时缓存</string>
     <string name="row_context_length">上下文长度</string>
-    <string name="row_gpu_layers">GPU 卸载层数</string>
+    <string name="row_gpu_layers">GPU 加速</string>
     <string name="context_auto">自动 · 根据运行模式使用 1K / 2K</string>
     <string name="context_value">%1$d tokens · 超过模型上限时按上限运行</string>
     <string name="gpu_cpu">0 层 · 仅 CPU</string>
@@ -207,4 +207,17 @@
     <string name="gpu_explanation">0 表示仅 CPU，-1 表示全部层，也可输入 1～256 指定层数，超过模型总层数时按全部层处理。需要支持 Vulkan 1.2 的 GPU。手机通常共享系统内存，实际 GPU 占用随模型、量化和上下文变化，不能按固定 MB 分配。保存后在下一轮对话重新加载生效。</string>
     <string name="inference_reset">恢复默认</string>
     <string name="chat_latest_message">回到最新消息</string>
+    <string name="action_filters">筛选</string>
+    <string name="action_filters_active">筛选（已启用）</string>
+    <string name="advanced_title">高级设置</string>
+    <string name="advanced_sub">上下文、GPU 与设备诊断</string>
+    <string name="action_diagnostics">设备诊断</string>
+    <string name="chat_prompt_think">帮我理清思路</string>
+    <string name="chat_prompt_write">润色一段文字</string>
+    <string name="chat_prompt_think_text">我想梳理一个问题，请先问我需要解决什么，再帮我一步步分析。</string>
+    <string name="chat_prompt_write_text">请帮我润色下面这段文字，保留原意，让表达更自然：
+</string>
+    <string name="chat_get_model">选择一个模型，即可开始对话</string>
+    <string name="action_more">更多操作</string>
+    <string name="model_release_action">释放当前模型内存</string>
 </resources>

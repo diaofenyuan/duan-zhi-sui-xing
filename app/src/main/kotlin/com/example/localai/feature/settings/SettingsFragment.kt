@@ -75,6 +75,14 @@ class SettingsFragment : Fragment() {
         swKeepScreen.setOnCheckedChangeListener { _, checked ->
             prefs().edit().putBoolean(KEY_KEEP_SCREEN, checked).apply()
         }
+        view.findViewById<View>(R.id.row_advanced).setOnClickListener {
+            val content = view.findViewById<View>(R.id.advanced_content)
+            content.visibility = if (content.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            it.isSelected = content.visibility == View.VISIBLE
+        }
+        view.findViewById<View>(R.id.row_diagnostics).setOnClickListener {
+            (activity as? MainActivity)?.push(com.example.localai.feature.diagnostics.DiagnosticsFragment())
+        }
         refreshInferenceSettings()
         view.findViewById<View>(R.id.row_context_length).setOnClickListener { editInferenceSetting(false) }
         view.findViewById<View>(R.id.row_gpu_layers).setOnClickListener { editInferenceSetting(true) }
@@ -186,8 +194,9 @@ class SettingsFragment : Fragment() {
     }
 
     private fun highlight(card: MaterialCardView, selected: Boolean) {
-        val density = resources.displayMetrics.density
-        card.strokeWidth = if (selected) (2 * density).toInt() else (1 * density).toInt()
+        card.strokeWidth = 0
+        card.setCardBackgroundColor(ContextCompat.getColor(requireContext(),
+            if (selected) R.color.md_primary_container else R.color.surface_variant))
         card.strokeColor = ContextCompat.getColor(requireContext(),
             if (selected) R.color.md_primary else R.color.outline)
     }

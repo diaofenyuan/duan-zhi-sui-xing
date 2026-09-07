@@ -88,7 +88,7 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.addOnBackStackChangedListener { syncNavSelection() }
 
         if (savedInstanceState == null) {
-            openTab(R.id.nav_market)
+            openTab(R.id.nav_chat)
         }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -133,7 +133,7 @@ class MainActivity : AppCompatActivity() {
             is MarketFragment -> R.id.nav_market
             is ChatFragment -> R.id.nav_chat
             is DownloadsFragment -> R.id.nav_download
-            is DiagnosticsFragment -> R.id.nav_diag
+            is DiagnosticsFragment -> R.id.nav_settings
             is SettingsFragment -> R.id.nav_settings
             else -> 0
         }

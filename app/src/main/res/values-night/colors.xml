@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Brand (dark) -->
-    <color name="md_primary">#A5B4FC</color>
-    <color name="md_on_primary">#1E1B4B</color>
-    <color name="md_primary_container">#3730A3</color>
-    <color name="md_on_primary_container">#E0E7FF</color>
-    <color name="md_secondary">#5EEAD4</color>
+    <color name="md_primary">#80CDB6</color>
+    <color name="md_on_primary">#103B31</color>
+    <color name="md_primary_container">#203D33</color>
+    <color name="md_on_primary_container">#C2EBDC</color>
+    <color name="md_secondary">#80CDB6</color>
     <color name="md_on_secondary">#042F2E</color>
-    <color name="md_secondary_container">#115E59</color>
-    <color name="md_on_secondary_container">#CCFBF1</color>
+    <color name="md_secondary_container">#203D33</color>
+    <color name="md_on_secondary_container">#C2EBDC</color>
     <color name="md_tertiary">#FBBF24</color>
     <color name="md_on_tertiary">#1F1300</color>
     <color name="md_tertiary_container">#78350F</color>
     <color name="md_on_tertiary_container">#FEF3C7</color>
 
     <!-- Surfaces (dark) -->
-    <color name="app_background">#0B0E18</color>
-    <color name="surface">#131725</color>
-    <color name="surface_variant">#1C2233</color>
-    <color name="on_surface">#E8EBF3</color>
-    <color name="on_surface_variant">#9BA6BB</color>
-    <color name="outline">#272E42</color>
+    <color name="app_background">#111715</color>
+    <color name="surface">#18201C</color>
+    <color name="surface_variant">#222D27</color>
+    <color name="on_surface">#E4ECE7</color>
+    <color name="on_surface_variant">#A5B5AC</color>
+    <color name="outline">#34423A</color>
 
     <!-- Text (dark) -->
-    <color name="text_primary">#E8EBF3</color>
-    <color name="text_secondary">#9BA6BB</color>
-    <color name="text_tertiary">#929FB6</color>
+    <color name="text_primary">#E4ECE7</color>
+    <color name="text_secondary">#A5B5AC</color>
+    <color name="text_tertiary">#9AADA1</color>
 
     <!-- Status (dark) -->
     <color name="status_success">#34D399</color>
@@ -38,8 +38,8 @@
     <color name="status_danger_container">#3B1717</color>
 
     <!-- Gradients (dark) -->
-    <color name="hero_start">#4338CA</color>
-    <color name="hero_end">#6D28D9</color>
+    <color name="hero_start">#245C49</color>
+    <color name="hero_end">#245C49</color>
     <color name="hero_sub_text">#CDC7FF</color>
     <color name="hero_badge">#33FFFFFF</color>
     <color name="hero_badge_soft">#26FFFFFF</color>

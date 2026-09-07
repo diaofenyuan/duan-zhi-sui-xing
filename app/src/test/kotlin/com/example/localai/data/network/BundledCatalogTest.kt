@@ -40,6 +40,28 @@ class BundledCatalogTest {
         assertNull(TrustedKeys.get().publicKey("release-2026-01-dev"))
     }
 
+    @Test fun bundledCodeModelsAppearInCodeFilter() {
+        val client = client()
+        val catalog = com.example.localai.feature.download.DownloadRepository.CatalogView().apply {
+            models = client.fetchCatalog().models!!.map { entry ->
+                val m = client.fetchManifest(entry.modelId!!, entry.version!!)
+                com.example.localai.feature.download.DownloadRepository.CatalogItem(
+                    m.modelId, m.version, m.displayName, m.description, m.source?.publisher,
+                    m.license?.spdx, m.license?.url, m.source?.url,
+                    m.primaryFile()!!.sizeBytes, m.quantization, m.parameterCount, m.contextLength,
+                    m.tasks, m.languages, m.weightStatus, m.chatTemplate, m.updatedAt,
+                    m.runtime?.minAndroidApi ?: 0, m.runtime?.abis, false)
+            }
+        }
+        val models = com.example.localai.feature.market.MarketModels.map(catalog,
+            com.example.localai.core.compatibility.CompatibilityEngine.DeviceSnapshot(
+                36, "arm64-v8a", 64L * 1024 * 1024 * 1024, 8L * 1024 * 1024 * 1024))
+        val code = com.example.localai.mock.Filters.apply(models, "",
+            com.example.localai.model.ModelInfo.TASK_CODE, "ALL", "ALL")
+        assertEquals(4, code.size)
+        assertTrue(code.all { it.name.contains("Coder") })
+    }
+
     @Test fun modifiedBundledManifestIsRejected() {
         val client = client { path, bytes ->
             if (path.endsWith("manifest.json")) bytes + byteArrayOf(32) else bytes

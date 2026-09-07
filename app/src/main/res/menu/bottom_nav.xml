@@ -1,19 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/nav_market"
-        android:icon="@drawable/ic_sparkle"
-        android:title="@string/tab_market" />
-    <item
-        android:id="@+id/nav_chat"
-        android:icon="@drawable/ic_chat"
-        android:title="@string/tab_chat" />
+    <item android:id="@+id/nav_chat" android:icon="@drawable/ic_chat" android:title="@string/tab_chat" />
+    <item android:id="@+id/nav_market" android:icon="@drawable/ic_folder" android:title="@string/tab_market" />
     <item
         android:id="@+id/nav_download"
         android:icon="@drawable/ic_download"
         android:title="@string/tab_download" />
     <item
         android:id="@+id/nav_diag"
+        android:visible="false"
         android:icon="@drawable/ic_pulse"
         android:title="@string/tab_diag" />
     <item

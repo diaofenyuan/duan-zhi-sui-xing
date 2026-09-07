@@ -5,7 +5,9 @@
     android:layout_height="wrap_content"
     android:layout_marginStart="@dimen/pad_screen"
     android:layout_marginEnd="@dimen/pad_screen"
-    android:layout_marginBottom="10dp"
+    android:layout_marginBottom="0dp"
+    app:cardCornerRadius="0dp"
+    app:strokeWidth="0dp"
     android:clickable="true"
     android:focusable="true">
 
@@ -14,7 +16,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="14dp">
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp">
 
         <FrameLayout
             android:layout_width="46dp"
@@ -31,7 +34,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="17sp"
                 android:textStyle="bold" />
         </FrameLayout>
@@ -44,10 +47,9 @@
             android:orientation="vertical">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/text_name"
@@ -60,7 +62,7 @@
                     style="@style/Text.App.Badge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginTop="5dp"
                     android:background="@drawable/bg_rounded_badge"
                     android:paddingStart="7dp"
                     android:paddingEnd="7dp"
@@ -74,42 +76,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
-                android:maxLines="1"
+                android:maxLines="2"
                 android:ellipsize="end" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp">
 
-                <TextView
-                    android:id="@+id/tag_ctx"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_rounded_badge"
-                    android:backgroundTint="@color/surface_variant"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingTop="3dp"
-                    android:paddingBottom="3dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/tag_size"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:background="@drawable/bg_rounded_badge"
-                    android:backgroundTint="@color/surface_variant"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingTop="3dp"
-                    android:paddingBottom="3dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout

@@ -18,7 +18,7 @@
             android:gravity="center_vertical"
             android:paddingStart="@dimen/pad_screen"
             android:paddingEnd="@dimen/pad_screen"
-            android:paddingTop="14dp">
+            android:paddingTop="20dp">
 
             <TextView
                 style="@style/Text.App.PageTitle"
@@ -40,7 +40,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/pad_screen"
             android:layout_marginEnd="@dimen/pad_screen"
-            android:layout_marginTop="@dimen/gap_sm">
+            android:layout_marginTop="20dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -88,47 +88,21 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 模型目录（签名验证通过的目录数据） -->
-        <LinearLayout
-            android:id="@+id/catalog_header"
-            android:layout_width="match_parent"
+        <!-- 已安装 -->
+        <TextView
+            android:id="@+id/label_installed"
+            style="@style/Text.App.Label"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
             android:paddingStart="@dimen/pad_screen"
             android:paddingEnd="@dimen/pad_screen"
             android:paddingTop="@dimen/gap_lg"
-            android:paddingBottom="@dimen/gap_xs">
-
-            <TextView
-                style="@style/Text.App.Label"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="@string/dl_section_catalog"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/catalog_status"
-                style="@style/Text.App.Caption"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp" />
-
-            <TextView
-                android:id="@+id/btn_sync_catalog"
-                style="@style/Text.App.Caption"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="6dp"
-                android:background="?attr/selectableItemBackground"
-                android:text="@string/action_retry"
-                android:textColor="@color/md_primary"
-                android:contentDescription="@string/action_retry" />
-        </LinearLayout>
+            android:paddingBottom="@dimen/gap_xs"
+            android:text="@string/dl_section_installed"
+            android:textStyle="bold" />
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/list_catalog"
+            android:id="@+id/list_installed"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
@@ -154,26 +128,6 @@
             android:nestedScrollingEnabled="false"
             android:overScrollMode="never" />
 
-        <!-- 已安装 -->
-        <TextView
-            android:id="@+id/label_installed"
-            style="@style/Text.App.Label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingStart="@dimen/pad_screen"
-            android:paddingEnd="@dimen/pad_screen"
-            android:paddingTop="@dimen/gap_lg"
-            android:paddingBottom="@dimen/gap_xs"
-            android:text="@string/dl_section_installed"
-            android:textStyle="bold" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/list_installed"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"
-            android:overScrollMode="never" />
-
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -181,7 +135,8 @@
             <com.example.localai.common.widget.EmptyStateView
                 android:id="@+id/empty"
                 android:layout_width="match_parent"
-                android:layout_height="220dp"
+                android:layout_height="wrap_content"
+                android:minHeight="260dp"
                 android:visibility="gone"
                 app:esIcon="@drawable/ic_download"
                 app:esTitle="@string/empty_dl_title"

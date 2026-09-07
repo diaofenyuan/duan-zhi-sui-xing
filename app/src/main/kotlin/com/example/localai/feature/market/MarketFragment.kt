@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.localai.MainActivity
 import com.example.localai.R
+import com.example.localai.common.ModelDisplay
 import com.example.localai.common.widget.EmptyStateView
 import com.example.localai.core.compatibility.CompatibilityEngine
 import com.example.localai.core.device.DeviceProfiler
@@ -72,6 +73,13 @@ class MarketFragment : Fragment() {
 
         listView.layoutManager = LinearLayoutManager(requireContext())
         listView.adapter = adapter
+        listView.addItemDecoration(com.google.android.material.divider.MaterialDividerItemDecoration(
+            requireContext(), LinearLayoutManager.VERTICAL).apply {
+            dividerInsetStart = (24 * resources.displayMetrics.density).toInt()
+            dividerInsetEnd = dividerInsetStart
+            dividerColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.outline)
+            isLastItemDecorated = false
+        })
         emptyView.visibility = View.GONE
 
         // 精选横幅：点击进入第一条目录模型（目录为空时隐藏）
@@ -82,6 +90,11 @@ class MarketFragment : Fragment() {
                     (activity as MainActivity).push(ModelDetailFragment.newInstance(heroId))
                 }
             }
+        }
+
+        val advancedFilters = view.findViewById<View>(R.id.filters_advanced)
+        view.findViewById<View>(R.id.btn_filters).setOnClickListener {
+            advancedFilters.visibility = if (advancedFilters.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
         // 搜索
@@ -218,10 +231,9 @@ class MarketFragment : Fragment() {
         if (all.isNotEmpty()) {
             val hero = all[0]
             val heroTitle = heroCard.findViewById<TextView>(R.id.hero_title)
-            heroTitle.text = hero.name
+            heroTitle.text = ModelDisplay.name(hero.name)
             val heroDesc = heroCard.findViewById<TextView>(R.id.hero_desc)
-            heroDesc.text = hero.paramsLabel + " 参数 · 上下文 " + hero.contextLabel +
-                    " · " + ModelAdapter.compatLabel(hero.compat)
+            heroDesc.text = hero.paramsLabel + " · " + hero.sizeLabel + " · " + ModelAdapter.compatLabel(hero.compat)
         }
         applyFilter()
     }
@@ -230,6 +242,14 @@ class MarketFragment : Fragment() {
         if (!::adapter.isInitialized || context == null) {
             return
         }
+        val filtered = query.isNotBlank() || taskFilter != Filters.TASK_ALL ||
+                langFilter != Filters.LANG_ALL || sizeFilter != Filters.SIZE_ALL
+        // 小屏和大字体优先展示可操作的模型列表，推荐条不占据首屏。
+        val roomy = resources.configuration.screenHeightDp >= 640 && resources.configuration.fontScale <= 1.2f
+        heroCard.visibility = if (all.isNotEmpty() && !filtered && roomy) View.VISIBLE else View.GONE
+        view?.findViewById<View>(R.id.btn_filters)?.contentDescription = getString(
+            if (langFilter != Filters.LANG_ALL || sizeFilter != Filters.SIZE_ALL)
+                R.string.action_filters_active else R.string.action_filters)
         val result = Filters.apply(all, query, taskFilter, langFilter, sizeFilter)
         adapter.submit(result)
         countView.text = getString(R.string.market_count_fmt, result.size)

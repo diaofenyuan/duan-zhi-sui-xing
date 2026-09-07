@@ -93,7 +93,7 @@ object MarketModels {
     }
 
     private fun primaryTask(tasks: List<String>?): String {
-        if (tasks != null && tasks.contains(ModelInfo.TASK_CODE)) {
+        if (tasks?.any { it.equals(ModelInfo.TASK_CODE, ignoreCase = true) } == true) {
             return ModelInfo.TASK_CODE
         }
         return ModelInfo.TASK_TEXT

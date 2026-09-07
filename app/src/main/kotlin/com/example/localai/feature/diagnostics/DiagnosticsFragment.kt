@@ -66,6 +66,7 @@ class DiagnosticsFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        view.findViewById<View>(R.id.btn_back).setOnClickListener { parentFragmentManager.popBackStack() }
         adaptReadableLayout(view)
         repository = ServiceLocator.downloads()
         repository?.register(repositoryListener)

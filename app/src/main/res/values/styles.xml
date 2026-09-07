@@ -3,14 +3,14 @@
 
     <!-- ============ Typography ============ -->
     <style name="Text.App.Headline" parent="android:TextAppearance">
-        <item name="android:textSize">24sp</item>
+        <item name="android:textSize">28sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
     <style name="Text.App.PageTitle" parent="android:TextAppearance">
-        <item name="android:textSize">20sp</item>
+        <item name="android:textSize">26sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
@@ -23,7 +23,7 @@
     </style>
 
     <style name="Text.App.ItemTitle" parent="android:TextAppearance">
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:maxLines">1</item>
@@ -31,7 +31,7 @@
     </style>
 
     <style name="Text.App.Body" parent="android:TextAppearance">
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:lineSpacingExtra">4sp</item>
     </style>
@@ -48,7 +48,7 @@
     </style>
 
     <style name="Text.App.Caption" parent="android:TextAppearance">
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/text_tertiary</item>
     </style>
 
@@ -87,7 +87,7 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">2dp</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/text_tertiary</item>
     </style>
 
@@ -103,7 +103,7 @@
     <style name="SpecLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/text_tertiary</item>
     </style>
 
@@ -138,7 +138,7 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">6dp</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:gravity">center</item>
@@ -201,7 +201,7 @@
     <style name="RowTitle" parent="android:TextAppearance">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
@@ -249,7 +249,8 @@
         <item name="itemIconTint">@color/nav_item_tint</item>
         <item name="itemTextColor">@color/nav_item_tint</item>
         <item name="itemActiveIndicatorStyle">@style/Widget.App.NavIndicator</item>
-        <item name="elevation">8dp</item>
+        <item name="elevation">0dp</item>
+        <item name="itemRippleColor">@color/md_primary_container</item>
     </style>
 
     <style name="Widget.App.NavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
@@ -257,7 +258,7 @@
     </style>
 
     <style name="Widget.App.Button" parent="Widget.Material3.Button">
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="cornerRadius">@dimen/radius_btn</item>
         <item name="android:minHeight">@dimen/h_button</item>
@@ -268,7 +269,7 @@
     </style>
 
     <style name="Widget.App.Button.Outline" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="cornerRadius">@dimen/radius_btn</item>
         <item name="android:minHeight">@dimen/h_button</item>
@@ -281,7 +282,11 @@
 
     <style name="Widget.App.Chip" parent="Widget.Material3.Chip.Filter">
         <item name="android:textSize">12sp</item>
-        <item name="chipMinHeight">30dp</item>
+        <item name="chipMinHeight">36dp</item>
+        <item name="ensureMinTouchTargetSize">true</item>
+        <item name="chipBackgroundColor">@color/chip_background</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="android:textColor">@color/nav_item_tint</item>
         <item name="chipStartPadding">12dp</item>
         <item name="chipEndPadding">12dp</item>
         <item name="checkedIconVisible">false</item>

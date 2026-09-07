@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.localai.MainActivity
 import com.example.localai.R
+import com.example.localai.common.ModelDisplay
 import com.example.localai.core.inference.ApprovedModels
 import com.example.localai.data.ServiceLocator
 import com.example.localai.model.ChatMessage
@@ -181,7 +182,39 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             }
         }
         view.findViewById<View>(R.id.btn_new).setOnClickListener { startNewConversation() }
-        view.findViewById<View>(R.id.btn_switch).setOnClickListener { showModelPicker() }
+        // 大字体或窄屏把次要操作收进菜单，为模型名称保留完整阅读空间。
+        val compactHeader = resources.configuration.screenWidthDp / resources.configuration.fontScale < 300
+        view.findViewById<View>(R.id.btn_new).visibility = if (compactHeader) View.GONE else View.VISIBLE
+        view.findViewById<View>(R.id.btn_history).visibility = if (compactHeader) View.GONE else View.VISIBLE
+        modelTitle.setOnClickListener { showModelPicker() }
+        view.findViewById<View>(R.id.btn_switch).setOnClickListener { anchor ->
+            androidx.appcompat.widget.PopupMenu(requireContext(), anchor).apply {
+                if (compactHeader) {
+                    menu.add(R.string.action_new_conversation).setOnMenuItemClickListener { startNewConversation(); true }
+                    menu.add(R.string.history_title).setOnMenuItemClickListener {
+                        (activity as? MainActivity)?.push(HistoryFragment()); true
+                    }
+                }
+                menu.add(R.string.picker_title).setOnMenuItemClickListener { showModelPicker(); true }
+                if (!generating && engine.modelState() == ChatEngine.ModelState.LOADED) {
+                    menu.add(R.string.model_release_action).setOnMenuItemClickListener { engine.release(); true }
+                }
+                show()
+            }
+        }
+        view.findViewById<View>(R.id.btn_get_model).setOnClickListener {
+            (activity as? MainActivity)?.openTab(R.id.nav_market)
+        }
+        for ((id, prompt) in listOf(R.id.prompt_think to R.string.chat_prompt_think_text,
+                R.id.prompt_write to R.string.chat_prompt_write_text)) {
+            view.findViewById<View>(id).setOnClickListener {
+                inputView.setText(getString(prompt))
+                inputView.setSelection(inputView.text.length)
+                inputView.requestFocus()
+                requireContext().getSystemService(android.view.inputmethod.InputMethodManager::class.java)
+                    .showSoftInput(inputView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }
+        }
 
         refreshHeader()
         inputView.setText(draft)
@@ -425,9 +458,15 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
     private fun refreshHeader() {
         val approved = resolveApproved()
         val state = engine.modelState()
-        modelTitle.text = approved?.displayName ?: getString(R.string.chat_no_model)
+        modelTitle.text = approved?.displayName?.let(ModelDisplay::name) ?: getString(R.string.chat_no_model)
+        modelTitle.contentDescription = approved?.displayName ?: getString(R.string.picker_title)
         modelStateText.visibility = if (approved != null) View.VISIBLE else View.GONE
-        btnUnloadModel.visibility = modelStateText.visibility
+        btnUnloadModel.visibility = View.GONE
+        view?.findViewById<View>(R.id.btn_get_model)?.visibility = if (approved == null) View.VISIBLE else View.GONE
+        view?.findViewById<View>(R.id.prompt_think)?.visibility = if (approved != null) View.VISIBLE else View.GONE
+        view?.findViewById<View>(R.id.prompt_write)?.visibility = if (approved != null) View.VISIBLE else View.GONE
+        view?.findViewById<TextView>(R.id.empty_subtitle)?.setText(
+            if (approved == null) R.string.chat_get_model else R.string.chat_empty_sub)
         modelStateText.setText(when (state) {
             ChatEngine.ModelState.UNLOADED -> R.string.chat_model_unloaded
             ChatEngine.ModelState.LOADING -> R.string.chat_model_loading
@@ -438,7 +477,8 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
         })
         btnUnloadModel.isEnabled = approved != null && !generating && state == ChatEngine.ModelState.LOADED
         setStatusDot(if (approved != null && state in setOf(ChatEngine.ModelState.LOADED,
-                ChatEngine.ModelState.GENERATING)) R.color.status_success else R.color.status_warn)
+                ChatEngine.ModelState.GENERATING)) R.color.status_success
+            else if (state == ChatEngine.ModelState.ERROR) R.color.status_warn else R.color.text_tertiary)
     }
 
     /** 绿色仅代表模型已加载，下载完成本身不代表推理已就绪。 */
@@ -462,6 +502,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             com.example.localai.feature.settings.InferencePolicy.keepScreenOn(requireContext())
         inputView.isEnabled = !loadingHistory
         btnSend.isEnabled = generating || (!emptyInput && !loadingHistory)
+        btnSend.alpha = if (btnSend.isEnabled) 1f else 0.38f
         btnSend.contentDescription = getString(if (generating) R.string.action_stop else R.string.action_send)
         btnSend.setIconResource(if (generating) R.drawable.ic_stop else R.drawable.ic_send)
         btnSend.backgroundTintList = android.content.res.ColorStateList.valueOf(
@@ -476,7 +517,8 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             return
         }
         if (currentModelId.isEmpty() || resolveApproved() == null) {
-            Snackbar.make(messagesView, R.string.picker_empty, Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(messagesView, R.string.picker_empty, Snackbar.LENGTH_LONG)
+                .setAction(R.string.action_goto_market) { (activity as? MainActivity)?.openTab(R.id.nav_market) }.show()
             return
         }
         inputView.setText("")
