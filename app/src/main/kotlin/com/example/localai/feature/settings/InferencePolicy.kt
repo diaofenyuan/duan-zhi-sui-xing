@@ -34,7 +34,7 @@ object InferencePolicy {
         val saver = mode == "saver" || constrained || (mode != "balanced" && powerSave)
         // 手动上下文独立于性能档位；只按模型真实上限裁剪，避免设置后被静默降回 1K。
         val context = if (manualContext > 0) minOf(manualContext.coerceIn(MIN_CONTEXT, MAX_CONTEXT), model.maxContextLength)
-            else minOf(model.contextLength, if (saver) 1024 else 2048)
+            else minOf(model.maxContextLength, if (saver) 1024 else if (mode == "balanced") 4096 else model.contextLength.coerceAtMost(2048))
         return Parameters(context,
             minOf(model.threadCount, processors.coerceAtLeast(1), if (saver) 2 else 4),
             minOf(model.maxNewTokens, if (saver) 128 else 256), gpuLayers.coerceIn(-1, 256))

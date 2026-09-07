@@ -14,6 +14,7 @@ interface ChatEngine {
     interface StreamListener {
         /** 首个片段到达前触发一次，用于展示"正在思考"。 */
         fun onThinking()
+        fun onAdvice(message: String) {}
 
         /** 仅影响本轮推理输入，持久化的历史不删除。 */
         fun onContextTrimmed(droppedCount: Int) {}

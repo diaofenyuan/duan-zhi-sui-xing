@@ -34,6 +34,9 @@ import java.util.ArrayList
  * 模型切换（真实已安装模型）与会话持久化（Room：新建/自动保存/恢复）。
  */
 class ChatFragment : Fragment(), ChatEngine.StreamListener {
+    override fun onAdvice(message: String) {
+        view?.let { Snackbar.make(it, message, Snackbar.LENGTH_LONG).show() }
+    }
 
     private lateinit var adapter: MessageAdapter
     private lateinit var engine: ChatEngine
@@ -207,7 +210,7 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             }
         }
         view.findViewById<View>(R.id.btn_get_model).setOnClickListener {
-            (activity as? MainActivity)?.openTab(R.id.nav_market)
+            (activity as? MainActivity)?.push(com.example.localai.feature.settings.DeviceAdviceFragment())
         }
         view.findViewById<View>(R.id.btn_materials).setOnClickListener {
             (activity as? MainActivity)?.push(com.example.localai.feature.library.LibraryFragment())

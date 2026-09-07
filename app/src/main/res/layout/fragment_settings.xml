@@ -30,6 +30,7 @@
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.button.MaterialButton android:id="@+id/row_device_advice" style="@style/Widget.Material3.Button.TextButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="24dp" android:layout_marginEnd="24dp" android:minHeight="48dp" android:text="设备推荐与运行实测" />
         <TextView style="@style/GroupLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/group_inference"/>
         <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/pad_screen" android:layout_marginEnd="@dimen/pad_screen">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">

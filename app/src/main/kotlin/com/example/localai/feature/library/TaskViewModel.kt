@@ -142,6 +142,7 @@ class TaskViewModel(app: Application) : AndroidViewModel(app) {
         notifyChanged()
         engine!!.start(listOf(ChatMessage(ChatMessage.ROLE_USER, prompts[index])), object : ChatEngine.StreamListener {
             override fun onThinking() {}
+            override fun onAdvice(message: String) { status = "正在本机生成 ${index + 1}/${prompts.size}\n$message"; notifyChanged() }
             override fun onDelta(delta: String) {
                 if (token == epoch) { record.output += delta; notifyChanged() }
             }

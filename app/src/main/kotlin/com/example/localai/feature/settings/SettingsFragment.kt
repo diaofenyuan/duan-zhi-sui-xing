@@ -80,6 +80,9 @@ class SettingsFragment : Fragment() {
             content.visibility = if (content.visibility == View.VISIBLE) View.GONE else View.VISIBLE
             it.isSelected = content.visibility == View.VISIBLE
         }
+        view.findViewById<View>(R.id.row_device_advice).setOnClickListener {
+            (activity as? MainActivity)?.push(DeviceAdviceFragment())
+        }
         view.findViewById<View>(R.id.row_diagnostics).setOnClickListener {
             (activity as? MainActivity)?.push(com.example.localai.feature.diagnostics.DiagnosticsFragment())
         }

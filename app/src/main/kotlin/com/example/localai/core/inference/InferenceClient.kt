@@ -218,6 +218,16 @@ class InferenceClient(context: Context) {
     }
 
     /** 同步诊断接口，仅供后台调用；业务 UI 不在主线程查询 Binder。 */
+    fun readStats(callback: (InferenceStats?) -> Unit) {
+        val current = connection ?: return
+        binderIo.execute {
+            if (connection !== current) return@execute
+            val snapshot = try { current.service?.getStats() } catch (_: RemoteException) { null }
+            main.post { callback(snapshot) }
+        }
+    }
+
+    /** 同步诊断接口，仅供后台调用；业务 UI 不在主线程查询 Binder。 */
     fun getStats(): InferenceStats? {
         val current = connection ?: return null
         return try {

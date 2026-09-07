@@ -5,6 +5,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class InferencePolicyTest {
+    @Test fun qualityModeRetainsMoreContextWithoutIgnoringPressure() {
+        val fast = InferencePolicy.select(ApprovedModels.QWEN_05B, "auto", 8, false, false)
+        val quality = InferencePolicy.select(ApprovedModels.QWEN_05B, "balanced", 8, false, false)
+        assertEquals(4096, quality.contextLength)
+        assertTrue(quality.contextLength > fast.contextLength)
+        assertEquals(1024, InferencePolicy.select(ApprovedModels.QWEN_05B, "balanced", 8, false, true).contextLength)
+    }
     @Test fun manualContextAndGpuSurviveModeChangesAndRespectModelLimit() {
         val manual = InferencePolicy.select(ApprovedModels.QWEN_05B, "saver", 8, true, true, 8192, 12)
         assertEquals(8192, manual.contextLength)

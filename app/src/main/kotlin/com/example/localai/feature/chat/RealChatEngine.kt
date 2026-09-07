@@ -58,6 +58,7 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
         running = true
         pendingPrompt = ""
         listener.onThinking()
+        com.example.localai.feature.settings.DeviceAdvice.pressure(appContext).takeIf { it.isNotBlank() }?.let { listener.onAdvice(it) }
         if (!running || generation != currentGeneration) return
         val preparePrompt = {
             client.withTokenizer({ countTokens ->
@@ -91,6 +92,9 @@ class RealChatEngine(context: Context, private val approved: ApprovedModels.Appr
 
             override fun onFinished(reason: Int) {
                 if (!running || generation != currentGeneration) return
+                if (reason != NativeSession.FINISH_STOPPED) {
+                    client.readStats { stats -> com.example.localai.feature.settings.DeviceAdvice.record(appContext, approved.modelId, parameters, stats) }
+                }
                 running = false
                 pendingPrompt = null
                 val l = this@RealChatEngine.listener

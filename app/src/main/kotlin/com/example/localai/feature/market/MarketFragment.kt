@@ -188,10 +188,9 @@ class MarketFragment : Fragment() {
     }
 
     private fun heroModelId(): String? {
-        for (m in all) {
-            return m.id
-        }
-        return null
+        val mode = requireContext().getSharedPreferences(InferencePolicy.PREFS, 0).getString(InferencePolicy.KEY_MODE, "auto")
+        return com.example.localai.feature.settings.DeviceAdvice.recommend(all, mode,
+            DeviceProfiler.collect(requireContext()).ramAvailMb)?.id
     }
 
     /** 从仓库目录视图刷新：LOADING/ERROR/READY 三态。 */
@@ -228,12 +227,13 @@ class MarketFragment : Fragment() {
                 ?: minOf(item.contextLength, 2048L)
         })
         heroCard.visibility = if (all.isEmpty()) View.GONE else View.VISIBLE
-        if (all.isNotEmpty()) {
-            val hero = all[0]
+        val recommended = all.firstOrNull { it.id == heroModelId() }
+        if (recommended != null) {
+            val hero = recommended
             val heroTitle = heroCard.findViewById<TextView>(R.id.hero_title)
             heroTitle.text = ModelDisplay.name(hero.name)
             val heroDesc = heroCard.findViewById<TextView>(R.id.hero_desc)
-            heroDesc.text = hero.paramsLabel + " · " + hero.sizeLabel + " · " + ModelAdapter.compatLabel(hero.compat)
+            heroDesc.text = hero.paramsLabel + " · " + hero.sizeLabel + " · 根据设备估算"
         }
         applyFilter()
     }
@@ -246,7 +246,7 @@ class MarketFragment : Fragment() {
                 langFilter != Filters.LANG_ALL || sizeFilter != Filters.SIZE_ALL
         // 小屏和大字体优先展示可操作的模型列表，推荐条不占据首屏。
         val roomy = resources.configuration.screenHeightDp >= 640 && resources.configuration.fontScale <= 1.2f
-        heroCard.visibility = if (all.isNotEmpty() && !filtered && roomy) View.VISIBLE else View.GONE
+        heroCard.visibility = if (heroModelId() != null && !filtered && roomy) View.VISIBLE else View.GONE
         view?.findViewById<View>(R.id.btn_filters)?.contentDescription = getString(
             if (langFilter != Filters.LANG_ALL || sizeFilter != Filters.SIZE_ALL)
                 R.string.action_filters_active else R.string.action_filters)
