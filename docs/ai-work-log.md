@@ -927,3 +927,16 @@
   - 结果：`PASS`（41 秒）；**0 错误、155 警告**。相对本日志早先记录的 126 警告有回升，主要类别为 UnusedResources 48、SetTextI18n 34、ContentDescription 16、UseKtx 14；已核实其中 3 条 `TrustAllX509TrustManager` 指向 Gradle 缓存依赖 bouncycastle `bcpkix-jdk15to18:1.72`，**不是本工程代码**（`app/src/main` 内无 `X509TrustManager` 相关实现）。警告收敛列入后续轮次。
 - 风险/阻塞：无软件阻塞。真机验收（P6）仍缺 arm64-v8a 真机。
 - 下一阶段依赖：`P4` 正式验收关闭仍需补一次端到端主流程记录；`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）尚未归档。
+
+### 2026-09-26 | 无障碍语义补齐与 Robolectric 资源解析 | DONE
+
+- 承接上一轮「警告收敛」待办，处理 Lint 的 16 条 `ContentDescription`。这些是无障碍真实缺陷（TalkBack 下图标完全无播报），不是纯风格问题。
+- 逐处判定而不是一律补描述：15 处图标与相邻文字或可点击行含义重复（诊断页三张状态卡的图标与设备图标、市场搜索框、下载页文件夹、下载条目状态图标、许可行与模型行的箭头、输入气泡、空态图标、详情页三个数据格图标与适配结论图标），标为 `android:contentDescription="@null"` 明确其为装饰元素；模型切换列表的勾选图标（`img_selected`）承载**真实状态**，仅标 `@null` 会让选中状态对无障碍用户彻底不可见，因此改为整行播报：新增 `a11y_selected`（“已选择”）字符串，绑定前用 `ViewCompat.setStateDescription` 设置或清空状态（未选中时清空，避免 RecyclerView 复用残留上一次的播报）。
+- 为这处**行为改动**补可执行证据时发现：本工程 `testOptions.unitTests.includeAndroidResources = false`，Robolectric 无法解析本工程资源，任何 inflate 布局的用例都会 `Resources$NotFoundException`——这也解释了此前为什么没有任何用例 inflate 布局。改为 `includeAndroidResources = true` 后资源可解析，新增 `PickerAdapterTest` 断言选中行 stateDescription 为「已选择」、重新绑定到未选中行后为 null（覆盖复用残留）。该配置变更同时让后续布局/无障碍类用例变得可写。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:testReleaseUnitTest :app:assembleDebug :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`（47 秒）；Debug **164 项、0 失败/0 错误/0 跳过**（29 个类，本轮新增 1 项）；Release **164 项、0 失败/0 错误/0 跳过**；`assembleDebug` BUILD SUCCESSFUL；`PickerAdapterTest.selectedRowExposesStateToAccessibility` PASS，4.084 秒。
+  - 命令：`./gradlew :app:lintDebug --offline`
+  - 结果：`PASS`；**0 错误、139 警告**（本轮前为 155），`ContentDescription` **16 → 0**。剩余主要类别：UnusedResources 48、SetTextI18n 34、UseKtx 14、NotifyDataSetChanged 8，留待后续轮次逐类处理。
+- 风险/阻塞：无软件阻塞。`includeAndroidResources = true` 会略微增加单测启动开销，本轮 Debug/Release 单测实测仍在既有量级。
+- 下一阶段依赖：`P4` 正式验收关闭仍需补一次端到端主流程记录；`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）尚未归档。

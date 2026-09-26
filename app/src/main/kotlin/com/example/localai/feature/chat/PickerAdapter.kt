@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import androidx.core.view.ViewCompat
 import com.example.localai.R
 import com.example.localai.model.ModelInfo
 import java.util.ArrayList
@@ -38,7 +39,12 @@ class PickerAdapter(
         h.textIcon.text = model.letter().toString()
         h.textName.text = model.name
         h.textMeta.text = model.paramsLabel + " · " + model.quant + " · " + model.sizeLabel
-        h.imgSelected.visibility = if (model.id == selectedId) View.VISIBLE else View.GONE
+        val selected = model.id == selectedId
+        h.imgSelected.visibility = if (selected) View.VISIBLE else View.GONE
+        // 勾选图标本身是装饰（不单独朗读），选中状态由整行播报给无障碍服务。
+        ViewCompat.setStateDescription(
+            h.itemView,
+            if (selected) h.itemView.context.getString(R.string.a11y_selected) else null)
         h.itemView.setOnClickListener { onPick.onPick(model) }
     }
 

@@ -49,6 +49,7 @@
                             android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:src="@drawable/ic_phone"
+                            android:contentDescription="@null"
                             app:tint="@android:color/white" />
                     </FrameLayout>
 
@@ -126,7 +127,7 @@
                 android:layout_height="wrap_content">
 
                 <LinearLayout style="@style/StatusCell">
-                    <ImageView android:id="@+id/icon_thermal" style="@style/StatusIcon" android:src="@drawable/ic_thermo" app:tint="@color/status_success" />
+                    <ImageView android:id="@+id/icon_thermal" style="@style/StatusIcon" android:src="@drawable/ic_thermo" app:tint="@color/status_success" android:contentDescription="@null" />
                     <TextView android:id="@+id/chip_thermal" style="@style/StatusText" android:text="@string/chip_thermal_ok" android:textColor="@color/status_success" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -138,7 +139,7 @@
                 android:layout_marginStart="10dp">
 
                 <LinearLayout style="@style/StatusCell">
-                    <ImageView style="@style/StatusIcon" android:src="@drawable/ic_battery" app:tint="@color/md_primary" />
+                    <ImageView style="@style/StatusIcon" android:src="@drawable/ic_battery" app:tint="@color/md_primary" android:contentDescription="@null" />
                     <TextView android:id="@+id/chip_battery" style="@style/StatusText" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -150,7 +151,7 @@
                 android:layout_marginStart="10dp">
 
                 <LinearLayout style="@style/StatusCell">
-                    <ImageView style="@style/StatusIcon" android:src="@drawable/ic_pulse" app:tint="@color/md_secondary" />
+                    <ImageView style="@style/StatusIcon" android:src="@drawable/ic_pulse" app:tint="@color/md_secondary" android:contentDescription="@null" />
                     <TextView style="@style/StatusText" android:text="@string/chip_backend" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

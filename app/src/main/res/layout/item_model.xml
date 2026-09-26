@@ -99,6 +99,7 @@
                 android:layout_height="18dp"
                 android:layout_marginTop="4dp"
                 android:src="@drawable/ic_chevron_right"
+                android:contentDescription="@null"
                 app:tint="@color/text_tertiary" />
         </LinearLayout>
     </LinearLayout>

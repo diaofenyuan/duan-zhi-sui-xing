@@ -24,6 +24,7 @@
             android:layout_height="15dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_sparkle"
+            android:contentDescription="@null"
             app:tint="@android:color/white" />
     </FrameLayout>
 

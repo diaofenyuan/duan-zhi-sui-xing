@@ -35,6 +35,7 @@
                     android:layout_height="18dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_download"
+                    android:contentDescription="@null"
                     app:tint="@color/md_primary" />
             </FrameLayout>
 

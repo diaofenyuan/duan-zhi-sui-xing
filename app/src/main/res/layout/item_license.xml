@@ -12,5 +12,5 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp" />
     </LinearLayout>
-    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" />
+    <ImageView style="@style/Chevron" android:src="@drawable/ic_chevron_right" android:contentDescription="@null" />
 </LinearLayout>

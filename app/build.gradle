@@ -89,7 +89,8 @@ android {
 
     testOptions {
         unitTests {
-            includeAndroidResources = false
+            // 开启后 Robolectric 可解析本工程资源，使布局/无障碍（如 stateDescription）可在 JVM 用例中断言。
+            includeAndroidResources = true
             all {
                 // Robolectric 的 android-all 镜像包走阿里云，规避境外直连超时
                 systemProperty 'robolectric.dependency.repo.url', 'https://maven.aliyun.com/repository/central'

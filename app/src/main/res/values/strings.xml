@@ -20,6 +20,7 @@
     <string name="action_back">返回</string>
     <string name="action_send">发送消息</string>
     <string name="action_stop">停止生成</string>
+    <string name="a11y_selected">已选择</string>
 
     <!-- 市场 -->
     <string name="market_subtitle">本地大模型 · 下载后离线运行</string>

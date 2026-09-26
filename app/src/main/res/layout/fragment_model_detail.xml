@@ -182,7 +182,7 @@
                 android:layout_height="wrap_content">
 
                 <LinearLayout style="@style/StatCell">
-                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_folder" />
+                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_folder" android:contentDescription="@null" />
                     <TextView android:id="@+id/val_size" style="@style/StatValue" />
                     <TextView style="@style/StatLabel" android:text="@string/stat_size" />
                 </LinearLayout>
@@ -195,7 +195,7 @@
                 android:layout_marginStart="10dp">
 
                 <LinearLayout style="@style/StatCell">
-                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_pulse" />
+                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_pulse" android:contentDescription="@null" />
                     <TextView android:id="@+id/val_speed" style="@style/StatValue" />
                     <TextView style="@style/StatLabel" android:text="@string/stat_speed" />
                 </LinearLayout>
@@ -208,7 +208,7 @@
                 android:layout_marginStart="10dp">
 
                 <LinearLayout style="@style/StatCell">
-                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_history" />
+                    <ImageView style="@style/StatIcon" android:src="@drawable/ic_history" android:contentDescription="@null" />
                     <TextView android:id="@+id/val_ttft" style="@style/StatValue" />
                     <TextView style="@style/StatLabel" android:text="@string/stat_ttft" />
                 </LinearLayout>
@@ -233,7 +233,8 @@
                     android:id="@+id/compat_icon"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@drawable/ic_check_circle" />
+                    android:src="@drawable/ic_check_circle"
+                    android:contentDescription="@null" />
 
                 <LinearLayout
                     android:layout_width="0dp"
