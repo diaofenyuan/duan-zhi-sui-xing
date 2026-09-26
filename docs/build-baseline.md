@@ -22,7 +22,7 @@
 
 1. **AGP 8.13.2 而非 9.x**：AGP 9.0 起默认启用内置 Kotlin 并引入 KGP 运行时依赖；本工程原为纯 Java 工程，故选择 8.13（8.x 成熟稳定线的最终补丁）。**2026-08-28 起引入 Kotlin（KGP 2.2.20），原"避开内置 Kotlin"的理由已因本次语言迁移而失效；但本次迁移不升级 AGP，该判断留待独立变更处理。**
 2. **Gradle 与 wrapper**：项目根目录通过 Gradle Wrapper 固定发行版（`gradle/wrapper/gradle-wrapper.properties`），所有开发者与 CI 使用同一发行版，无需本机安装 Gradle。
-3. **SDK 定位**：`ANDROID_HOME` 未设置系统级环境变量，机器本地路径通过 `local.properties`（已 gitignore）提供：`C:\Users\zhy23\AppData\Local\Android\Sdk`。
+3. **SDK 定位**：`ANDROID_HOME` 未设置系统级环境变量，机器本地路径通过 `local.properties`（已 gitignore）提供，形如 `sdk.dir=C\:\\Users\\<用户名>\\AppData\\Local\\Android\\Sdk`；该文件不入库，故文档不记录具体用户名。
 
 ## 复现验证
 

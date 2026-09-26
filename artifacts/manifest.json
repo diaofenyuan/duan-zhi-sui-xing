@@ -1,0 +1,119 @@
+{
+    "schemaVersion":  1,
+    "product":  "端智随行（local-ai）",
+    "applicationId":  "com.example.localai",
+    "versionName":  "0.3.0",
+    "versionCode":  3,
+    "buildType":  "release",
+    "generatedAt":  "2026-09-26",
+    "toolchain":  {
+                      "jdk":  "17.0.19 (Temurin)",
+                      "gradle":  "8.14",
+                      "agp":  "8.13.2",
+                      "kotlin":  "2.2.20",
+                      "ndk":  "28.2.13676358",
+                      "cmake":  "3.22.1",
+                      "compileSdk":  36,
+                      "minSdk":  26,
+                      "targetSdk":  36
+                  },
+    "artifact":  {
+                     "name":  "local-ai-0.3.0-arm64-release.apk",
+                     "path":  "artifacts/candidate/local-ai-0.3.0-arm64-release.apk",
+                     "sizeBytes":  96071389,
+                     "sha256":  "c4937ee2c036c50a73c972e84217623d4928654c6918c25c452abeffee69c52e",
+                     "sha1":  "5db6dc7dcc00d8f845c44abd91eecab11fb0b42b",
+                     "abi":  "arm64-v8a"
+                 },
+    "signing":  {
+                    "verified":  true,
+                    "schemeV1":  false,
+                    "schemeV2":  true,
+                    "schemeV3":  false,
+                    "signerCount":  1,
+                    "certificateDn":  "CN=duan-zhi-sui-xing",
+                    "certificateSha256":  "ede51c40527006fe5d9df04cfef007b046e3603b3146df4428dbd18b9bea4c5e"
+                },
+    "nativeLibraries":  [
+                            {
+                                "path":  "lib/arm64-v8a/libai_jni.so",
+                                "sizeBytes":  57536,
+                                "sha256":  "2f11e2738cc82ef2104ab7240beec22962d173eef77b1c3038c49b39e3f8e43a"
+                            },
+                            {
+                                "path":  "lib/arm64-v8a/libggml.so",
+                                "sizeBytes":  121712,
+                                "sha256":  "0cbbed1afe1b7a922d73863b4e989ecd44a24eb68b4bc722ea645ca5dd7c1ff3"
+                            },
+                            {
+                                "path":  "lib/arm64-v8a/libggml-base.so",
+                                "sizeBytes":  1007568,
+                                "sha256":  "c092f8bf71e19155a49ce6d62b1d130fc34ef03a151019a3f0b0921d764f1452"
+                            },
+                            {
+                                "path":  "lib/arm64-v8a/libggml-cpu.so",
+                                "sizeBytes":  791400,
+                                "sha256":  "4491617b1e15cb88e089d74b6d5752fba7d7b64022c22c3d1402724a25299a5b"
+                            },
+                            {
+                                "path":  "lib/arm64-v8a/libggml-vulkan.so",
+                                "sizeBytes":  36210096,
+                                "sha256":  "455157495e84d8948ba5ba02d3ef000929830731b6fe14fd864241e67deea5aa"
+                            },
+                            {
+                                "path":  "lib/arm64-v8a/libllama.so",
+                                "sizeBytes":  3007512,
+                                "sha256":  "fd4752d6218252448398aeb8773363f2318d256c8cf7567f00ba8fa3d01f783d"
+                            },
+                            {
+                                "path":  "lib/arm64-v8a/libonnxruntime.so",
+                                "sizeBytes":  25831632,
+                                "sha256":  "5cc388800bdd737e401f716b5e31f3fafab28bf9d2c2bee3f150ed043c368021"
+                            },
+                            {
+                                "path":  "lib/arm64-v8a/libonnxruntime4j_jni.so",
+                                "sizeBytes":  83432,
+                                "sha256":  "937010aba1b782a5bb12302a0f45c600395b52ffd5e49ae3c9e71dda1eb9ef2a"
+                            }
+                        ],
+    "symbols":  [
+                    {
+                        "name":  "libggml.so",
+                        "sizeBytes":  1782608,
+                        "sha256":  "b59fa721ff305475a414a759da636fa6ce821ff7f63d8bf59d376dd8b4ed04b4"
+                    },
+                    {
+                        "name":  "libggml-base.so",
+                        "sizeBytes":  7893312,
+                        "sha256":  "85ad47bf2f7dbeccb27deef28e04b8a8ac328e4b08fa8bc9657c9e0f9cb9bd91"
+                    },
+                    {
+                        "name":  "libggml-cpu.so",
+                        "sizeBytes":  4315792,
+                        "sha256":  "1d4bb8903a0572eaa363d579655549444b4b1eef3b3bd2b7fbb57a65f92518ed"
+                    },
+                    {
+                        "name":  "libggml-vulkan.so",
+                        "sizeBytes":  50574504,
+                        "sha256":  "1a4c1910a2ba2b4b08233290857a8861502b7efb8d0b8d6ed996f577c4f0cc11"
+                    },
+                    {
+                        "name":  "libllama.so",
+                        "sizeBytes":  39526720,
+                        "sha256":  "9402d5ea744b1c4bdc819167475028fbd3871add9b16645981d298cc11e10948"
+                    }
+                ],
+    "verification":  {
+                         "command":  "./gradlew :app:assembleRelease :app:testReleaseUnitTest --offline",
+                         "result":  "PASS",
+                         "unitTests":  "Debug 164 / Release 164，0 失败",
+                         "connectedTests":  "52 项完成，0 失败，3 项设计内跳过",
+                         "lint":  "0 错误、139 警告",
+                         "redactionScan":  "qa/release/log_redaction_scan.py，312 个文件 0 命中"
+                     },
+    "notes":  [
+                  "模型权重不随包分发，经 HTTPS 从目录源下载；",
+                  "候选包仅 arm64-v8a；",
+                  "签名方案为 APK Signature Scheme v2（minSdk 26，无需 v1）。"
+              ]
+}

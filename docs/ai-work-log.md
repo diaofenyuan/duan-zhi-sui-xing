@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-- 当前阶段：`P4`
-- 当前状态：`DONE`（2026-09-26：仪器化回归完成 52 项、0 失败、3 项设计内跳过；主流程走查完成，证据截图入库 `qa/e2e/`）
-- 最近完成：`P4` 接通核心功能闭环（市场/详情/下载安装/聊天/历史/删除均为真实本地流程，模型经应用自身安装链路登记）；此前 `MIGRATION-K5` Kotlin 全量迁移 DONE；2026-09-26 另修复两处既有回归、补齐无障碍语义与设备模型正规预置流程
-- 最近阻塞：无软件阻塞；`P6` 真机验收仍缺 arm64-v8a 真机（解除条件见 `docs/device-baseline.md` 第 6 节）
-- 下一可执行阶段：`P5`（发布候选与自动化验收：`docs/gates/`、`docs/release/`、`artifacts/manifest.json`、候选 APK SHA-256 与符号表归档）
+- 当前阶段：`P5`
+- 当前状态：`DONE`（2026-09-26：候选包归档并签名校验通过；软件门禁、脱敏扫描与候选说明入库）
+- 最近完成：`P5` 候选包与软件门禁（`artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`）；此前 `P4` 主流程走查关闭、`MIGRATION-K5` Kotlin 全量迁移 DONE
+- 最近阻塞：`P6` 真机验收缺 arm64-v8a 真机（解除条件见 `docs/device-baseline.md` 第 6 节）
+- 下一可执行阶段：`P6`（三档真机安装同一候选包，执行端到端与性能回归，记录 TTFT/TPS、峰值内存、温度与电量）
 
 ## 记录规则
 
@@ -1023,3 +1023,27 @@
 - 工具注意：PowerShell 5.1 管道会以 gb2312 解码外部程序输出，`ui_driver.py` 的中文文本转储会变乱码，故本轮一律以**截图**作为可读证据（文本转储仅用于取资源 id 与坐标）。
 - 风险/阻塞：无软件阻塞。真机验收（P6）仍缺 arm64-v8a 真机。
 - 下一阶段依赖：`P4` 已关闭，`P5` 可开始——发布候选交付物（`docs/gates/`、`docs/release/`、`artifacts/manifest.json`、候选 APK SHA-256 与符号表）尚未归档。
+
+### 2026-09-26 | P5 候选包归档与软件门禁 | DONE
+
+- `P4` 关闭后开始 `P5`。产出可校验的 arm64-v8a 发布候选，并把软件门禁、脱敏扫描与候选说明归档入库。
+- **候选包**：`assembleRelease` 44 秒产出 `app-release.apk`，归档为 `artifacts/candidate/local-ai-0.3.0-arm64-release.apk`（96,071,389 字节）。SHA-256 `c4937ee2…9c52e`、SHA-1 `5db6dc7d…0b42b`（归档副本复核一致）。`apksigner verify` 退出码 0：APK Signature Scheme **v2** 通过，签名者 1 个，证书 `CN=duan-zhi-sui-xing`（证书 SHA-256 `ede51c40…a4c5e`）；v1 未启用（minSdk 26 无需），v3/v4 未启用。包内仅 `lib/arm64-v8a/`，8 个原生库逐个记录 SHA-256；未剥离符号的 `.so`（libllama 等 5 个，最大 50.6 MB）另存 `artifacts/symbols/`。
+- **机器可读清单** `artifacts/manifest.json`：版本、工具链、ABI、候选包哈希、签名方案与证书指纹、8 个原生库与 5 个符号文件的 SHA-256，以及本轮验证矩阵结果，便于真机验收时比对同一候选。
+- **脱敏扫描**（新增 `qa/release/log_redaction_scan.py`，对应 P5 要求的「日志脱敏扫描」）：
+  - 首轮命中 2180 处，逐条核实后确认绝大多数是误报——Kotlin `this@XxxFragment` 标签被邮箱规则误匹配、内置 llama.cpp 上游源码自带的作者署名与示例路径。收紧规则（排除代码标签、排除上游源码树）后降到 82 处。
+  - 剩余 81 处为随包第三方许可正文中的作者邮箱，属许可要求必须逐字保留，已显式豁免并注明理由。
+  - **发现并修复 1 处真实泄露**：`docs/build-baseline.md` 曾把本机 SDK 绝对路径连同用户名写进文档，已改为不含用户名的形式（`local.properties` 本身不入库）。
+  - 最终结果：312 个受跟踪文件、**0 命中**、退出码 0。
+- **门禁与候选文档**：新增 `docs/gates/g5-software-acceptance.md`（候选标识、验证矩阵、本轮修复、明确未覆盖项、结论）与 `docs/release/candidate-0.3.0.md`（校验方式、包内容、安装、已知限制、下一步）。
+- 大二进制按项目既有惯例不入库：`.gitignore` 增加 `artifacts/candidate/*.apk` 与 `artifacts/symbols/*.so`，并注明哈希见清单。
+- 验证：
+  - 命令：`./gradlew :app:assembleRelease :app:testReleaseUnitTest --offline --console=plain`
+  - 结果：`PASS`（44 秒）；Release 单测 **164 项、0 失败**。
+  - 命令：`apksigner verify --print-certs artifacts/candidate/local-ai-0.3.0-arm64-release.apk`
+  - 结果：`PASS`（退出码 0）。
+  - 命令：`python qa/release/log_redaction_scan.py`
+  - 结果：`PASS`；312 个文件、0 命中。
+  - 复用既有证据：Debug 单测 164 项 0 失败；Lint 0 错误、139 警告；仪器化 52 项完成 0 失败 3 项设计内跳过；真实下载链路 `OK (1 test)` 61.0 秒。
+- 明确未覆盖（不据本阶段推断）：真机验收（`P6`，无 arm64 设备）、AAB 与商店上传路径、性能基准（详情页仍显示「待测」）、长时间稳定性循环。
+- 风险/阻塞：无软件阻塞。`P6` 需至少一台 arm64-v8a 真机。
+- 下一阶段依赖：`P6` 真机验收；解除条件与采集口径见 `docs/device-baseline.md` 第 6 节。

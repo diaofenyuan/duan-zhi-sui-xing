@@ -25,5 +25,9 @@ backend/fixtures/media/
 # uiautomator 临时 dump
 ui_dump.xml
 
+# P5：发布候选二进制与符号表体积大，不入库；SHA-256 与签名信息见 artifacts/manifest.json
+artifacts/candidate/*.apk
+artifacts/symbols/*.so
+
 
 .local-signing/
