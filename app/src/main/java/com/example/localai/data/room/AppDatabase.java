@@ -46,9 +46,15 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * 全部迁移的唯一来源：{@link #build} 与迁移测试共用。
+     * 新增数据库版本时必须把新迁移加入本数组，否则升级路径测试会失败而不是静默漏测。
+     */
+    public static final Migration[] MIGRATIONS = { MIGRATION_1_2, MIGRATION_2_3 };
+
     public static AppDatabase build(Context context) {
         return Room.databaseBuilder(context, AppDatabase.class, "localai.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATIONS)
                 .build();
     }
 }

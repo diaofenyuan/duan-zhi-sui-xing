@@ -31,6 +31,22 @@
 ./gradlew :app:assembleDebug   # 应 BUILD SUCCESSFUL 并生成 app-debug.apk
 ```
 
+## 常见构建故障与恢复
+
+### `undefined symbol: vtable for llama_model_*`，且 `.cxx` 中存在 0 字节 `.o`
+
+现象：`assembleDebug` / `assembleRelease` 在 Native 链接阶段失败，例如 `ld.lld: error: undefined symbol: vtable for llama_model_exaone4`（类名随 vendored 版本而变），任务名形如 `:app:buildCMakeDebug[arm64-v8a]`。
+
+原因：上一次 Native 构建被中断（Ctrl-C、进程被杀、磁盘写满），留下长度 0 的目标文件。Ninja 只按修改时间判断新旧，会把该 `.o` 视为最新并跳过重编，链接时便缺少整个翻译单元的全部符号（首发症状通常是该架构类的 vtable）。**源码与 CMake 配置本身没有问题**，`git status` 亦无改动，因此极易被误判为代码回归。
+
+恢复：删除截断的目标文件后重编即可，无需清空整个 `.cxx`：
+
+```powershell
+Get-ChildItem app\.cxx -Recurse -File -Include *.o | Where-Object { $_.Length -eq 0 } | Remove-Item -Force
+```
+
+排查提示：遇到 `undefined symbol` 时，先确认「符号所属的 `.cpp` 是否已列在 `build.ninja` 与 `llama.rsp` 中，而对应 `.o` 是否为 0 字节」，再怀疑源码或 CMake 配置。
+
 ## 后续注意
 
 - S005 引入 Native 构建时，`CMake` 版本从版本目录读取并在 `externalNativeBuild` 中显式声明。

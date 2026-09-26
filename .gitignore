@@ -13,16 +13,16 @@ local.properties
 backend/signing/keys/*.seed
 backend/build-tools/
 
-# æ‰¹å‡†æ¨¡å‹æƒé‡ï¼ˆä½“ç§¯å¤§ï¼Œä¸å…¥åº“ï¼›SHA-256 è§? qa/fixtures/approved-model.jsonï¼?
+# æ‰¹å‡†æ¨¡å‹æƒé‡ï¼ˆä½“ç§¯å¤§ï¼Œä¸å…¥åº“ï¼›SHA-256 è§ qa/fixtures/approved-model.jsonï¼‰
 qa/fixtures/models/*.gguf
 
-# P4: ÕæÊµ GGUF È¨ÖØÃ½ÌåÄ¿Â¼£¨²»Èë¿â£©
+# P4: çœŸå® GGUF æƒé‡åª’ä½“ç›®å½•ï¼ˆä¸å…¥åº“ï¼‰
 backend/fixtures/media/
 
-# WorkBuddy ¹¤×÷ÇøÊı¾İ£¨ÏîÄ¿¼ÇÒä/ÁÙÊ±Êı¾İ£¬²»Èë¿â£©
+# WorkBuddy å·¥ä½œåŒºæ•°æ®ï¼ˆé¡¹ç›®è®°å¿†/ä¸´æ—¶æ•°æ®ï¼Œä¸å…¥åº“ï¼‰
 .workbuddy/
 
-# uiautomator ÁÙÊ± dump
+# uiautomator ä¸´æ—¶ dump
 ui_dump.xml
 
 

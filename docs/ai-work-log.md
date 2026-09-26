@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-- 当前阶段：`P3`
-- 当前状态：`DONE`
-- 最近完成：`P3`（真实 llama.cpp 推理：JNI 加载/生成/停止/释放 + 流式批量 Token + InferenceService 独立进程 + AIDL + 崩溃恢复；模拟器真模型端到端 + 6 项仪器化测试全过）
-- 最近阻塞：无
-- 下一可执行阶段：`P4`
+- 当前阶段：`P4`
+- 当前状态：`IN_PROGRESS`（2026-09-26 修正：本摘要此前停留在 `P3 | DONE`，与「执行记录」正文实际进度不符，属遗漏更新而非阶段回退）
+- 最近完成：`MIGRATION-K5`（Java→Kotlin 全量迁移 DONE，13 个红线文件保留 Java）；其后 2026-09-06～09-07 的多轮优化已落地并按独立记录追加（离线中文 OCR、离线资料问答与任务工作区、运行模式与常亮生效、模型手动释放、长对话预算与超长输入恢复、流式输出字符分片、快速停止与终止状态、APK 内完整许可与 `preBuild` 校验、正式签名 ARM64 覆盖升级、字体上限 150%、聊天智能滚动与增量保存）
+- 最近阻塞：无软件阻塞；`P6` 真机验收仍缺 arm64-v8a 真机（解除条件见 `docs/device-baseline.md` 第 6 节）
+- 下一可执行阶段：先关闭 `P4` 正式验收（`G-P4` 门禁经用户授权豁免，端到端主流程验收作为独立待办保留），随后进入 `P5`
 
 ## 记录规则
 
@@ -910,3 +910,20 @@
 - ChatRepositoryTest 16 项通过（7.177 秒）；新增写入计数证明 80 条消息连续 5 次尾部变化仅发生 5 次 UPDATE、0 次 INSERT/DELETE。中间删除、重试截断、消息角色顺序、草稿与正文事务回滚均覆盖。失败注入同时覆盖 INSERT 和 UPDATE。
 - 既有存储故障仪器化 2 项通过，覆盖提交成功但历史刷新失败、中文错误提示、保存失败及重试。仪器化使用独立内存库，不清理用户模型或会话；新滚动用例恢复原模型偏好。
 - 最终 Debug、androidTest、签名 Release 构建成功，Debug Lint 0 错误（仍有警告），diff --check 通过。未修改推理算法或后台下载，未重复 Native 全量测试。改动保留在工作区，未提交或推送。
+
+### 2026-09-26 | 工程一致性修复与两处既有回归 | DONE
+
+- 用户要求「开始优化」。本轮先建立验证基线，并在基线中发现并修复两处**已提交但一直未被发现**的缺陷（一处单测红、一处 Native 链接红），同时修复工程一致性缺口。
+- **回归一：数据库迁移用例失败（单测红）**。基线 `./gradlew :app:testDebugUnitTest --offline` 为 163 项、1 项失败；本日志最后一次记录为 149 项 0 失败，说明该回归在 2026-09-07 的提交中引入且当时未被记录。失败用例 `AppDatabaseMigrationTest.upgradeFromPublishedSchemaKeepsHistoryModelsAndTasks`，异常 `java.lang.IllegalStateException: A migration from 1 to 3 was required but not found`。根因：该用例写于数据库 v2 时代、只注册 `MIGRATION_1_2`；提交 `d9949a5` 把 `AppDatabase` 升到 version 3 并新增 `MIGRATION_2_3` 与 `schemas/3.json`，同时新增 `LibraryMigrationTest` 覆盖 2→3，但未同步 1→3 用例，导致「最早已发布 schema 升级到当前版本」这条路径没有测试能通过。
+- 修复方式不是补一行，而是消除同类漂移：`AppDatabase` 新增 `public static final Migration[] MIGRATIONS = { MIGRATION_1_2, MIGRATION_2_3 }` 作为迁移唯一来源，`build()` 与迁移用例共用；用例改为 `addMigrations(*AppDatabase.MIGRATIONS)`。今后数据库再升版时若忘记把新迁移加入该数组，本用例会直接失败而不是静默漏测。
+- **回归二：Native 链接失败（APK 构建红）**。`./gradlew :app:assembleDebug --offline` 在 `:app:buildCMakeDebug[arm64-v8a]` 失败：`ld.lld: error: undefined symbol: vtable for llama_model_exaone4`。排查确认 `models/exaone4.cpp` 源码存在，且已列在 `build.ninja` 与 `llama.rsp`（179 个目标文件）中，问题不在源码或 CMake 配置；实际是该翻译单元的目标文件长度为 **0 字节**（时间戳 2026-09-06 19:17:44），即上一次 Native 构建被中断留下的截断产物。Ninja 只按修改时间判断新旧，会把它当成最新而跳过重编，链接时便缺少该架构类的 vtable。全量扫描 1044 个 `.o` 仅此 1 个为 0 字节，删除后重编即通过；本轮未改动任何 C++ 源码。该故障模式与恢复命令已写入 `docs/build-baseline.md` 新增的「常见构建故障与恢复」一节。
+- **编码损坏修复**：`.gitignore` 是仓库内唯一非 UTF-8 的受跟踪文本文件——4 行注释为 GBK 编码，另有「批准模型权重」一行有 2 个字节被 `?` 顶替（`见`、`）`）。已重写为纯 UTF-8（无 BOM、LF、29 个换行，与原文件一致），`git diff` 仅 4 行注释变化，无整文件伪差异。附带澄清：`.gitattributes` 经字节校验与内容核对**完全正常**，先前所见的乱码是 pwsh 输出编码假象，不是文件问题。
+- **日志状态失真修复**：本文件「当前状态」此前停留在 `P3 | DONE`，与正文实际进度（P4 自 2026-08-28 起 IN_PROGRESS、Kotlin 全量迁移 K0-K5 DONE、其后 2026-09-06/07 多轮优化）不符，属遗漏更新而非阶段回退，已更正为 `P4 | IN_PROGRESS` 并补真实阻塞与下一步。
+- **补齐 README**：新增根 `README.md`（定位、功能、架构要点、目录结构、构建与验证命令、构建期强制校验、隐私与许可、文档索引、已知限制）。此前仓库没有任何 README。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:testReleaseUnitTest :app:assembleDebug --offline --console=plain`
+  - 结果：`PASS`；Debug **163 项、0 失败/0 错误/0 跳过**（修复前同命令为 163 项 1 失败）；Release **163 项、0 失败/0 错误/0 跳过**；`assembleDebug` BUILD SUCCESSFUL（44 秒），产出 `app-debug.apk`（177465708 字节，含 arm64-v8a 与 x86_64 两套原生库）。`AppDatabaseMigrationTest` 1 项通过，3.494 秒。
+  - 命令：`./gradlew :app:lintDebug --offline`
+  - 结果：`PASS`（41 秒）；**0 错误、155 警告**。相对本日志早先记录的 126 警告有回升，主要类别为 UnusedResources 48、SetTextI18n 34、ContentDescription 16、UseKtx 14；已核实其中 3 条 `TrustAllX509TrustManager` 指向 Gradle 缓存依赖 bouncycastle `bcpkix-jdk15to18:1.72`，**不是本工程代码**（`app/src/main` 内无 `X509TrustManager` 相关实现）。警告收敛列入后续轮次。
+- 风险/阻塞：无软件阻塞。真机验收（P6）仍缺 arm64-v8a 真机。
+- 下一阶段依赖：`P4` 正式验收关闭仍需补一次端到端主流程记录；`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）尚未归档。

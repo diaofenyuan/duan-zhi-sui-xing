@@ -34,8 +34,10 @@ class AppDatabaseMigrationTest {
             old.execSQL("INSERT INTO download_tasks(taskId,parameterCount,bytesDownloaded,totalBytes,retryCount,createdAt,updatedAt) VALUES('old-task',10,5,20,0,1,1)")
             old.version = 1
         }
+        // 覆盖「最早已发布 schema → 当前版本」的完整迁移路径；使用与生产同一份迁移列表，
+        // 避免数据库升版后本用例漏加迁移（历史缺陷：v3 升版后本用例仍只注册 1→2 而失败）。
         val db = Room.databaseBuilder(context, AppDatabase::class.java, name)
-            .addMigrations(AppDatabase.MIGRATION_1_2).allowMainThreadQueries().build()
+            .addMigrations(*AppDatabase.MIGRATIONS).allowMainThreadQueries().build()
         try {
             assertEquals("历史标题", db.conversationDao().getById(42).title)
             assertEquals("历史正文", db.messageDao().messagesFor(42).single().content)
