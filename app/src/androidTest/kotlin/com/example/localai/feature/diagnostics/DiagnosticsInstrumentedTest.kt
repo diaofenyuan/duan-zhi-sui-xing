@@ -14,6 +14,7 @@ import com.example.localai.data.room.ModelEntity
 import com.example.localai.feature.download.DownloadRepository
 import com.example.localai.feature.settings.InferencePolicy
 import org.junit.Assert.*
+import org.junit.Assume
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
@@ -62,6 +63,10 @@ class DiagnosticsInstrumentedTest {
     }
 
     @Test fun installedSnapshotChangesRefreshVisibleRowsWithoutTouchingModels() {
+        // 本用例前提是「有经安装流程登记的模型」：installed() 读的是安装记录，
+        // 手动放置模型文件不会登记。未安装时按项目惯例跳过，而不是以失败掩盖预置缺失。
+        Assume.assumeTrue("需要先安装批准的 Qwen 模型",
+            ServiceLocator.downloads()!!.installed().any { it.modelId == "qwen2.5-0.5b-instruct" })
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { it.openTab(R.id.nav_diag) }
             await(scenario) { text(fragment(it).requireView().findViewById(R.id.bench_list)).contains("Qwen") }

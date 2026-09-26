@@ -66,6 +66,10 @@ class ChatStorageFailureInstrumentedTest {
         val sessionFailure = AtomicReference<Pair<String, RuntimeException>?>(null)
         inject(repository, "conversationDao", historyFailure)
         inject(repository, "sessionDao", sessionFailure)
+        // 必须在聊天页建立之前就注入：会话恢复只在视图首次创建时执行一次，
+        // 之后再切回聊天页只走 show/hide，不会重新恢复，也就不会出现恢复失败提示。
+        // 空 message 的异常同样必须判为失败，否则恢复逻辑可能把空会话写回数据库。
+        sessionFailure.set("current" to RuntimeException())
         val singleton = ServiceLocator::class.java.getDeclaredField("instance").apply { isAccessible = true }.get(null)
         val field = ServiceLocator::class.java.getDeclaredField("chatRepository").apply { isAccessible = true }
         val original = field.get(singleton)
@@ -88,8 +92,6 @@ class ChatStorageFailureInstrumentedTest {
                 await(scenario) { it.findViewById<View>(R.id.list)?.isShown == true }
                 assertEquals(1, repository.conversations().size)
 
-                // 空 message 的异常仍必须是失败，否则恢复逻辑可能把空会话写回数据库。
-                sessionFailure.set("current" to RuntimeException())
                 scenario.onActivity { it.openTab(R.id.nav_chat) }
                 await(scenario) {
                     it.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)?.text
@@ -172,11 +174,19 @@ class ChatStorageFailureInstrumentedTest {
     private fun await(scenario: ActivityScenario<MainActivity>, predicate: (MainActivity) -> Boolean) {
         val deadline = SystemClock.uptimeMillis() + 10_000
         var passed = false
+        var seen = ""
         while (!passed && SystemClock.uptimeMillis() < deadline) {
             instrumentation.waitForIdleSync()
-            scenario.onActivity { passed = predicate(it) }
+            scenario.onActivity { seen = visibleText(it.window.decorView); passed = predicate(it) }
             if (!passed) SystemClock.sleep(40)
         }
-        assertTrue("页面未显示预期的异常或恢复状态", passed)
+        assertTrue("页面未显示预期的异常或恢复状态；当前可见文本=$seen", passed)
+    }
+
+    /** 失败时把当时页面上的文本带进断言信息，避免只报“未显示预期状态”而无从定位。 */
+    private fun visibleText(view: View): String = when (view) {
+        is TextView -> if (view.isShown) view.text.toString() else ""
+        is android.view.ViewGroup -> (0 until view.childCount).joinToString("|") { visibleText(view.getChildAt(it)) }
+        else -> ""
     }
 }

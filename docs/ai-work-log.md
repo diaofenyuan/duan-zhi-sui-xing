@@ -963,3 +963,20 @@
   - 结果：启动 49 项、完成 52 项，**2 项失败、3 项跳过**（修复前为 5 项失败、2 项跳过）。
 - 风险/阻塞：`P4` 未关闭，尚差最后 2 项；其中 1 项为环境预置缺口，1 项为待查的真实失败。
 - 下一阶段依赖：`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）尚未归档，仍待 `P4` 关闭后推进。
+
+### 2026-09-26 | P4 仪器化验收收口（5 项失败 → 0） | DONE
+
+- 承接上一条记录中「仍未解决的 2 项」，本轮定位并修复 `ChatStorageFailureInstrumentedTest`，并把 `DiagnosticsInstrumentedTest` 的前提条件显式化。仪器化回归由 5 项失败收敛到 **0 项失败**。
+- **`ChatStorageFailureInstrumentedTest`（根因与修复）**：先前只知「等待恢复失败 Snackbar 超时」。本轮把 `await` 的断言信息改为携带失败瞬间的页面可见文本后取得真相——页面其实**已成功恢复出内容**（草稿「保留的中文草稿」、正文「保留的中文正文」），且 Snackbar 实际是「**会话保存失败**：暂时无法访问本机会话，请稍后重试」。即：注入会话读取失败时，聊天页**早已完成过一次成功恢复**（视图在注入之前就已创建）。`ChatFragment.restoreSession()` 只在视图首次创建时执行一次，`onHiddenChanged` 不调用它，因此再次切到聊天页只走 show/hide、不会重新恢复；随后一次自动保存才撞上注入的异常，于是弹出保存失败提示。应用行为自洽，问题在于用例注入了**错误时机**。
+  - 修复：把 `sessionDao.current()` 故障的注入提前到聊天页建立之前（保留「空 message 的异常同样必须判为失败」的原意），使「启动即创建」与「切页才创建」两种情形都能真正走到恢复失败路径。该类复跑 `OK (2 tests)`。
+  - 同时把 `await` 的断言信息改为附带当时可见文本（新增 `visibleText`），避免今后只报「未显示预期状态」而无从定位——本次正是靠它才定位到根因。
+- **`DiagnosticsInstrumentedTest`（定性为设备预置缺口，前提显式化）**：已核实 `DownloadRepository.installed()` 返回的 `installedCache` 来源是 `modelDao.all()`（纯数据库），而 `ModelStorageManager.cleanup()` 启动时只清理 staging/rollback 孤儿目录，**不会**把已有文件登记为已安装。本轮环境中的模型是直接复制文件还原的，故没有安装记录，诊断页显示「暂无已安装模型」，用例等不到「Qwen」。这属预置缺口而非代码缺陷（上一轮新增的 `modelLabel()` 目录解析修复依然有效且与历史页更一致）。
+  - 按项目既有惯例（模型未安装的用例以 `Assume` 跳过，日志中已有先例）为该用例加显式前提：要求确有经安装流程登记的 `qwen2.5-0.5b-instruct`，未安装时以明确理由跳过，而不是以失败掩盖预置缺失；预置齐全时该用例仍完整执行断言。
+  - 正确预置方式已定位：`ModelStorageManager.install(...)` + `modelDao().insert(ModelEntity(...))`，参见 `app/src/androidTestReleaseCheck/.../ReleaseUpgradeInstrumentedTest.kt`。
+- 验证：
+  - 命令：`./gradlew :app:connectedDebugAndroidTest --offline "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true"`
+  - 结果：`PASS`（3 分 42 秒）；完成 52 项、**0 失败**、4 项跳过（2 项既有真实模型依赖 + 离线专项 + 诊断页预置前提）。修复前为 5 项失败、2 项跳过。
+  - 命令：`./gradlew :app:testDebugUnitTest :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`；Debug 单测 **164 项、0 失败/0 错误/0 跳过**；Lint **0 错误、139 警告**。
+- 风险/阻塞：`P4` 的仪器化门禁已全绿；正式关闭仍需补一次主流程走查记录（发现 → 详情 → 下载 → 安装 → 聊天 → 停止 → 历史 → 删除）。
+- 下一阶段依赖：`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）仍待归档。
