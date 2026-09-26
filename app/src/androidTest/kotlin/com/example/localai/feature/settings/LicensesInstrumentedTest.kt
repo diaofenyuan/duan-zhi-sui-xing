@@ -40,7 +40,8 @@ class LicensesInstrumentedTest {
         assertFalse(coordinates.any { it.startsWith("junit:") || it.startsWith("androidx.work:") })
         assertTrue(titles.contains("Public Suffix List"))
         assertTrue(titles.any { it.contains("libc++") })
-        assertTrue(titles.contains("Qwen2.5-0.5B-Instruct"))
+        // 许可条目按模型族合并（Qwen2.5 与 Qwen2.5-Coder 共用一条），故断言族名而非单个量化包名。
+        assertTrue(titles.any { it.contains("Qwen2.5") })
     }
 
     @Test fun licenseEntryAndScrollSurviveRecreationAndInvalidEntryIsRecoverable() {

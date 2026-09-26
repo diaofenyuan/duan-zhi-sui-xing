@@ -240,6 +240,17 @@ class DiagnosticsFragment : Fragment() {
         }
     }
 
+    /**
+     * 与历史页一致：优先使用目录中的当前显示名，其次为入库时记录的名称，最后回退模型标识。
+     * 只读入库字段会在目录改名后长期显示旧名称，导致诊断页与历史页对同一模型显示不同名称。
+     */
+    private fun modelLabel(entity: ModelEntity): String {
+        val fromCatalog = repository?.catalogView()?.models
+            ?.firstOrNull { it.modelId == entity.modelId }?.displayName
+            ?.takeIf { it.isNotBlank() }
+        return fromCatalog ?: entity.displayName?.takeIf { it.isNotBlank() } ?: entity.modelId
+    }
+
     private fun buildEstRow(entity: ModelEntity, snapshot: CompatibilityEngine.DeviceSnapshot): View {
         val approved = ApprovedModels.byId(entity.modelId)
         val contextLength = approved?.let { InferencePolicy.current(requireContext(), it).contextLength.toLong() } ?: 2048L
@@ -256,7 +267,7 @@ class DiagnosticsFragment : Fragment() {
         name.textSize = 13f
         name.setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
         name.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
-        name.text = if (entity.displayName == null) entity.modelId else entity.displayName
+        name.text = modelLabel(entity)
         name.maxLines = 2
         name.ellipsize = android.text.TextUtils.TruncateAt.END
         row.addView(name, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,

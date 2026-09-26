@@ -940,3 +940,26 @@
   - 结果：`PASS`；**0 错误、139 警告**（本轮前为 155），`ContentDescription` **16 → 0**。剩余主要类别：UnusedResources 48、SetTextI18n 34、UseKtx 14、NotifyDataSetChanged 8，留待后续轮次逐类处理。
 - 风险/阻塞：无软件阻塞。`includeAndroidResources = true` 会略微增加单测启动开销，本轮 Debug/Release 单测实测仍在既有量级。
 - 下一阶段依赖：`P4` 正式验收关闭仍需补一次端到端主流程记录；`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）尚未归档。
+
+### 2026-09-26 | P4 仪器化验收回归定位与修复 | IN_PROGRESS
+
+- 启动模拟器（AVD `Medium_Phone`，x86_64 / 16KB 页）重跑 P4 端到端验收：`connectedDebugAndroidTest` 首轮 **51 项中 5 项失败、2 项跳过**，不满足「P4 需仪器化测试全绿」的通过标准。
+- **先证明与本次改动无关**：`git diff 0957194 HEAD -- app/src/main/assets/catalog app/src/main/assets/licenses` 为空，即目录与许可清单在本轮改动之前已定型；失败由 `0b3591b`（扩充模型选择，改显示名）与 `dc47193`（改许可条目标题）留下的过期断言造成，与第 1 轮发现的迁移用例回归同源（当时也未被记录）。
+- 逐条定位与处理：
+  1. `LicensesInstrumentedTest`：断言 `titles.contains("Qwen2.5-0.5B-Instruct")`，而清单实际标题为「Qwen2.5 / Qwen2.5-Coder（0.5B、1.5B）」（已按模型族合并）。改为断言族名 `titles.any { it.contains("Qwen2.5") }`。
+  2. `HistoryChineseInstrumentedTest`：断言历史行 meta 含「中文轻量助手」，该字符串**在整个仓库中仅存在于这一行断言**；应用实际从目录取 `displayName`（现为「Qwen2.5-0.5B-Instruct · Q4_K_M」）。改为在测试内从目录推导期望值再断言，避免目录改名后断言再次失效。
+  3. `OfflineWorkloadInstrumentedTest`：首行 `assertNull(activeNetwork)` 是**离线专项前置条件**——项目自己的 `qa/build/run_emulator_acceptance.py` 正是先开飞行模式再单跑本类。联网整包回归下改为 `Assume.assumeTrue` 显式跳过，类内后续仍强制校验全程无网络，未削弱离线断言。
+  4. `DiagnosticsFragment`：诊断页模型名直接用入库字段 `entity.displayName`（为空则回退 `modelId`），而历史页已改为从目录解析。同一模型会在两个页面显示不同名称，且目录改名后诊断页长期显示旧名。新增 `modelLabel()` 与历史页语义对齐：目录显示名 → 入库名 → 模型标识。
+  5. `ChatStorageFailureInstrumentedTest`：**尚未解决**。
+- 复跑结果：**失败由 5 项降至 2 项**；`LicensesInstrumentedTest` 与 `HistoryChineseInstrumentedTest` 转为通过；`OfflineWorkloadInstrumentedTest` 按设计跳过（该轮 3 项跳过中含原有 2 项）。
+- 仍失败 2 项及定性：
+  - `DiagnosticsInstrumentedTest`：`installed()` 读的是数据库安装记录，而本轮环境中的模型是**直接复制文件**还原的（设备无 sqlite3，全新安装后数据库尚未创建），数据库里没有该行，故诊断页显示「暂无已安装模型」。属**环境预置缺口**，非代码缺陷；需经应用自身安装流程预置后才能判定。
+  - `ChatStorageFailureInstrumentedTest`：等待「恢复会话失败：暂时无法访问本机会话」Snackbar 超时（第 94 行）。该文案在 `ChatFragment.kt:342` 与 `ChatRepository.kt:217` 均存在，不是过期断言；修复前后**在同一行、同一次序复现**，与本次改动无关，待续查。
+- **环境变更与影响（必须记录）**：`connectedDebugAndroidTest` 运行结束会卸载被测应用，导致 AVD 上原有的已安装模型（491400032 字节）随应用数据一并被清除。本轮已用 `/data/local/tmp/localai-qwen05b.gguf`（同尺寸）还原文件与 `install.ok`，并用 `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true` 复跑使应用与模型在测试后保留。注意该参数**必须加引号**，否则 PowerShell 会把 `-P...` 拆成任务名并报 `Task '.injected...' not found`。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest --offline --console=plain`
+  - 结果：`PASS`；Debug 单测 **164 项、0 失败**；主代码与仪器化测试代码均编译通过。
+  - 命令：`./gradlew :app:connectedDebugAndroidTest --offline "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true"`
+  - 结果：启动 49 项、完成 52 项，**2 项失败、3 项跳过**（修复前为 5 项失败、2 项跳过）。
+- 风险/阻塞：`P4` 未关闭，尚差最后 2 项；其中 1 项为环境预置缺口，1 项为待查的真实失败。
+- 下一阶段依赖：`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）尚未归档，仍待 `P4` 关闭后推进。

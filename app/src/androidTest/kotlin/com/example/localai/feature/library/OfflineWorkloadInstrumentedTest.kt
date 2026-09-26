@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -18,7 +19,9 @@ class OfflineWorkloadInstrumentedTest {
     @Test fun repeatsOfflineWorkflowsInOneProcess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val connectivity = context.getSystemService(ConnectivityManager::class.java)
-        assertNull("请先断开虚拟机网络", connectivity.activeNetwork)
+        // 本类为离线专项验收：qa/build/run_emulator_acceptance.py 会先开飞行模式再单跑本类。
+        // 联网的整包回归下跳过；一旦开始执行，下方第 33 行仍强制校验全程无网络。
+        Assume.assumeTrue("请先断开虚拟机网络后再运行本用例", connectivity.activeNetwork == null)
         val flow = LibraryFlowInstrumentedTest()
         val ocr = OfflineOcrInstrumentedTest()
         flow.importsPdfPageTextWithoutNetworkAndRejectsBlankScan()

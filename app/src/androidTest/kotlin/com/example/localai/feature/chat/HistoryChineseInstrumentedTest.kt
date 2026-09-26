@@ -55,7 +55,11 @@ class HistoryChineseInstrumentedTest {
                 scenario.onActivity { activity ->
                     val row = activity.findViewById<RecyclerView>(R.id.list).findViewHolderForAdapterPosition(position)!!.itemView
                     assertEquals("👨‍👩‍👧‍👦", row.findViewById<TextView>(R.id.text_icon).text.toString())
-                    assertTrue(row.findViewById<TextView>(R.id.text_meta).text.contains("中文轻量助手"))
+                    // 显示名以目录当前值为准（应用即从目录解析），不硬编码名称，避免目录改名后断言失效。
+                    val expectedName = ServiceLocator.downloads()!!.catalogView().models
+                        .firstOrNull { it.modelId == "qwen2.5-0.5b-instruct" }?.displayName
+                    assertNotNull("目录未提供该模型的显示名称", expectedName)
+                    assertTrue(row.findViewById<TextView>(R.id.text_meta).text.contains(expectedName!!))
                     row.findViewById<View>(R.id.btn_more).performClick()
                     val dialog = dialogRoot()
                     val message = dialog.findViewById<TextView>(android.R.id.message).text.toString()
