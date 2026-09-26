@@ -980,3 +980,23 @@
   - 结果：`PASS`；Debug 单测 **164 项、0 失败/0 错误/0 跳过**；Lint **0 错误、139 警告**。
 - 风险/阻塞：`P4` 的仪器化门禁已全绿；正式关闭仍需补一次主流程走查记录（发现 → 详情 → 下载 → 安装 → 聊天 → 停止 → 历史 → 删除）。
 - 下一阶段依赖：`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）仍待归档。
+
+### 2026-09-26 | 设备模型正规预置与诊断页用例转真通过 | DONE
+
+- 承接上一条记录「诊断页用例因缺安装记录而跳过、需按安装流程正规预置」，本轮完成设备预置，并把该用例由**跳过**变为**真实执行并通过**；仪器化回归在预置齐全的设备上保持 0 失败。
+- **先厘清判定口径差异（本轮的关键认知）**：`ApprovedModels.isInstalled(...)` 只看权重文件长度与 `install.ok` 标记；而 `DownloadRepository.installed()`（诊断页模型清单与兼容性统计的数据源）读的是**数据库安装记录**，`ModelStorageManager.cleanup()` 启动时只清理 staging/rollback 孤儿目录、**不会**补登记。因此手工复制权重永远无法满足诊断页一类用例；设备侧又无 `sqlite3`，不能直接改写记录。
+- **改走应用自身的下载 → 校验 → 安装链路**：删除手工放置的模型目录后，以 `-e allowModelDownload true` 运行 `StandaloneModelInstrumentedTest`（该用例默认跳过，以免常规回归联网拉取权重）。结果 `OK (1 test)`，**61.043 秒**从 `https://huggingface.co` 拉取 491400032 字节并完成安装；进度实测 0 → 63.9 MB → 166.8 MB → 273.1 MB → 375.7 MB → 466.4 MB → 完成。用例内部另校验完整 SHA-256（`74a4da8c…a9db`）与 GGUF 架构（`qwen2`），并完成一轮真实中文生成。
+  - 安装目录随后为**正规产物**：`install.ok` + `manifest.json`(1593) + `manifest.sig`(156) + 权重(491400032)，权限为应用私有（`-rw-------`），与手工复制（0666、无签名清单）明显不同。
+  - 附带价值：这同时补齐了 P4 主流程中「下载 → 安装」一段的**真实链路证据**（此前记录 releaseCheck 时明确注明「未重新测试网络下载链路」）。
+- **诊断页用例转为真实通过**：单独复跑 `DiagnosticsInstrumentedTest` 得 `OK (2 tests)`，不再触发 `Assume` 跳过；即上一轮新增的 `modelLabel()`「目录显示名 → 入库名 → 模型标识」解析在真机上得到验证。
+- 完整回归：`connectedDebugAndroidTest`（预置齐全）**完成 52 项、0 失败、3 项跳过**，较上一轮少 1 项跳过。余下 3 项跳过均为设计使然：`ChatFragmentInstrumentedTest.processRestartRestoresSavedChat`（需外部两阶段 `-e phase prepare|verify` 驱动）、`StandaloneModelInstrumentedTest`（需显式 `-e allowModelDownload true`）、`OfflineWorkloadInstrumentedTest`（需先断网，见 `qa/build/run_emulator_acceptance.py`）。
+- **文档**：预置流程与两个易踩的坑（`connectedDebugAndroidTest` 会卸载应用并清掉已安装模型；PowerShell 下 `-P` 参数须整体加引号）写入 `docs/build-baseline.md` 新增的「Debug 应用的设备模型预置」一节，使 P4/P5 在其它设备上可复现。
+- 验证：
+  - 命令：`adb shell am instrument -w -r -e allowModelDownload true -e class ...StandaloneModelInstrumentedTest com.example.localai.test/androidx.test.runner.AndroidJUnitRunner`
+  - 结果：`PASS`；`OK (1 test)`，61.043 秒，491400032 字节，SHA-256 与 GGUF 架构校验通过。
+  - 命令：`adb shell am instrument -w -r -e class ...DiagnosticsInstrumentedTest com.example.localai.test/androidx.test.runner.AndroidJUnitRunner`
+  - 结果：`PASS`；`OK (2 tests)`，未再跳过。
+  - 命令：`./gradlew :app:connectedDebugAndroidTest --offline "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true"`
+  - 结果：`PASS`（3 分 29 秒）；完成 52 项、**0 失败**、3 项跳过。
+- 风险/阻塞：无软件阻塞。`P4` 仪器化门禁已全绿且设备预置可复现；正式关闭仍需补一次主流程走查记录（发现 → 详情 → 下载 → 安装 → 聊天 → 停止 → 历史 → 删除），其中「下载 → 安装」本轮已取得真实链路证据。
+- 下一阶段依赖：`P5` 发布候选交付物（`docs/gates/`、`docs/release/`、候选 APK 哈希与符号表）仍待归档。
