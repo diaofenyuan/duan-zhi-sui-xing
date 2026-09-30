@@ -12,6 +12,7 @@
     <!-- 通用 -->
     <string name="action_ok">确定</string>
     <string name="action_cancel">取消</string>
+    <string name="action_cancel_download">取消下载</string>
     <string name="action_delete">删除</string>
     <string name="action_retry">重试</string>
     <string name="action_pause">暂停</string>

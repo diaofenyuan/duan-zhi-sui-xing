@@ -73,7 +73,7 @@ class ModelStorageManager(filesDir: File) {
                 manifestBytes: ByteArray, sigBytes: ByteArray, fileName: String) {
         val staging = File(stagingDir, version + "-" + System.nanoTime())
         if (!staging.mkdirs()) {
-            throw IOException("无法创建安装暂存目录")
+            throw IOException("存储空间不足或目录不可写，无法创建安装目录")
         }
         val target = modelDir(modelId, version)
         var backup: File? = null
@@ -88,20 +88,20 @@ class ModelStorageManager(filesDir: File) {
             if (target.exists()) {
                 val b = File(rollbackDir, version + "-" + System.nanoTime())
                 if (!b.parentFile!!.mkdirs() && !b.parentFile!!.exists()) {
-                    throw IOException("无法创建回滚目录")
+                    throw IOException("存储空间不足或目录不可写，无法创建回滚目录")
                 }
                 if (!target.renameTo(b)) {
-                    throw IOException("旧版本退避失败")
+                    throw IOException("替换旧版本文件失败，请重试")
                 }
                 backup = b
             } else {
                 val parent = target.parentFile
                 if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                    throw IOException("无法创建模型目录")
+                    throw IOException("存储空间不足或目录不可写，无法创建模型目录")
                 }
             }
             if (!staging.renameTo(target)) {
-                throw IOException("安装 rename 失败")
+                throw IOException("模型文件安装失败，请重试")
             }
             partFile.delete()
             if (backup != null) {

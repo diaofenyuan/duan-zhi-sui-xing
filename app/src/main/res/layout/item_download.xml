@@ -85,7 +85,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_close"
                 app:tint="@color/text_secondary"
-                android:contentDescription="@string/action_cancel" />
+                android:contentDescription="@string/action_cancel_download" />
         </LinearLayout>
 
         <com.google.android.material.progressindicator.LinearProgressIndicator

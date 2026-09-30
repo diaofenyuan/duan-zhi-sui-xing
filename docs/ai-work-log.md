@@ -1117,3 +1117,25 @@
 - 审计结论：`ui_strings.xml` 13 条、`strings.xml` 其余条目未发现乱码、占位符错配或半角/全角混用；未改动的条目按「不为提交而制造改动」原则保持原样。`action_close` 等条目存在行尾多余空格，属格式噪声、非文案问题，未纳入本次改动。
 - 风险/阻塞：无。
 - 下一阶段依赖：`OPT-3`（源码内联中文与无障碍文案）可开始。
+
+### 2026-09-30 | OPT-3 | DONE
+
+- 目标：核查 `app/src/main/kotlin/**` 的 UI 层与错误提示内联中文、AIDL/Java 边界用户可见中文与无障碍语义，按与 `OPT-2` 同一套语言规范修复。
+- 依赖：`OPT-2` DONE。
+- 审计方法与结论：
+  - 机械扫描：对全部 Kotlin 主源码扫描「中文相邻半角标点、`...` 省略号、半角范围符、中英文括号混用」，0 命中（唯一命中为 `LibraryContent` 的待办识别正则，属内部匹配规则、非展示文案）。
+  - 无障碍：解析 `res/layout/*.xml` 全部 `ImageButton`/`ImageView`/`CheckBox`/`Switch` 节点，未发现「既无 `contentDescription` 又未标记 `importantForAccessibility=no`」的节点；Kotlin 动态创建的可点击行（资料列表、任务清单、下载行、聊天顶栏）均有中文 `contentDescription`。
+- 实际修改（均为「原因 + 下一步」口径与去开发者术语，不改业务逻辑）：
+  - `feature/download/ModelVerifier.kt`：GGUF 探针 9 条失败原因由开发者术语（「魔数」「KV 数量超限」「general.architecture 类型非字符串」）改为用户可读表述并补下一步，保留 `architecture` 关键字与版本号等诊断信息。
+  - `data/storage/ModelStorageManager.kt`：安装链 5 条 `IOException` 文案改为「存储空间不足或目录不可写…」/「模型文件安装失败，请重试」，避免「rename 失败」「旧版本退避失败」这类内部实现词直接出现在下载失败提示里。
+  - `core/inference/InferenceClient.kt`：`describeLoadError` 中 6 条错误补齐下一步（重新下载 / 缩短上下文 / 精简输入 / 重新发送 / 重试）。
+  - `feature/library/TaskViewModel.kt`、`feature/library/OcrViewModel.kt`：3 条状态文案补齐下一步（返回资料库重试、重新选择图片）。
+  - `res/values/strings.xml` + `res/layout/item_download.xml`：下载行「取消」图标按钮的无障碍描述细化为新增的 `action_cancel_download`（「取消下载」），与按钮实际作用一致。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`；单测 **164 项、0 失败**；lint **0 错误、135 警告**（与 `OPT-2` 后持平，无新增）。
+  - 命令：`aapt2 dump resources/xmltree app/build/outputs/apk/debug/app-debug.apk`
+  - 结果：`PASS`；`item_download.xml` 的 `btn_cancel` 的 `contentDescription` 指向 `0x7f10001e = string/action_cancel_download =「取消下载」`，资源与布局接线正确。
+  - 说明：下载行无障碍描述的运行时核对与真实下载中断走查合并到 `OPT-4` 的下载中断/恢复环节执行，避免为同一动作重复触发下载。
+- 风险/阻塞：无。
+- 下一阶段依赖：`OPT-4`（中文渲染链路）可开始。

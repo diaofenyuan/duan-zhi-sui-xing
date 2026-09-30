@@ -64,7 +64,7 @@ class TaskViewModel(app: Application) : AndroidViewModel(app) {
                         ready = true; status = "内容在本机处理"; notifyChanged()
                         if (input.isNotBlank() || ids.isNotEmpty()) save()
                     }
-                }.onFailure { status = "无法打开工作区"; notifyChanged() }
+                }.onFailure { status = "无法打开工作区，请返回资料库重试"; notifyChanged() }
             }
         }
     }
@@ -72,7 +72,7 @@ class TaskViewModel(app: Application) : AndroidViewModel(app) {
         repository.workspaces { r -> r.onSuccess { list -> workspaceName = list.firstOrNull { it.id == workspace }?.title ?: "工作区"; notifyChanged() } }
         repository.selectedSources(ids) { r ->
             r.onSuccess { selected -> sources = selected; done() }
-                .onFailure { status = "读取资料失败"; notifyChanged() }
+                .onFailure { status = "读取资料失败，请返回资料库重试"; notifyChanged() }
         }
     }
     fun edit(input: String? = null, output: String? = null, title: String? = null) {

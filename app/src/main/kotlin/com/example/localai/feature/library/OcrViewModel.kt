@@ -48,7 +48,7 @@ class OcrViewModel(app: Application) : AndroidViewModel(app) {
                     while (maxOf(bounds.outWidth, bounds.outHeight) / sample > 2048) sample *= 2
                     val decoded = BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply {
                         inSampleSize = sample; inPreferredConfig = Bitmap.Config.ARGB_8888
-                    }) ?: error("图片读取失败")
+                    }) ?: error("图片读取失败，请重新选择")
                     val orientation = runCatching { ExifInterface(file.path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL) }.getOrDefault(1)
                     val matrix = Matrix().apply {
                         when (orientation) {

@@ -315,14 +315,14 @@ class InferenceClient(context: Context) {
         @JvmField val STATE_RELEASED = 6
 
         private fun describeLoadError(code: Int): String = when (code) {
-            NativeSession.ERR_MODEL_LOAD_FAILED -> "模型文件加载失败（文件无效或不兼容）"
-            NativeSession.ERR_CONTEXT_CREATE_FAILED -> "推理上下文创建失败（内存不足）"
+            NativeSession.ERR_MODEL_LOAD_FAILED -> "模型文件加载失败（文件无效或不兼容），请在模型页重新下载"
+            NativeSession.ERR_CONTEXT_CREATE_FAILED -> "推理上下文创建失败（内存不足），请缩短上下文或释放内存后重试"
             NativeSession.ERR_GPU_UNAVAILABLE -> "设备没有可用的 Vulkan GPU，请在设置中将 GPU 卸载层数设为 0（CPU）"
-            NativeSession.ERR_TOKENIZE_FAILED -> "输入文本分词失败"
+            NativeSession.ERR_TOKENIZE_FAILED -> "输入文本分词失败，请精简内容后重试"
             NativeSession.ERR_INPUT_TOO_LONG -> "问题超出模型上下文，请缩短或分段发送；原文已保留"
-            NativeSession.ERR_WRONG_STATE -> "推理服务状态异常"
-            NativeSession.ERR_ILLEGAL_ARGUMENT -> "模型路径不合法"
-            else -> "推理失败（code=$code）"
+            NativeSession.ERR_WRONG_STATE -> "推理服务状态异常，请重新发送"
+            NativeSession.ERR_ILLEGAL_ARGUMENT -> "模型路径不合法，请在模型页重新下载"
+            else -> "推理失败（code=$code），请重试"
         }
     }
 }

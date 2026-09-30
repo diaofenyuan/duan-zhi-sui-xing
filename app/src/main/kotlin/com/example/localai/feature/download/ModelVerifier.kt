@@ -79,23 +79,23 @@ object ModelVerifier {
             CountingInputStream(FileInputStream(file)).use { inp ->
                 val magic = readU32(inp)
                 if (magic != GGUF_MAGIC.toLong()) {
-                    return@use GgufProbe.fail("GGUF 魔数错误（非 GGUF 文件）")
+                    return@use GgufProbe.fail("模型文件格式不正确（GGUF 标识缺失），请重新下载")
                 }
                 val version = readU32(inp)
                 if (version != 2L && version != 3L) {
-                    return@use GgufProbe.fail("不支持的 GGUF 版本：$version")
+                    return@use GgufProbe.fail("模型文件版本不受支持（GGUF v$version），请重新下载")
                 }
                 readU64(inp) // tensor count（本次不校验张量区）
                 val kvCount = readU64(inp)
                 if (kvCount > MAX_KV_COUNT) {
-                    return@use GgufProbe.fail("GGUF 元数据 KV 数量超限")
+                    return@use GgufProbe.fail("模型文件元数据异常（KV 数量超限），请重新下载")
                 }
                 var architecture: String? = null
                 var i = 0L
                 while (i < kvCount) {
                     val keyLen = readU64(inp)
                     if (keyLen > MAX_KEY_LENGTH) {
-                        return@use GgufProbe.fail("GGUF 元数据键超长")
+                        return@use GgufProbe.fail("模型文件元数据异常（键名超长），请重新下载")
                     }
                     val keyBytes = ByteArray(keyLen.toInt())
                     readFully(inp, keyBytes)
@@ -103,28 +103,28 @@ object ModelVerifier {
                     val type = readU32(inp)
                     if (key == "general.architecture") {
                         if (type != 8L) {
-                            return@use GgufProbe.fail("general.architecture 类型非字符串")
+                            return@use GgufProbe.fail("模型文件架构信息异常（字段类型错误），请重新下载")
                         }
                         val value = readString(inp)
                         if (value == null) {
-                            return@use GgufProbe.fail("general.architecture 读取失败")
+                            return@use GgufProbe.fail("模型文件架构信息（general.architecture）读取失败，请重新下载")
                         }
                         architecture = String(value, StandardCharsets.UTF_8).trim()
                     } else {
                         if (!skipValue(inp, type)) {
-                            return@use GgufProbe.fail("GGUF 元数据越界（$key）")
+                            return@use GgufProbe.fail("模型文件元数据越界（$key），请重新下载")
                         }
                     }
                     i++
                 }
                 val arch = architecture
                 if (arch == null || arch.isEmpty()) {
-                    return@use GgufProbe.fail("GGUF 缺少 general.architecture 元数据")
+                    return@use GgufProbe.fail("模型文件缺少架构信息（general.architecture），请重新下载")
                 }
                 GgufProbe.ok(arch)
             }
         } catch (e: IOException) {
-            GgufProbe.fail("GGUF 头部读取失败")
+            GgufProbe.fail("模型文件头部读取失败，请重新下载")
         }
     }
 
