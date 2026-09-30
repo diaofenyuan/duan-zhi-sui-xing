@@ -1210,3 +1210,27 @@
   - 结果：`PASS`；退出码 0，哈希与三处文档记录一致。
 - 风险/阻塞：无。
 - 下一阶段依赖：`OPT-7`（发布侧补齐：产出 AAB 并登记）可开始。
+
+### 2026-09-30 | OPT-7 | DONE
+
+- 目标：产出 arm64-v8a 发布 AAB，按既有字段结构登记到 `artifacts/manifest.json`，并同步文档中的「未产出 AAB」结论。
+- 依赖：`OPT-6` DONE（候选包与文档一致性已复核）。
+- 实际修改：
+  - `./gradlew :app:bundleRelease --offline` 产出 `app-release.aab`（构建 13 秒），归档为 `artifacts/candidate/local-ai-0.3.0-arm64-release.aab`：**64,225,674 字节**，SHA-256 `f2f097aba412c39117aab77e3a019556a4e2ac91a1deeb259017e8b06bbd37bc`，SHA-1 `160949ec…0629`。
+  - `.gitignore`：按「大二进制不入库、哈希入清单」惯例增加 `artifacts/candidate/*.aab`。
+  - `artifacts/manifest.json`：新增 `aab` 段（名称、路径、字节数、SHA-256/SHA-1、ABI、产出日期、签名校验说明、`storeUploadVerified: false`）；`verification` 段更新为 2026-09-30 实测值（Release 单测 167 项 0 失败、lint 0 错误 131 警告、脱敏扫描 315 文件 0 命中、AAB/APK 校验结果）；`notes` 补 AAB 说明。
+  - `docs/gates/g5-software-acceptance.md` §4：条目由「未产出 AAB」改为「已产出、未验证商店上传路径」，含哈希与验证方式。
+  - `docs/release/candidate-0.3.0.md` §4、`README.md`「已知限制」：同步 AAB 产出状态与「待真机实测」文案。
+- 验证：
+  - 命令：`./gradlew :app:bundleRelease --offline`；`./gradlew :app:testReleaseUnitTest --offline`
+  - 结果：`PASS`；AAB 产出成功；Release 单测 **167 项、0 失败**（与 Debug 一致）。
+  - 命令：`jarsigner -verify app-release.aab`（本机无 bundletool，以 jarsigner 为准）
+  - 结果：`PASS`；退出码 0；`keytool -printcert` 复核签名算法 `SHA256withRSA`、证书 SHA-256 `ede51c40…a4c5e`，与候选 APK 同一证书。
+  - 命令：`apksigner verify artifacts/candidate/local-ai-0.3.0-arm64-release.apk`
+  - 结果：`PASS`；退出码 0（候选 APK 未被本轮改动影响，哈希仍为 `c4937ee2…9c52e`）。
+  - 命令：`python qa/release/log_redaction_scan.py`
+  - 结果：`PASS`；315 个受跟踪文件、0 命中、退出码 0。
+  - 命令：`python -c "json.load(...)"`
+  - 结果：`PASS`；`artifacts/manifest.json` 可解析，`aab` 段与归档副本一致。
+- 风险/阻塞：无。未覆盖：AAB→APK 拆分校验（无 bundletool）与应用商店上传验证。
+- 下一阶段依赖：`OPT-8`（短程稳定性冒烟）可开始。

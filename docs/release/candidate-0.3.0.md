@@ -38,8 +38,8 @@ adb install -r artifacts/candidate/local-ai-0.3.0-arm64-release.apk
 ## 4. 已知限制
 
 - **未经真机验收**：现有结论均来自 16 KB x86_64 模拟器（ARM64 经 `libndk_translation.so` 运行），不代表 arm64 真机性能与温度表现。
-- 输出速度与首字延迟在应用内显示「待测」，未提供基准数字。
-- 未产出 AAB，未验证应用商店上传。
+- 输出速度与首字延迟在应用内显示「待真机实测」，未提供基准数字（口径与回填条件见 `docs/device-baseline.md` 第 7 节）。
+- 已产出 AAB（`artifacts/candidate/local-ai-0.3.0-arm64-release.aab`，64,225,674 字节，SHA-256 `f2f097ab…d37bc`，`jarsigner -verify` 通过），但未验证应用商店上传路径，也未做 AAB→APK 拆分校验。
 - 未执行长时间稳定性循环与故障矩阵全量跑测。
 - 「停止生成」的 UI 侧人工复现受 uiautomator 限制（流式期间取不到静止快照），该路径以自动化用例为准。
 

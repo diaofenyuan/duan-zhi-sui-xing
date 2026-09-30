@@ -50,7 +50,7 @@
 ## 4. 明确未覆盖（不得据本门禁推断）
 
 - **真机验收（P6）未执行**：无 arm64-v8a 真机。全部性能与稳定性结论来自 16 KB x86_64 模拟器（ARM64 经 `libndk_translation.so` 运行），不等同于真机表现。
-- **未产出 AAB**：仅 APK，未验证 Play 上传路径。
+- **AAB 已产出、未验证商店上传路径**：2026-09-30 由 `./gradlew :app:bundleRelease --offline` 产出 `local-ai-0.3.0-arm64-release.aab`（64,225,674 字节，SHA-256 `f2f097ab…d37bc`），`jarsigner -verify` 退出码 0、证书与候选 APK 一致；本机无 bundletool，未做 AAB→APK 拆分校验，也未在 Google Play 或国内商店做上传验证。
 - **未做性能基准**：详情页「输出速度」「首字延迟」显示「待真机实测」，本轮未补测，也未以模拟器数字冒充真机指标；该口径与回填条件见 `docs/device-baseline.md` 第 7 节。
 - **未执行崩溃/长时间稳定性循环**：仅覆盖仪器化回归与一次真实下载+生成。
 - 许可审查以构建期清单一致性与随包文本可读性为准（`LicensesInstrumentedTest` 通过），不构成法律意见。
