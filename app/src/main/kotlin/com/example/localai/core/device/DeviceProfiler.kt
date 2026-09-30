@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.StatFs
 import java.util.Arrays
+import java.util.Locale
 
 /**
  * 设备画像采集（P4，真实取值，无个人标识：不含序列号/IMEI/账号）。
@@ -62,10 +63,11 @@ object DeviceProfiler {
 
         fun storageLabel(): String {
             val gb = storageFreeMb / 1024.0
+            // 固定 Locale.US：剩余空间数字不随系统语言变化
             return if (gb >= 10) {
-                String.format("%.1f GB", gb)
+                String.format(Locale.US, "%.1f GB", gb)
             } else {
-                String.format("%.0f MB", storageFreeMb.toDouble())
+                String.format(Locale.US, "%.0f MB", storageFreeMb.toDouble())
             }
         }
     }

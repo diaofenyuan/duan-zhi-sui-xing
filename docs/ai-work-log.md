@@ -1184,3 +1184,29 @@
   - 结果：`PASS`；证据 `qa/e2e/opt5-market-150.png`、`opt5-detail-150.png`、`opt5-downloads-150.png`、`opt5-settings-150.png`、`opt5-advanced-150.png`、`opt5-dialog-150.png`、`opt5-history-150.png`（含空态）。走查后已把模拟器字体缩放恢复为 100%。
 - 风险/阻塞：无。
 - 下一阶段依赖：`OPT-6`（P5 软件侧遗留一致性收尾）可开始。
+
+### 2026-09-30 | OPT-6 | DONE
+
+- 目标：修正 `README.md` 过期限制项，核对 `docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`、`artifacts/manifest.json` 与仓库现状一致；登记详情页「待测」口径与回填条件；对 lint 告警按正确性/隐私/安全与风格分类处置。
+- 依赖：`OPT-5` DONE。
+- 一致性核对结果：
+  - 候选包归档副本：96,071,389 字节、SHA-256 `c4937ee2…9c52e`，与 `artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md` 记录一致；`apksigner verify` 退出码 0，证书 `CN=duan-zhi-sui-xing`、证书 SHA-256 `ede51c40…a4c5e` 与清单一致。
+  - `README.md`「已知限制」中「P5 交付物尚未归档」已过期，改为「发布候选已归档、AAB 与商店路径未验证」并给出三处归档位置。
+- 实际修改：
+  - `README.md`：更新过期限制项。
+  - `docs/device-baseline.md`：新增第 7 节「性能指标的『待测』口径与回填条件」——详情页「输出速度/首字延迟」固定显示「待真机实测」，模拟器数字不得回填；真机 Benchmark 完成后才回填并注明档位与采集时间。
+  - `docs/gates/g5-software-acceptance.md`：§2 追加 2026-09-30 复核行（单测 167 项 0 失败、lint 0 错误 131 警告、候选包哈希与签名复核一致）；§4 的「待测」条目改为指向 `docs/device-baseline.md` 第 7 节并采用界面实际文案「待真机实测」。
+  - `core/compatibility/CompatibilityEngine.kt`、`core/device/DeviceProfiler.kt`：`String.format` 补 `Locale.US`，容量数字不随系统语言变化（与 `Fmt` 口径一致）。这是本轮唯一修改的代码告警。
+- lint 告警分类（修复后 0 错误、131 警告）：
+  - 正确性相关且已修：`DefaultLocale` 4 项（本轮消除）。
+  - 正确性/安全相关但保留并说明：`TrustAllX509TrustManager` 3 项全部来自 Gradle 缓存中的第三方 `bcpkix` JAR（本地签名工具链依赖，非仓库代码）；`PrivateApi`/`DiscouragedPrivateApi` 2 项为 `App.kt` 读取进程名的兜底反射（API 28+ 已用公开 API，且 try/catch 兜底，官方模板同款）；`ExifInterface` 2 项建议改用 androidx 实现，但需新增依赖，本轮禁止加依赖故保留。
+  - 纯风格/资源类保留：`UnusedResources` 48、`SetTextI18n` 34、`UseKtx` 14、`NotifyDataSetChanged` 8、`UseCompoundDrawables` 6、`DisableBaselineAlignment` 2、`RtlSymmetry` 2、`SmallSp` 2、`Overdraw` 1、`ObsoleteSdkInt` 1、`InflateParams` 1、`UnusedAttribute` 1、`PluralsCandidate` 1、`GradleDependency` 2；其中 `TypographyDashes` 1 为误报（模型名 `Qwen3-4B-Instruct` 的连字符不得替换为破折号）。不追求零告警、不做全仓库格式化。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`；单测 167 项、0 失败；lint **0 错误、131 警告**（较 `OPT-5` 的 135 减少 4 条，无新增）。
+  - 命令：`python qa/release/log_redaction_scan.py`
+  - 结果：`PASS`；315 个受跟踪文件、0 命中、退出码 0。
+  - 命令：`apksigner verify --print-certs artifacts/candidate/local-ai-0.3.0-arm64-release.apk` + SHA-256 复核
+  - 结果：`PASS`；退出码 0，哈希与三处文档记录一致。
+- 风险/阻塞：无。
+- 下一阶段依赖：`OPT-7`（发布侧补齐：产出 AAB 并登记）可开始。

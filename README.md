@@ -80,5 +80,5 @@ docs/           执行计划、工作日志、构建/设备/许可/UI/迁移基�
 ## 已知限制
 
 - **真机验收尚未执行**：现有性能结论均来自 x86_64 模拟器（ARM64 经 `libndk_translation.so` 运行），不等同于 arm64 真机性能。解除条件见 `docs/device-baseline.md` 第 6 节。
-- **发布候选（P5）交付物尚未归档**：候选 APK/AAB、哈希与软件验收报告待补。
+- **发布候选已归档，商店路径未验证**：候选 APK、哈希与软件验收报告见 `artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`；AAB 与应用商店上传路径尚未验证。
 - 模型权重不入库，需由目录地址下载；`qa/fixtures/models/*.gguf` 与 `backend/fixtures/media/` 已被忽略。

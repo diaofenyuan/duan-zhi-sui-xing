@@ -81,3 +81,9 @@ S025 CompatibilityEngine  硬约束过滤(第 2 节) -> 短 Benchmark -> 输出 
 - 需要：至少 1 台 arm64-v8a 真机（USB 调试可用）即可开始 S007 前置验证；三档齐备才能完整通过 G0。
 - 当前持有：0 台。
 - 已尝试：检查本机 `adb devices`（无设备连接）；确认 Windows x86_64 模拟器不能作为 arm64 Native 推理的可信基线。
+
+## 7. 性能指标的「待测」口径与回填条件
+
+- 当前口径：模型详情页的「输出速度」与「首字延迟」固定显示「待真机实测」，不显示任何数字；模拟器（x86_64，ARM64 经 `libndk_translation.so`）的运行数字不得用于填充该处，也不得写进对外说明。
+- 回填条件：真机按第 3 节字段采集并完成 Benchmark（TTFT/TPS、峰值内存、温度、电量）后，才在详情页与 `artifacts/manifest.json` 中回填真实数字，并注明设备档位与采集时间；未采集到的档位继续显示「待真机实测」。
+- 登记位置：档位结论写 `qa/device-matrix/devices.yaml`（`MEASURED`），验收记录写 `docs/gates/g6-device-acceptance.md`。

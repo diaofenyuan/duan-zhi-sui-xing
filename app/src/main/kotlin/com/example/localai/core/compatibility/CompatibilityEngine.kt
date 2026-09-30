@@ -1,6 +1,7 @@
 package com.example.localai.core.compatibility
 
 import java.util.ArrayList
+import java.util.Locale
 
 /**
  * 可解释的兼容性规则引擎（P4 版）。
@@ -112,7 +113,9 @@ object CompatibilityEngine {
 
     private fun humanMb(bytes: Long): String {
         val mb = bytes / (1024.0 * 1024.0)
-        return if (mb >= 1024) String.format("%.1f GB", mb / 1024.0) else String.format("%.0f MB", mb)
+        // 固定 Locale.US：容量数字不随系统语言变化（与 Fmt 的输出口径一致）
+        return if (mb >= 1024) String.format(Locale.US, "%.1f GB", mb / 1024.0)
+        else String.format(Locale.US, "%.0f MB", mb)
     }
 
     private fun join(inp: List<String>): String {
