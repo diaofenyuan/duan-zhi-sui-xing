@@ -68,7 +68,6 @@ docs/           执行计划、工作日志、构建/设备/许可/UI/迁移基�
 
 | 文档 | 内容 |
 | --- | --- |
-| `docs/ai-execution-plan.md` | 六阶段执行计划（P1–P6）与技术检查清单 |
 | `docs/ai-work-log.md` | 追加式工作日志：每轮目标、改动与验证证据 |
 | `docs/build-baseline.md` | 工具链基线与发布签名覆盖升级验收流程 |
 | `docs/native-baseline.md` | llama.cpp 版本锁定与 Native 构建 |

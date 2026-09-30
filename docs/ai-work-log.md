@@ -15,7 +15,7 @@
 - `IN_PROGRESS`：已开始但尚未通过阶段验收。
 - `DONE`：当前阶段的可运行结果和验收命令真实通过。
 - `BLOCKED`：当前阶段因外部输入或明确技术阻塞无法继续，必须记录解除条件。
-- 一次对话只能写一个 `PHASE_ID`（协议迁移特殊记录使用 `MIGRATION`）。
+- 一次对话只能写一个 `PHASE_ID`（协议迁移特殊记录使用 `MIGRATION`，目录清理类记录使用 `CLEANUP`）。
 - “下一阶段依赖”只用于导航，不表示下一阶段已经执行。
 - Kotlin 语言迁移（`docs/kotlin-migration-plan.md`）使用 `MIGRATION-K0` ～ `MIGRATION-K5` 作为阶段 ID，每个阶段 `IN_PROGRESS`/`DONE` 各一条，与 P 阶段并列、互不隶属。
 
@@ -1047,3 +1047,18 @@
 - 明确未覆盖（不据本阶段推断）：真机验收（`P6`，无 arm64 设备）、AAB 与商店上传路径、性能基准（详情页仍显示「待测」）、长时间稳定性循环。
 - 风险/阻塞：无软件阻塞。`P6` 需至少一台 arm64-v8a 真机。
 - 下一阶段依赖：`P6` 真机验收；解除条件与采集口径见 `docs/device-baseline.md` 第 6 节。
+
+### 2026-09-30 | CLEANUP | DONE
+
+- 目标：按用户要求移除已废弃的 `plan/` 目录与 `docs/ai-execution-plan.md`，AI 执行计划文档不再维护。
+- 依赖：无。
+- 实际修改：
+  - 删除 `plan/`（3 个源文件，内容已由 docs 版本覆盖）。
+  - 删除 `docs/ai-execution-plan.md`。
+  - `README.md`：目录结构与文档索引移除相应条目。
+  - `docs/kotlin-migration-plan.md`：移除对已删除执行计划的并列引用。
+- 验证：
+  - 命令：`git status --short`；全文检索 `ai-execution-plan`。
+  - 结果：`PASS`；除本日志历史记录外无残留引用，工作树无意外改动。
+- 风险/阻塞：无。历史记录中的引用按追加式规则原样保留。
+- 下一阶段依赖：无。
