@@ -328,7 +328,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:chipBackgroundColor="?attr/colorSurfaceVariant"
-                android:text="帮我总结一篇文章的要点" />
+                android:text="@string/sample_prompt_summary" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/sample_2"
@@ -336,7 +336,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:chipBackgroundColor="?attr/colorSurfaceVariant"
-                android:text="解释什么是模型量化" />
+                android:text="@string/sample_prompt_quant" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/sample_3"
@@ -344,7 +344,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:chipBackgroundColor="?attr/colorSurfaceVariant"
-                android:text="写一首关于离线 AI 的短诗" />
+                android:text="@string/sample_prompt_poem" />
         </com.google.android.material.chip.ChipGroup>
 
         <!-- 底部操作 -->

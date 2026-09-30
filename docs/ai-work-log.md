@@ -1098,3 +1098,22 @@
   - 结果：`BLOCKED`（维持）；真机 0 台、无线调试服务 0 条，结论与 2026-09-30 上一轮一致，本轮不再重复探测。
 - 风险/阻塞：`P6` 真机验收仍缺 arm64-v8a 真机；解除条件与采集口径不变（`docs/device-baseline.md` 第 6 节），`P6` 不关闭。
 - 下一阶段依赖：软件优化轮继续 `OPT-2`（中文文案资源审计）；`P6` 待设备接入后按既有计划执行。
+
+### 2026-09-30 | OPT-2 | DONE
+
+- 目标：审计 `res/values/strings.xml`、`res/values/ui_strings.xml` 与 `res/layout/*` 中的中文文案，修复乱码/占位符、标点混用、术语不一致、错误态含糊、数字单位格式与布局内联硬编码文本。
+- 依赖：`OPT-1` DONE。
+- 实际修改：
+  - `res/layout/fragment_chat.xml`：底部「资料」按钮文本由硬编码改为 `@string/chat_materials`（`strings.xml` 新增该字符串），消除布局内联中文。
+  - `res/layout/fragment_model_detail.xml`：详情页 3 个示例指令 Chip 文本改为 `@string/sample_prompt_*`（新增对应字符串），保持原文案不变。
+  - `res/values/strings.xml`：`filter_size_mid` 的半角范围符 `3~8B` 改为全角 `3～8B`（与 `context_input_hint`、`gpu_explanation` 的既有全角范围写法统一）；`hero_desc` 删除「实测 14 tok/s」这一无实测依据的性能数字，改为「本机离线运行」（详情页「输出速度/首字延迟」仍按既定口径显示「待测」，不编造数字）；隐私说明中引用的聊天页按钮名由不存在的「释放模型」更正为界面实际文案「释放内存」。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest --offline --console=plain`
+  - 结果：`PASS`；164 项、0 失败（与基线一致）。
+  - 命令：`./gradlew :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`；**0 错误、135 警告**（基线 139 警告，减少 4 条，即消除的 HardcodedText；无新增错误）。
+  - 命令：`adb install -r -d app-debug.apk` + 模拟器走查（x86_64 模拟器来源）
+  - 结果：`PASS`；聊天页「资料」按钮文本与 `content-desc="资料库"` 正确（`qa/e2e/opt1-chat-materials.png`），模型详情页「示例指令」三条 Chip 正常渲染（`qa/e2e/opt1-detail-samples.png`）。
+- 审计结论：`ui_strings.xml` 13 条、`strings.xml` 其余条目未发现乱码、占位符错配或半角/全角混用；未改动的条目按「不为提交而制造改动」原则保持原样。`action_close` 等条目存在行尾多余空格，属格式噪声、非文案问题，未纳入本次改动。
+- 风险/阻塞：无。
+- 下一阶段依赖：`OPT-3`（源码内联中文与无障碍文案）可开始。
