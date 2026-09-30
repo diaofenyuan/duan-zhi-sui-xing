@@ -42,7 +42,6 @@ app/            Android 应用
 backend/        目录/清单 fixture 服务、manifest schema、签名与打包工具
 qa/             E2E 脚本与截图、设备矩阵、fixture、模拟器验收
 docs/           执行计划、工作日志、构建/设备/许可/UI/迁移基线
-plan/           原始方案与技术参考正文
 ```
 
 ## 构建与验证
