@@ -1164,3 +1164,23 @@
 - 环境备注：模拟器若以 `-gpu swiftshader_indirect` 启动，ggml 会以 `Unsupported device` 拒绝加载模型（`llama_model_load` 报错，App 侧表现为 `native load failed (code=1101)`）；改用默认 GPU 启动后恢复正常，后续模拟器验证统一用默认 GPU。
 - 风险/阻塞：无。
 - 下一阶段依赖：`OPT-5`（大字体与长文案适配）可开始。
+
+### 2026-09-30 | OPT-5 | DONE
+
+- 目标：核查系统字体缩放 150%（项目上限）下关键页面是否截断/重叠，以及长模型名与长中文标题的省略策略。
+- 依赖：`OPT-4` DONE。
+- 核查方式：`adb shell settings put system font_scale 1.5` 后在模拟器逐页走查并截图；同时用脚本对 `res/layout/*` 做「设了行数上限但未设省略号」的静态扫描。
+- 审计结论与修改：
+  - 静态扫描命中 3 处：`fragment_chat.xml` 多行输入框、`fragment_market.xml` 单行搜索框（均为输入控件，靠内部滚动，不需要省略号）、`item_installed.xml` 的 `text_name`（`maxLines=2` 但无 `ellipsize`，超长模型名会被硬裁切且无「…」）。仅修复最后一项：补 `android:ellipsize="end"`，与列表其余标题（会话标题 `maxLines=1 + ellipsize`、市场卡片副标题 `maxLines=2 + ellipsize`）口径一致；长名的完整可读途径为详情页标题与聊天页顶栏（后者 `contentDescription` 带完整名称）。
+  - 走查未发现其它截断或重叠：聊天顶栏在 150% 下把「新建会话/会话历史」按既有设计收进溢出菜单（`screenWidthDp / fontScale < 300`），功能未丢失，模型名保留完整阅读宽度；市场卡片、详情页三格数据、下载列表、设置项与「清空全部会话」对话框在 150% 下均完整显示。
+- 实际修改：
+  - `res/layout/item_installed.xml`：已安装模型名补 `ellipsize="end"`（唯一改动）。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`；单测 167 项、0 失败；lint 0 错误、135 警告（无新增）。
+  - 命令：`./gradlew :app:connectedDebugAndroidTest --offline -Pandroid.testInstrumentationRunnerArguments.class=com.example.localai.feature.diagnostics.ReadabilityInstrumentedTest`
+  - 结果：`PASS`；2 项完成、0 失败（模拟器来源，字体缩放在用例内断言为 150%）。诊断页数值无省略、无高度裁切；辅助文字对比度 ≥ 4.5。
+  - 命令：模拟器走查 + 截图（字体缩放 150%，x86_64 模拟器来源）
+  - 结果：`PASS`；证据 `qa/e2e/opt5-market-150.png`、`opt5-detail-150.png`、`opt5-downloads-150.png`、`opt5-settings-150.png`、`opt5-advanced-150.png`、`opt5-dialog-150.png`、`opt5-history-150.png`（含空态）。走查后已把模拟器字体缩放恢复为 100%。
+- 风险/阻塞：无。
+- 下一阶段依赖：`OPT-6`（P5 软件侧遗留一致性收尾）可开始。
