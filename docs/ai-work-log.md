@@ -1139,3 +1139,28 @@
   - 说明：下载行无障碍描述的运行时核对与真实下载中断走查合并到 `OPT-4` 的下载中断/恢复环节执行，避免为同一动作重复触发下载。
 - 风险/阻塞：无。
 - 下一阶段依赖：`OPT-4`（中文渲染链路）可开始。
+
+### 2026-09-30 | OPT-4 | DONE
+
+- 目标：核查中文从数据到界面的最后一段链路——OCR/PDF 文本输出、聊天流式多字节字符、资料问答引用一致性、相对时间本地化。
+- 依赖：`OPT-3` DONE。
+- 审计结论与修改：
+  - 相对时间本地化发现 1 处真实缺陷：`common/Fmt.kt` 的 `timeLabel` 用「24~48 小时」窗口判定「昨天」，会把**前天**误标为昨天（例：今天 00:30 看前天 23:45，间隔 24 小时 45 分）。改为按本地自然日比较（仅当前一自然日且仍在 48 小时内显示「昨天」，否则显示 `yyyy-MM-dd`）。
+  - 其余链路检查后无改动：聊天流式多字节由 `UnicodeStreamInstrumentedTest` 覆盖；OCR/PDF 文本中文由 `OfflineOcrInstrumentedTest` 与 `LibraryContentTest.chineseEncodingsAreDecodedWithoutReplacementCharacters`（UTF-8/GB18030/UTF-16LE 均无替换字符）覆盖；引用一致性由 `LibraryContentTest.retrievalKeepsExactSourcePageAndOffsets`（逐条断言 `excerpt == original.substring(start, start+length)`）覆盖。
+- 实际修改：
+  - `common/Fmt.kt`：`timeLabel` 的「昨天」判定改为自然日比较，新增私有 `dayIndex`。
+  - `test/.../common/FmtTest.kt`：新增 3 个用例（刚刚/分钟前/小时前/昨天、前天不得标为昨天、日期回退与非法输入），其中前天一例在修复前必然失败。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest --offline --console=plain`
+  - 结果：`PASS`；**167 项、0 失败**（基线 164 + 本轮新增 3）。
+  - 命令：`./gradlew :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`；0 错误、135 警告（无新增）。
+  - 命令：`./gradlew :app:connectedDebugAndroidTest --offline -Pandroid.testInstrumentationRunnerArguments.class=com.example.localai.core.inference.UnicodeStreamInstrumentedTest,com.example.localai.feature.library.OfflineOcrInstrumentedTest`
+  - 结果：`PASS`；3 项完成、0 失败（模拟器来源，x86_64）。真实模型流式输出中文与 emoji 无孤立代理/替换字符（5.353 秒）；离线 OCR 中文+数字识别 0.375 秒；空白图不编造文字且取消可停（0.44 秒）。
+  - 命令：模拟器手工走查（x86_64 模拟器来源）+ 截图存证
+  - 结果：`PASS`；聊天页中文问答渲染正常、无乱码/断字（`qa/e2e/opt4-chat-chinese.png`）；本机识别中文图片输出 4 行、0.4 秒，正文无乱码与多余空格，姓名/手机号/日期数字完整，页面同时提示「请核对姓名、数字和日期后保存」（`qa/e2e/opt4-ocr-chinese.png`）；下载页中文状态与空态渲染正常（`qa/e2e/opt4-downloads-page.png`）。OCR 把「下午/项目」识别为「下牛/项自」，属识别引擎精度、非渲染缺陷。
+  - 命令：真实下载任务中读取 UI 节点（`uiautomator dump`）
+  - 结果：`PASS`；下载行「取消」按钮运行时 `content-desc="取消下载"`（`OPT-3` 的无障碍改动在真机链路生效），主按钮在「校验完整性中…」状态下描述为「暂停」且不可点击。
+- 环境备注：模拟器若以 `-gpu swiftshader_indirect` 启动，ggml 会以 `Unsupported device` 拒绝加载模型（`llama_model_load` 报错，App 侧表现为 `native load failed (code=1101)`）；改用默认 GPU 启动后恢复正常，后续模拟器验证统一用默认 GPU。
+- 风险/阻塞：无。
+- 下一阶段依赖：`OPT-5`（大字体与长文案适配）可开始。

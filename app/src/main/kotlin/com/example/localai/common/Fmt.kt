@@ -1,6 +1,7 @@
 package com.example.localai.common
 
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -55,10 +56,19 @@ object Fmt {
         if (diff < 24 * hour) {
             return "${diff / hour} 小时前"
         }
-        if (diff < 48 * hour) {
+        // 24~48 小时窗口内仍可能落在前天（如今天 00:30 看前天 23:45），必须按自然日判断，
+        // 否则会把前天错标成「昨天」；窗口外直接给日期，避免「昨天」长期驻留。
+        if (diff < 48 * hour && dayIndex(nowMillis) - dayIndex(epochMillis) == 1L) {
             return "昨天"
         }
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA)
         return sdf.format(Date(epochMillis))
+    }
+
+    /** 本地自然日序号（默认时区），用于判断两个时间点是否相邻一天。 */
+    private fun dayIndex(millis: Long): Long {
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = millis
+        return cal.get(Calendar.YEAR) * 1000L + cal.get(Calendar.DAY_OF_YEAR)
     }
 }
