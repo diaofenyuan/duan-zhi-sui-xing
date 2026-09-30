@@ -4,10 +4,10 @@
 
 ## 当前状态
 
-- 当前阶段：`P5`
-- 当前状态：`DONE`（2026-09-26：候选包归档并签名校验通过；软件门禁、脱敏扫描与候选说明入库）
+- 当前阶段：`P6`
+- 当前状态：`BLOCKED`（2026-09-30：探测 0 台 arm64-v8a 真机；候选包 0.3.0 完整性复核通过，接入首台设备即可开始首档验收）
 - 最近完成：`P5` 候选包与软件门禁（`artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`）；此前 `P4` 主流程走查关闭、`MIGRATION-K5` Kotlin 全量迁移 DONE
-- 最近阻塞：`P6` 真机验收缺 arm64-v8a 真机（解除条件见 `docs/device-baseline.md` 第 6 节）
+- 最近阻塞：`P6` 真机验收缺 arm64-v8a 真机（2026-09-30 复核：`adb devices -l`、`adb mdns services`、Windows PnP 探测均为 0 台；解除条件见 `docs/device-baseline.md` 第 6 节）
 - 下一可执行阶段：`P6`（三档真机安装同一候选包，执行端到端与性能回归，记录 TTFT/TPS、峰值内存、温度与电量）
 
 ## 记录规则
@@ -1062,3 +1062,23 @@
   - 结果：`PASS`；除本日志历史记录外无残留引用，工作树无意外改动。
 - 风险/阻塞：无。历史记录中的引用按追加式规则原样保留。
 - 下一阶段依赖：无。
+
+### 2026-09-30 | P6 | BLOCKED
+
+- 目标：三档真实设备（旗舰/中端/入门）安装同一候选 APK，完成主流程、性能与稳定性回归，产出真机验收报告（安装结果、脱敏设备画像、TTFT/TPS、峰值内存、温度、电量、崩溃与恢复证据）。
+- 依赖：`P5` DONE（候选包与软件门禁已归档）；设备解除条件见 `docs/device-baseline.md` 第 6 节。
+- 本轮实际执行：
+  - 候选包完整性复核：`artifacts/candidate/local-ai-0.3.0-arm64-release.apk` 存在，96,071,389 字节，SHA-256 `c4937ee2…9c52e`，与 `artifacts/manifest.json` 记录一致，可直接用于真机验收。
+  - 真机探测（0 台）：`adb devices -l` 无设备连接；`adb mdns services` 无无线调试服务；Windows `Get-PnpDevice` 过滤 Android/ADB 等关键词无结果。
+  - 推送复核：`git ls-remote` 确认远端 `main` 已在 `3f7e34e`（上一轮提交实际已推送，仅本地远程跟踪引用陈旧，`git push` 返回 up-to-date）；本轮已同步 `origin/main`，本地与远端 0/0 一致。
+- 计划修改（设备接入后执行；本轮未改动业务代码）：
+  - `qa/device-matrix/devices.yaml`：按实测追加三档 `MEASURED` 条目（脱敏字段，禁止序列号、账号与完整个人路径）。
+  - `docs/gates/g6-device-acceptance.md`：新建真机验收报告（安装结果、指标、证据与结论），记录候选 APK SHA-256。
+- 计划验证（设备接入后执行）：
+  - `adb install artifacts/candidate/local-ai-0.3.0-arm64-release.apk`：三档设备各安装 1 次并记录结果。
+  - 主流程走查（发现 → 详情 → 下载 → 安装 → 聊天 → 停止 → 历史 → 删除）：每档至少 1 次，沿用 `qa/e2e/ui_driver.py` + 截图存证。
+  - 性能与稳定性：每档 Benchmark 至少 3 次，采集 TTFT/TPS（设备端推理统计）、峰值内存（`dumpsys meminfo`）、温度与电量，口径按 `docs/device-baseline.md` 第 3 节。
+- 原因：本机接入的 arm64-v8a 真机数量为 0；P6 要求真实采集，模拟器（x86_64 或 ARM 转译）与模拟数据不得替代，不得伪造。
+- 解除条件：提供至少一台 arm64-v8a 真机（USB 调试可用）即可开始首档验收；三档齐备才能完整关闭 `P6`。
+- 风险/阻塞：真机验收无法在本环境执行，本轮不写 DONE；候选包、脚本与报告结构已就绪，待设备到位后按上表执行。
+- 推送：`origin/main`；写记录前已复核远端无遗留未推送提交（`3f7e34e`），本记录提交于验证后立即推送。
