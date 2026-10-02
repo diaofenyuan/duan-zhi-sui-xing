@@ -51,7 +51,7 @@ Get-ChildItem app\.cxx -Recurse -File -Include *.o | Where-Object { $_.Length -e
 
 - S005 引入 Native 构建时，`CMake` 版本从版本目录读取并在 `externalNativeBuild` 中显式声明。
 - 升级 AGP/Gradle 前先查官方兼容表，且必须同步更新本文件与版本目录。
-- 2026-08-28 起主语言为 Kotlin：新增 `org.jetbrains.kotlin.android` 插件（KGP 2.2.20，离线缓存 `kotlin-gradle-plugin-2.2.20-gradle813.jar` 命中本工程 Gradle 8.14）；`jvmTarget` 与 `compileOptions` 保持一致为 Java 17。Room 注解类（`data/room/`）、JNI 边界（`NativeSession`）、AIDL Parcelable（`InferenceRequest`/`InferenceStats`）保持 Java，详见 `docs/kotlin-migration-plan.md` 第 5 节。
+- 2026-08-28 起主语言为 Kotlin：新增 `org.jetbrains.kotlin.android` 插件（KGP 2.2.20，离线缓存 `kotlin-gradle-plugin-2.2.20-gradle813.jar` 命中本工程 Gradle 8.14）；`jvmTarget` 与 `compileOptions` 保持一致为 Java 17。Room 注解类（`data/room/`）、JNI 边界（`NativeSession`）、AIDL Parcelable（`InferenceRequest`/`InferenceStats`）保持 Java——离线环境缺 KSP/kapt，Room 继续走 `annotationProcessor`，JNI/AIDL 边界不迁移。
 
 ## 发布签名的同机隔离验收（2026-09-06）
 

@@ -26,7 +26,7 @@ Android 端侧本地 AI 应用：在手机上离线发现、下载并运行小�
 - **单 Activity + 底部 5 Tab**：市场 / 聊天 / 下载 / 诊断 / 设置；二级页（详情、历史）走返回栈。设计令牌与页面状态矩阵见 `docs/ui-design.md`。
 - **推理独立进程**：`InferenceService` 运行于 `:inference` 进程，该进程不含网络代码路径、不访问业务数据库；UI 侧通过 AIDL 与 `InferenceClient` 通信，UI 进程不直接加载 Native 库。
 - **推理内核**：vendored llama.cpp（`app/src/main/cpp/engine_llama/`，锁定版本见 `docs/native-baseline.md`）+ 自写 JNI 桥接 `app/src/main/cpp/ai_jni/`。流式输出以标准 UTF-8 字节跨批次传递并缓存不完整字符，避免多字节字符被截断。
-- **语言**：Kotlin 为主；`data/room/`（Room 注解类）与 `core/inference/`（JNI、AIDL Parcelable 边界）保留 Java，边界规则见 `docs/kotlin-migration-plan.md`。
+- **语言**：Kotlin 为主；保留 Java 仅限边界：`data/room/`（Room 注解类，走 `annotationProcessor` 以避开离线不可用的 KSP/kapt）、`core/inference/` 的 JNI 边界（`NativeSession`）与 AIDL Parcelable（`InferenceRequest`/`InferenceStats`）；`app/src/main/cpp/` 与 `backend/` 不在迁移范围。
 
 ## 目录结构
 
@@ -41,7 +41,7 @@ app/            Android 应用
   schemas/              Room 导出 schema（迁移审计）
 backend/        目录/清单 fixture 服务、manifest schema、签名与打包工具
 qa/             E2E 脚本与截图、设备矩阵、fixture、模拟器验收
-docs/           执行计划、工作日志、构建/设备/许可/UI/迁移基线
+docs/           工作日志、构建/设备/原生/许可/UI/模型接入基线与发布门禁
 ```
 
 ## 构建与验证
@@ -71,7 +71,6 @@ docs/           执行计划、工作日志、构建/设备/许可/UI/迁移基�
 | `docs/ai-work-log.md` | 追加式工作日志：每轮目标、改动与验证证据 |
 | `docs/build-baseline.md` | 工具链基线与发布签名覆盖升级验收流程 |
 | `docs/native-baseline.md` | llama.cpp 版本锁定与 Native 构建 |
-| `docs/kotlin-migration-plan.md` | Java→Kotlin 迁移方案与保留区边界 |
 | `docs/model-onboarding.md` | 模型接入与目录清单规范 |
 | `docs/license-policy.md` | 第三方许可登记与随包清单规则 |
 | `docs/ui-design.md` | 设计令牌、页面清单与状态矩阵 |

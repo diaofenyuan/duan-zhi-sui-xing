@@ -20,7 +20,7 @@
 - `BLOCKED`：当前阶段因外部输入或明确技术阻塞无法继续，必须记录解除条件。
 - 一次对话只能写一个 `PHASE_ID`（协议迁移特殊记录使用 `MIGRATION`，目录清理类记录使用 `CLEANUP`，软件优化轮使用 `OPT-n` 且允许同一对话多条）。
 - “下一阶段依赖”只用于导航，不表示下一阶段已经执行。
-- Kotlin 语言迁移（`docs/kotlin-migration-plan.md`）使用 `MIGRATION-K0` ～ `MIGRATION-K5` 作为阶段 ID，每个阶段 `IN_PROGRESS`/`DONE` 各一条，与 P 阶段并列、互不隶属。
+- Kotlin 语言迁移（已完成，2026-08-29 全部 DONE；边界规则见 `README.md` 架构要点）使用 `MIGRATION-K0` ～ `MIGRATION-K5` 作为阶段 ID，每个阶段 `IN_PROGRESS`/`DONE` 各一条，与 P 阶段并列、互不隶属。
 - 软件侧优化轮使用 `OPT-1` ～ `OPT-N`（按任务顺序编号）作为阶段 ID，允许同一对话内每完成一个任务追加一条 `DONE` 记录，与 P 阶段并列、互不隶属（2026-09-30 修订）。
 
 ## 记录模板
@@ -1250,3 +1250,19 @@
   - 收尾：脚本删除本轮下载的 1.5B 模型，设备恢复为运行前状态（仅 `qwen2.5-0.5b-instruct`）。
 - 风险/阻塞：无。**结论仅适用于模拟器冒烟；arm64 真机的温度、功耗与长稳表现仍需 `P6` 真机验收**。
 - 下一阶段依赖：软件优化轮 `OPT-1`…`OPT-8` 全部完成；`P6` 真机验收仍缺 arm64-v8a 真机。
+
+### 2026-09-30 20:28 | CLEANUP | DONE
+
+- 目标：按用户要求继续清理项目内文档与计划残留——删除已完成的 `docs/kotlin-migration-plan.md`（`K0-K5` 全部 DONE），Java 保留区边界改由 `README.md` 承载；清理空 `plan/` 目录与临时 UI dump。
+- 依赖：无。
+- 实际修改：
+  - 删除 `docs/kotlin-migration-plan.md`；边界规则并入 `README.md` 架构要点（`data/room/` 走 `annotationProcessor` 以避开离线不可用的 KSP/kapt，`core/inference/` 的 JNI 与 AIDL Parcelable 边界不迁移）。
+  - `README.md`：语言条目内联保留区边界；目录结构与文档索引移除该文档条目。
+  - `docs/build-baseline.md`：语言条目移除对已删除文档的引用，保留 Java 的原因就地写明。
+  - 本日志「记录规则」中该文档路径改述（历史记录按追加式规则原样保留）。
+  - 删除空目录 `plan/`；删除临时 dump 根目录 `ui_dump.xml` 与 `qa/e2e/ui_dump.xml`（由 `qa/e2e/ui_driver.py` 运行时按需再生成，均已 gitignore）。
+- 验证：
+  - 命令：`git status --short`；全文检索 `kotlin-migration-plan`、`ai-execution-plan`、`执行计划`。
+  - 结果：`PASS`；除本日志历史记录外无残留引用；工作树仅本轮预期的 3 处修改与 1 处删除。
+- 风险/阻塞：无。保留区边界（`data/room/`、`NativeSession`、`InferenceRequest`/`InferenceStats`）与原因已在 README 与构建基线中完整保留。
+- 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机（状态不变）。
