@@ -57,6 +57,8 @@ class DownloadsFragment : Fragment(), DownloadRepository.Listener {
         adapter = DownloadAdapter(object : DownloadAdapter.Actions {
             override fun onPauseResume(task: DownloadEntity) {
                 if (DownloadState.PAUSED == task.state) {
+                    // 恢复长下载同样需要常驻进度通知；未授权时前台服务仍保活，只是通知不可见
+                    DownloadForegroundService.ensureNotificationPermission(requireActivity())
                     ServiceLocator.downloads()?.resume(task.taskId)
                 } else {
                     ServiceLocator.downloads()?.pause(task.taskId)
@@ -68,6 +70,7 @@ class DownloadsFragment : Fragment(), DownloadRepository.Listener {
             }
 
             override fun onRetry(task: DownloadEntity) {
+                DownloadForegroundService.ensureNotificationPermission(requireActivity())
                 ServiceLocator.downloads()?.retry(task.taskId)
             }
         })

@@ -12,9 +12,9 @@
 | 构建类型 | `release`（R8 未开启压缩，与既有基线一致） |
 | ABI | `arm64-v8a` |
 | 候选包 | `artifacts/candidate/local-ai-0.3.0-arm64-release.apk` |
-| 大小 | 96,071,389 字节 |
-| SHA-256 | `c4937ee2c036c50a73c972e84217623d4928654c6918c25c452abeffee69c52e` |
-| SHA-1 | `5db6dc7dcc00d8f845c44abd91eecab11fb0b42b` |
+| 大小 | 96,075,709 字节 |
+| SHA-256 | `d631c28f2ab1848f6d107d6ba3cbc1af5d3ca05aedc59ed0172fc0d26b57e54e` |
+| SHA-1 | `5b694ed0bf3fe139edc96e55d9674bd71df4d45e` |
 
 签名（`apksigner verify` 退出码 0）：
 
@@ -39,6 +39,8 @@
 **未解释的失败：无。**
 
 > 2026-09-30 更新（软件优化轮）：单测 **167 项 0 失败**、lint **0 错误 135 警告**；候选包归档副本复核仍为 96,071,389 字节、SHA-256 `c4937ee2…9c52e`，`apksigner verify` 退出码 0、证书指纹一致。警告按「正确性/隐私/安全」与「纯风格」分类处置，详见 `docs/ai-work-log.md` 的 `OPT-6` 记录。
+>
+> 2026-10-02 更新（下载保活修复后重建）：单测 **Debug/Release 各 172 项 0 失败**、lint **0 错误 131 警告**；候选 APK 与 AAB 重新构建并归档，哈希见上表与 `artifacts/manifest.json`（`apksigner`/`jarsigner` 退出码均为 0，证书指纹不变）。保活链路在 x86_64 模拟器真实下载中走查通过：切后台 60 秒与锁屏期间传输持续（1.35 GB → 1.89 GB 全速推进并完成校验安装），结束后前台服务、通知与唤醒锁全部释放；修复前同一场景切后台约 10 秒即冻结、回前台任务失败。详见 `docs/ai-work-log.md` 的 `OPT-9` 记录。
 
 跳过 3 项均为设计使然，不计入失败：进程重启恢复需外部两阶段 `-e phase prepare|verify` 驱动；下载验收需显式 `-e allowModelDownload true`；离线连续负载需先断网（见 `qa/build/run_emulator_acceptance.py`）。
 
@@ -50,7 +52,7 @@
 ## 4. 明确未覆盖（不得据本门禁推断）
 
 - **真机验收（P6）未执行**：无 arm64-v8a 真机。全部性能与稳定性结论来自 16 KB x86_64 模拟器（ARM64 经 `libndk_translation.so` 运行），不等同于真机表现。
-- **AAB 已产出、未验证商店上传路径**：2026-09-30 由 `./gradlew :app:bundleRelease --offline` 产出 `local-ai-0.3.0-arm64-release.aab`（64,225,674 字节，SHA-256 `f2f097ab…d37bc`），`jarsigner -verify` 退出码 0、证书与候选 APK 一致；本机无 bundletool，未做 AAB→APK 拆分校验，也未在 Google Play 或国内商店做上传验证。
+- **AAB 已产出、未验证商店上传路径**：2026-10-02 由 `./gradlew :app:bundleRelease --offline` 产出 `local-ai-0.3.0-arm64-release.aab`（64,231,415 字节，SHA-256 `512a460f…5ee8`），`jarsigner -verify` 退出码 0、证书与候选 APK 一致；本机无 bundletool，未做 AAB→APK 拆分校验，也未在 Google Play 或国内商店做上传验证。
 - **未做性能基准**：详情页「输出速度」「首字延迟」显示「待真机实测」，本轮未补测，也未以模拟器数字冒充真机指标；该口径与回填条件见 `docs/device-baseline.md` 第 7 节。
 - **未执行崩溃/长时间稳定性循环**：仅覆盖仪器化回归与一次真实下载+生成。
 - 许可审查以构建期清单一致性与随包文本可读性为准（`LicensesInstrumentedTest` 通过），不构成法律意见。

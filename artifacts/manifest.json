@@ -5,7 +5,7 @@
     "versionName":  "0.3.0",
     "versionCode":  3,
     "buildType":  "release",
-    "generatedAt":  "2026-09-26",
+    "generatedAt":  "2026-10-02",
     "toolchain":  {
                       "jdk":  "17.0.19 (Temurin)",
                       "gradle":  "8.14",
@@ -20,9 +20,9 @@
     "artifact":  {
                      "name":  "local-ai-0.3.0-arm64-release.apk",
                      "path":  "artifacts/candidate/local-ai-0.3.0-arm64-release.apk",
-                     "sizeBytes":  96071389,
-                     "sha256":  "c4937ee2c036c50a73c972e84217623d4928654c6918c25c452abeffee69c52e",
-                     "sha1":  "5db6dc7dcc00d8f845c44abd91eecab11fb0b42b",
+                     "sizeBytes":  96075709,
+                     "sha256":  "d631c28f2ab1848f6d107d6ba3cbc1af5d3ca05aedc59ed0172fc0d26b57e54e",
+                     "sha1":  "5b694ed0bf3fe139edc96e55d9674bd71df4d45e",
                      "abi":  "arm64-v8a"
                  },
     "signing":  {
@@ -37,11 +37,11 @@
     "aab":  {
                 "name":  "local-ai-0.3.0-arm64-release.aab",
                 "path":  "artifacts/candidate/local-ai-0.3.0-arm64-release.aab",
-                "sizeBytes":  64225674,
-                "sha256":  "f2f097aba412c39117aab77e3a019556a4e2ac91a1deeb259017e8b06bbd37bc",
-                "sha1":  "160949ecb4527bb2df6a35977993af1760270629",
+                "sizeBytes":  64231415,
+                "sha256":  "512a460f7b32d43cb08879fbb5f0608482a27552ddf2f1f8c81683030e215ee8",
+                "sha1":  "c53526ff53a3ec5a11228dace6ef0ce124370eca",
                 "abi":  "arm64-v8a",
-                "generatedAt":  "2026-09-30",
+                "generatedAt":  "2026-10-02",
                 "verification":  "jarsigner -verify 退出码 0；签名算法 SHA256withRSA，证书 SHA-256 ede51c40…a4c5e（与候选 APK 同一证书）；本机无 bundletool，未做 AAB→APK 拆分校验",
                 "storeUploadVerified":  false
             },
@@ -115,19 +115,20 @@
                     }
                 ],
     "verification":  {
-                         "command":  "./gradlew :app:testReleaseUnitTest :app:bundleRelease --offline",
+                         "command":  "./gradlew :app:testDebugUnitTest :app:testReleaseUnitTest :app:lintDebug :app:assembleRelease :app:bundleRelease --offline",
                          "result":  "PASS",
-                         "unitTests":  "Debug 167 / Release 167，0 失败",
-                         "connectedTests":  "52 项完成，0 失败，3 项设计内跳过",
-                         "lint":  "0 错误、131 警告",
-                         "redactionScan":  "qa/release/log_redaction_scan.py，315 个文件 0 命中",
-                         "aab":  "bundleRelease 产出 64,225,674 字节；jarsigner -verify 退出码 0",
+                         "unitTests":  "Debug 172 / Release 172，0 失败",
+                         "connectedTests":  "本轮改动（下载保活）以设备侧走查覆盖：后台 60 秒 + 锁屏持续传输、前台服务 dataSync 与部分唤醒锁状态、通知展示/点击跳转/结束清理，证据见 docs/ai-work-log.md 的 OPT-9 记录；既有仪器化 52 项结论沿用 P4/P5，未重跑",
+                         "lint":  "0 错误、131 警告（与 2026-09-30 复核持平，无新增）",
+                         "redactionScan":  "qa/release/log_redaction_scan.py，314 个受跟踪文件 0 命中、退出码 0",
+                         "aab":  "bundleRelease 产出 64,231,415 字节；jarsigner -verify 退出码 0",
                          "apk":  "归档副本 SHA-256 复核一致；apksigner verify 退出码 0、证书指纹一致"
                      },
     "notes":  [
                   "模型权重不随包分发，经 HTTPS 从目录源下载；",
                   "候选包仅 arm64-v8a；",
                   "签名方案为 APK Signature Scheme v2（minSdk 26，无需 v1）；",
-                  "AAB 已产出并按「二进制不入库、哈希入清单」归档，未验证应用商店上传路径。"
+                  "AAB 已产出并按「二进制不入库、哈希入清单」归档，未验证应用商店上传路径；",
+                  "2026-10-02 重新构建：纳入下载保活（dataSync 前台服务 + 进度通知 + 部分唤醒锁），修复切后台约 10 秒后传输被冻结的问题；哈希与签名已同步更新。"
               ]
 }

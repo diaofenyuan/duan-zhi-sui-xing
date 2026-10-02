@@ -6,6 +6,7 @@ import com.example.localai.data.room.AppDatabase
 import com.example.localai.data.storage.ModelStorageManager
 import com.example.localai.feature.chat.ChatRepository
 import com.example.localai.feature.download.DownloadCoordinator
+import com.example.localai.feature.download.DownloadForegroundService
 import com.example.localai.feature.download.DownloadRepository
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -15,6 +16,7 @@ import okhttp3.OkHttpClient
 /** 应用级组合根：构建 Room/网络/存储/下载协调器并对外暴露唯一实例。 */
 class ServiceLocator private constructor(appContext: Context) {
 
+    private val appContext: Context = appContext.applicationContext
     private val downloadRepository: DownloadRepository
     private val downloadCoordinator: DownloadCoordinator
     private val downloadWorker: ExecutorService
@@ -44,7 +46,11 @@ class ServiceLocator private constructor(appContext: Context) {
         downloadRepository = DownloadRepository(
             database.downloadDao(), database.modelDao(), storage,
             catalogClient, downloadCoordinator)
-        downloadCoordinator.attachListener { downloadRepository.onCoordinatorChanged() }
+        downloadCoordinator.attachListener {
+            downloadRepository.onCoordinatorChanged()
+            // 任务快照已刷新，同步前台保活：有活动任务确保前台服务运行，任务清空则停止
+            DownloadForegroundService.sync(appContext)
+        }
         chatRepository = ChatRepository(database)
         libraryRepository = com.example.localai.feature.library.LibraryRepository(appContext, database)
     }

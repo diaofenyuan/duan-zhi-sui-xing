@@ -11,7 +11,7 @@
 - 最近完成：`P5` 候选包与软件门禁（`artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`）；此前 `P4` 主流程走查关闭、`MIGRATION-K5` Kotlin 全量迁移 DONE
 - 最近阻塞：`P6` 真机验收缺 arm64-v8a 真机（2026-09-30 复核：`adb devices -l`、`adb mdns services`、Windows PnP 探测均为 0 台；同日软件优化轮再次探测仍为 0 台，不再重复探测；解除条件见 `docs/device-baseline.md` 第 6 节）
 - 下一可执行阶段：`P6`（三档真机安装同一候选包，执行端到端与性能回归，记录 TTFT/TPS、峰值内存、温度与电量）
-- 进行中的软件优化轮：`OPT-1`…`OPT-8`（2026-09-30 起，与 `P6` 并行，不改变 `P6` 的 BLOCKED 状态）
+- 进行中的软件优化轮：`OPT-1`…`OPT-9`（2026-09-30 起，与 `P6` 并行，不改变 `P6` 的 BLOCKED 状态；`OPT-9` 为下载保活修复，2026-10-02）
 
 ## 记录规则
 
@@ -1266,3 +1266,32 @@
   - 结果：`PASS`；除本日志历史记录外无残留引用；工作树仅本轮预期的 3 处修改与 1 处删除。
 - 风险/阻塞：无。保留区边界（`data/room/`、`NativeSession`、`InferenceRequest`/`InferenceStats`）与原因已在 README 与构建基线中完整保留。
 - 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机（状态不变）。
+
+### 2026-10-02 | OPT-9 | DONE
+
+- 目标：修复模型下载在应用切后台/锁屏后中断的问题，补齐下载保活：`dataSync` 前台服务 + 常驻进度通知 + 传输期间部分唤醒锁；处理 Android 13+ 通知权限与 Android 15+ dataSync 超时。
+- 依赖：无（与 `P6` 并行，不改变其 BLOCKED 状态）；源码变更后候选包重建并同步哈希记录。
+- 复现（修复前，x86_64 模拟器，1.8 GB 模型真实下载）：
+  - 下载中按 HOME 后约 10 秒传输冻结（157,511,311 字节停滞 135 秒以上，全程无前台服务），回前台任务显示「失败 · 下载中断：Software caused connection abort」，停在 8%。证据 `qa/build/opt9-before.log`。
+- 实际修改：
+  - 新增 `feature/download/DownloadForegroundService.kt`：`dataSync` 前台服务，由任务快照驱动启停；进度通知（1 秒节流，单任务复用下载页状态文案）；传输期间持有 `PARTIAL_WAKE_LOCK`；`onTimeout`（API 34/35）到时暂停传输并退出前台。
+  - 新增 `feature/download/DownloadNotificationPlan.kt`：通知标题/正文/进度/节流签名的纯逻辑，多任务按字节加权聚合总进度。
+  - `AndroidManifest.xml`：`FOREGROUND_SERVICE`、`FOREGROUND_SERVICE_DATA_SYNC`、`WAKE_LOCK`、`POST_NOTIFICATIONS` 权限与 `foregroundServiceType="dataSync"` 服务声明（主进程，随最近任务移除不中止）。
+  - `data/ServiceLocator.kt`：下载协调器事件链在刷新任务快照后同步保活状态（有活动任务启动、清空停止）。
+  - `MainActivity.kt`：`onStart` 补一次保活同步（进程启动即恢复任务时后台启动前台服务受限）；通知点击经 action 直达下载页并消费一次。
+  - `feature/market/ModelDetailFragment.kt`、`feature/download/DownloadsFragment.kt`：发起下载/继续/重试时按需申请通知权限（拒绝不阻断下载，前台服务仍保活）。
+  - `res/values/strings.xml`：通知渠道与多任务文案 5 条。
+  - 归档同步：`artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`、`README.md` 更新重建后的候选包哈希与能力说明。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:testReleaseUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:bundleRelease --offline`
+  - 结果：`PASS`；单测 **Debug/Release 各 172 项 0 失败**（新增 5 项通知规划用例）；lint **0 错误、131 警告**（与基线持平，无新增）。
+  - 命令：`python qa/build/opt9_repro.py 150`（真实 1.8 GB 下载，HOME 60 秒后锁屏）
+  - 结果：`PASS`；后台与锁屏期间全速推进（每 5 秒 +32～52 MB，1.35 GB → 1.89 GB 并完成校验安装）；`dumpsys activity services` 显示 `isForeground=true foregroundId=1001 types=0x00000001`（dataSync），`dumpsys power` 显示 `PARTIAL_WAKE_LOCK 'localai:download'`；结束瞬间服务停止、通知移除（id=1001 计数 0）、唤醒锁释放（size=0）。证据 `qa/build/opt9-after.log`、`qa/e2e/opt9-notification.png`、`opt9-after-complete.png`。
+  - 命令：暂停/继续与通知点击走查（下载页与通知栏）
+  - 结果：`PASS`；暂停后服务、通知、唤醒锁全部回收（`qa/e2e/opt9-paused.png`），继续后恢复且字节持续增长；通知点击直达下载页（`qa/e2e/opt9-notification-tap.png`）；首次下载弹出通知权限对话框，允许后通知可见。
+  - 命令：`apksigner verify --print-certs`、`jarsigner -verify` + SHA-256 复核
+  - 结果：`PASS`；候选 APK 96,075,709 字节、SHA-256 `d631c28f…e54e`，AAB 64,231,415 字节、SHA-256 `512a460f…5ee8`；两个退出码 0，证书指纹不变。
+  - 命令：`python qa/release/log_redaction_scan.py`
+  - 结果：`PASS`；314 个受跟踪文件 0 命中、退出码 0。
+- 风险/阻塞：无。未覆盖：Android 15+ dataSync 6 小时超时的真实触发（需长时运行，按 `onTimeout` 暂停处理，未实测）；取消路径的服务回收与完成/暂停路径共用同一停止逻辑，未单独跑测。
+- 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机；本轮重建的候选包已包含保活修复，接入设备后按既有计划执行。

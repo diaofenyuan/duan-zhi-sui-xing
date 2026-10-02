@@ -19,6 +19,7 @@ import com.example.localai.core.device.DeviceProfiler
 import com.example.localai.core.inference.ApprovedModels
 import com.example.localai.feature.settings.InferencePolicy
 import com.example.localai.data.ServiceLocator
+import com.example.localai.feature.download.DownloadForegroundService
 import com.example.localai.feature.download.DownloadRepository
 import com.example.localai.model.ModelInfo
 import com.google.android.material.button.MaterialButton
@@ -208,6 +209,8 @@ class ModelDetailFragment : Fragment() {
                     Snackbar.make(view, "下载服务未就绪", Snackbar.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
+                // 长下载需要常驻进度通知；未授权时前台服务仍保活，只是通知不可见
+                DownloadForegroundService.ensureNotificationPermission(requireActivity())
                 repository.enqueue(item.modelId!!) { ok, message ->
                     if (!isAdded || view == null) {
                         return@enqueue

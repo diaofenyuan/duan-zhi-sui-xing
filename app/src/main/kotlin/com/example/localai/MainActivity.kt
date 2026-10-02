@@ -15,6 +15,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import com.example.localai.feature.chat.ChatFragment
 import com.example.localai.feature.diagnostics.DiagnosticsFragment
+import com.example.localai.feature.download.DownloadForegroundService
 import com.example.localai.feature.download.DownloadsFragment
 import com.example.localai.feature.market.MarketFragment
 import com.example.localai.feature.settings.SettingsFragment
@@ -101,6 +102,7 @@ class MainActivity : AppCompatActivity() {
             openTab(R.id.nav_chat)
             handleShare(intent)
         }
+        handleNavIntent(intent)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -114,10 +116,27 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    override fun onStart() {
+        super.onStart()
+        // 进程启动即恢复下载任务时，后台启动前台服务可能受限；回到前台后补一次保活同步
+        DownloadForegroundService.sync(this)
+    }
+
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleShare(intent)
+        handleNavIntent(intent)
+    }
+
+    /** 下载通知点击入口：直接切到下载页。 */
+    private fun handleNavIntent(intent: android.content.Intent?) {
+        if (intent?.action != DownloadForegroundService.ACTION_OPEN_DOWNLOADS) {
+            return
+        }
+        // 消费一次；恢复界面时不重复跳转
+        setIntent(android.content.Intent(this, MainActivity::class.java))
+        openTab(R.id.nav_download)
     }
 
     private fun handleShare(shared: android.content.Intent?) {

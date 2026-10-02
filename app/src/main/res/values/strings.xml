@@ -109,6 +109,13 @@
     <string name="dialog_delete_model_ok">删除</string>
     <string name="installed_meta_fmt">%1$s · 安装于 %2$s</string>
 
+    <!-- 下载通知（前台服务保活） -->
+    <string name="dl_notif_channel">模型下载</string>
+    <string name="dl_notif_channel_desc">下载期间显示进度与速度，切到后台或锁屏不会中断</string>
+    <string name="dl_notif_multi_title_fmt">正在下载 %d 个模型</string>
+    <string name="dl_notif_multi_text_fmt">总进度 %d%%</string>
+    <string name="dl_notif_preparing">正在准备下载…</string>
+
     <!-- 聊天 -->
     <string name="chat_input_hint">输入消息…</string>
     <string name="chat_empty_title">有什么想聊的？</string>

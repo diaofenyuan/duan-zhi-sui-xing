@@ -3,6 +3,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 下载保活：dataSync 前台服务 + 传输期间 CPU 唤醒锁 + Android 13+ 进度通知 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".App"
@@ -32,6 +37,13 @@
                 <data android:mimeType="application/pdf" />
             </intent-filter>
         </activity>
+
+        <!-- 下载保活：模型下载/校验/安装期间保持前台，避免应用进入后台后传输被冻结或回收。
+             与下载协调器同属主进程；用户上滑移除最近任务不中止服务（stopWithTask 默认 false）。 -->
+        <service
+            android:name=".feature.download.DownloadForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- P3：独立推理进程。Native/llama.cpp 只在本进程加载；
              本进程不包含任何网络代码路径，不访问业务数据库。 -->
