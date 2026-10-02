@@ -11,7 +11,7 @@
 - 最近完成：`P5` 候选包与软件门禁（`artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`）；此前 `P4` 主流程走查关闭、`MIGRATION-K5` Kotlin 全量迁移 DONE
 - 最近阻塞：`P6` 真机验收缺 arm64-v8a 真机（2026-09-30 复核：`adb devices -l`、`adb mdns services`、Windows PnP 探测均为 0 台；同日软件优化轮再次探测仍为 0 台，不再重复探测；解除条件见 `docs/device-baseline.md` 第 6 节）
 - 下一可执行阶段：`P6`（三档真机安装同一候选包，执行端到端与性能回归，记录 TTFT/TPS、峰值内存、温度与电量）
-- 进行中的软件优化轮：`OPT-1`…`OPT-10`（2026-09-30 起，与 `P6` 并行，不改变 `P6` 的 BLOCKED 状态；`OPT-10` 为悬浮输入法导致底栏被隐藏的修复，2026-10-02）
+- 进行中的软件优化轮：`OPT-1`…`OPT-11`（2026-09-30 起，与 `P6` 并行，不改变 `P6` 的 BLOCKED 状态；`OPT-11` 为冷启动键盘/返回键导航/错误文案三项体验修复，2026-10-02）
 
 ## 记录规则
 
@@ -1308,3 +1308,29 @@
   - 结果：`PASS`；悬浮输入法工具条显示期间（`mInputShown=true`）`bottom_nav`、`nav_divider` 保持可见、容器恢复 `[0,63][1080,2124]`，可从聊天页切回其他 Tab；收起输入法后状态不变。
 - 风险/阻塞：无。未覆盖：实体软键盘弹出时仍需隐藏底栏的行为（该分支条件未变，dock 键盘占位高度必然大于 0）。
 - 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机。
+
+### 2026-10-02 18:10 | OPT-11 | DONE
+
+- 目标：修复软件走查发现的 3 处体验问题——冷启动键盘自动弹出遮挡空态引导、非首 Tab 按系统返回键直接退出应用、聊天错误气泡附带对用户无意义的原始错误码。
+- 依赖：无（与 `P6` 并行，不改变其 BLOCKED 状态）。
+- 复现（修复前，x86_64 模拟器）：
+  - `am force-stop` 后冷启动，`dumpsys input_method` 报 `mInputShown=true`：输入框在窗口首帧抢得焦点并弹出停靠键盘，空态引导与底栏被遮挡。
+  - 在「模型/下载/设置」任一 Tab 按返回键，`topResumedActivity` 直接变为 Launcher：浏览途中误触返回即整应用退出。
+  - 单条消息超出上下文预算（ERR_INPUT_TOO_LONG）时，错误气泡显示「生成失败：…（1104）」，原始码对用户无意义且随会话持久化。
+- 实际修改：
+  - `MainActivity.kt`：`onCreate` 设置窗口 `SOFT_INPUT_STATE_ALWAYS_HIDDEN`（仅约束窗口获得焦点时的自动弹出，点击输入框仍正常弹出）；`OnBackPressedCallback` 在返回栈为空且当前 Tab 非默认对话页时改为 `openTab(nav_chat)`，对话页本身保持退出行为。
+  - `ChatFragment.kt`：错误气泡去掉 `（code）` 后缀——已知错误文案已含「原因 + 下一步」，未知错误文案内含 code，原始码不再重复展示。
+  - 尝试过 `fragment_chat.xml` 根布局 `focusableInTouchMode` 方案，实测无法阻止输入框抢焦点（`dumpsys activity top` 仍报输入框 `PFLAG_FOCUSED`），已回退，不留无效改动。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`；单测 172 项 0 失败；lint 0 错误、131 警告（与基线持平，无新增）。
+  - 命令：`./gradlew :app:connectedDebugAndroidTest --offline`（同一次调用内：`StandaloneModelInstrumentedTest`（allowModelDownload）+ `ChatFragmentInstrumentedTest` + `ChatScrollInstrumentedTest` + `ChatStorageFailureInstrumentedTest`；另一调用单独跑 `ChatInputInstrumentedTest`）
+  - 结果：`PASS`；13 + 2 项全部通过。`StandaloneModelInstrumentedTest` 重下 0.5B 模型 fixture 并完成中文生成验收（53 秒）。
+  - 冷启动走查：force-stop → 冷启动后 `mInputShown=false`，底栏与空态引导完整可见（`qa/e2e/opt11-coldstart.png`）；点击输入框键盘正常弹出。
+  - 返回键走查：「模型/下载/设置」按返回均回到对话页且应用存活（`qa/e2e/opt11-back-from-market.png`）；对话页按返回 `topResumedActivity` 变为 Launcher（退出行为不变）。
+  - 错误气泡走查：上下文设 512 后发送超预算消息，气泡显示「生成失败：问题超出模型上下文，请缩短或分段发送；原文已保留」，无原始码（`qa/e2e/opt11-error-bubble.png`），输入框原文恢复。
+  - 排障记录：中途 instrumented 测试出现批量失败，A/B 复核（同一环境先跑基线代码再跑改动代码）确认由模拟器输入法残留状态导致（OPT-10 轮遗留的悬浮键盘工具条 + Gboard 重置后的手写笔引导弹窗拦截合成触摸），非本轮改动引入；模拟器重启后干净环境全绿。`pm clear` Gboard 与禁用/启用 `com.google.android.as` 仅影响模拟器环境，与应用无关。
+  - 命令：`python qa/release/log_redaction_scan.py`
+  - 结果：`PASS`；317 个受跟踪文件 0 命中、退出码 0。
+- 风险/阻塞：无。未覆盖：`SOFT_INPUT_STATE_ALWAYS_HIDDEN` 在三档真机上的厂商输入法兼容性（依赖 `P6` 真机验收覆盖）。
+- 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机；模拟器应用数据已被 instrumented 测试轮换清空，下次走查需先重装模型 fixture。

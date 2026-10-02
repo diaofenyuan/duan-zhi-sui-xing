@@ -82,6 +82,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        // 打开应用不自动弹键盘：状态栏位只约束窗口获得焦点时的自动弹出，
+        // 点击输入框仍会正常弹出；空态引导与底栏不再被首帧键盘遮挡。
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
         bottomNav = findViewById(R.id.bottom_nav)
         // 输入时把空间留给内容；保留系统边距的原有分发，避免状态栏或键盘遮挡。
@@ -113,7 +116,10 @@ class MainActivity : AppCompatActivity() {
                 if (fm.backStackEntryCount > 0) {
                     fm.popBackStack()
                 } else {
-                    finish()
+                    // 二级 Tab 的返回应先回到默认的对话页，而不是整个退出应用；
+                    // 对话页本身的返回保持原有退出行为。
+                    val tab = currentTabId(topStackFragment())
+                    if (tab != 0 && tab != R.id.nav_chat) openTab(R.id.nav_chat) else finish()
                 }
             }
         })

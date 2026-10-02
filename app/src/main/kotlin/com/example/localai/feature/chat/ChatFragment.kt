@@ -641,7 +641,8 @@ class ChatFragment : Fragment(), ChatEngine.StreamListener {
             adapter.notifyItemRemoved(botPosition)
         }
         adapter.items().add(ChatMessage(ChatMessage.ROLE_BOT,
-            "生成失败：" + message + "（" + code + "）"))
+            // 已知错误的消息本身已带「原因 + 下一步」；未知错误的文案内含 code，无需重复展示原始码。
+            "生成失败：" + message))
         adapter.notifyItemInserted(adapter.itemCount - 1)
         scrollToBottom()
         streamingBot = null
