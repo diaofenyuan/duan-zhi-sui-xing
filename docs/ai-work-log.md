@@ -11,7 +11,7 @@
 - 最近完成：`P5` 候选包与软件门禁（`artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`）；此前 `P4` 主流程走查关闭、`MIGRATION-K5` Kotlin 全量迁移 DONE
 - 最近阻塞：`P6` 真机验收缺 arm64-v8a 真机（2026-09-30 复核：`adb devices -l`、`adb mdns services`、Windows PnP 探测均为 0 台；同日软件优化轮再次探测仍为 0 台，不再重复探测；解除条件见 `docs/device-baseline.md` 第 6 节）
 - 下一可执行阶段：`P6`（三档真机安装同一候选包，执行端到端与性能回归，记录 TTFT/TPS、峰值内存、温度与电量）
-- 进行中的软件优化轮：`OPT-1`…`OPT-9`（2026-09-30 起，与 `P6` 并行，不改变 `P6` 的 BLOCKED 状态；`OPT-9` 为下载保活修复，2026-10-02）
+- 进行中的软件优化轮：`OPT-1`…`OPT-10`（2026-09-30 起，与 `P6` 并行，不改变 `P6` 的 BLOCKED 状态；`OPT-10` 为悬浮输入法导致底栏被隐藏的修复，2026-10-02）
 
 ## 记录规则
 
@@ -1295,3 +1295,16 @@
   - 结果：`PASS`；314 个受跟踪文件 0 命中、退出码 0。
 - 风险/阻塞：无。未覆盖：Android 15+ dataSync 6 小时超时的真实触发（需长时运行，按 `onTimeout` 暂停处理，未实测）；取消路径的服务回收与完成/暂停路径共用同一停止逻辑，未单独跑测。
 - 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机；本轮重建的候选包已包含保活修复，接入设备后按既有计划执行。
+
+### 2026-10-02 16:51 | OPT-10 | DONE
+
+- 目标：修复悬浮输入法状态下底部导航被永久隐藏、聊天页没有任何出口的问题（用户报告“进入模型聊天界面没有退出按钮”）。
+- 依赖：无（与 `P6` 并行，不改变其 BLOCKED 状态）。
+- 复现（修复前，x86_64 模拟器）：Gboard 悬浮键盘折叠为工具条时 `dumpsys input_method` 报 `mInputShown=true`，但键盘实际不占高度（`adjustResize` 未缩放，聊天容器仍为 `[0,63][1080,2337]`），`insets.isVisible(IME)` 恒为真 → `bottom_nav`/`nav_divider` 被置 `GONE`；此时 `uiautomator dump` 无 `bottom_nav` 节点，聊天页只剩系统返回键（无返回栈时直接 `finish()` 退出应用）。
+- 实际修改：
+  - `MainActivity.kt`：底栏隐藏条件由 `insets.isVisible(IME)` 改为按实际占位高度 `insets.getInsets(IME).bottom > 0`，悬浮输入法不再被误判为键盘弹出。
+- 验证：
+  - 命令：`./gradlew :app:assembleDebug` + 模拟器安装后走查（`adb shell dumpsys input_method`、`adb shell uiautomator dump`）
+  - 结果：`PASS`；悬浮输入法工具条显示期间（`mInputShown=true`）`bottom_nav`、`nav_divider` 保持可见、容器恢复 `[0,63][1080,2124]`，可从聊天页切回其他 Tab；收起输入法后状态不变。
+- 风险/阻塞：无。未覆盖：实体软键盘弹出时仍需隐藏底栏的行为（该分支条件未变，dock 键盘占位高度必然大于 0）。
+- 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机。

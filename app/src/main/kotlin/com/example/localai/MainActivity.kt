@@ -86,7 +86,10 @@ class MainActivity : AppCompatActivity() {
         bottomNav = findViewById(R.id.bottom_nav)
         // 输入时把空间留给内容；保留系统边距的原有分发，避免状态栏或键盘遮挡。
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { _, insets ->
-            val visibility = if (insets.isVisible(WindowInsetsCompat.Type.ime())) View.GONE else View.VISIBLE
+            // 悬浮输入法（如悬浮键盘折叠成的工具条）会被系统标记为可见但不占高度，
+            // 只判断可见性会永久隐藏底栏，页面就失去返回其他 Tab 的唯一入口，故按实际占位高度判断。
+            val keyboardHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            val visibility = if (keyboardHeight > 0) View.GONE else View.VISIBLE
             bottomNav.visibility = visibility
             findViewById<View>(R.id.nav_divider).visibility = visibility
             insets
