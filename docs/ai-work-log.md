@@ -11,7 +11,7 @@
 - 最近完成：`P5` 候选包与软件门禁（`artifacts/manifest.json`、`docs/gates/g5-software-acceptance.md`、`docs/release/candidate-0.3.0.md`）；此前 `P4` 主流程走查关闭、`MIGRATION-K5` Kotlin 全量迁移 DONE
 - 最近阻塞：`P6` 真机验收缺 arm64-v8a 真机（2026-09-30 复核：`adb devices -l`、`adb mdns services`、Windows PnP 探测均为 0 台；同日软件优化轮再次探测仍为 0 台，不再重复探测；解除条件见 `docs/device-baseline.md` 第 6 节）
 - 下一可执行阶段：`P6`（三档真机安装同一候选包，执行端到端与性能回归，记录 TTFT/TPS、峰值内存、温度与电量）
-- 进行中的软件优化轮：`OPT-1`…`OPT-11`（2026-09-30 起，与 `P6` 并行，不改变 `P6` 的 BLOCKED 状态；`OPT-11` 为冷启动键盘/返回键导航/错误文案三项体验修复，2026-10-02）
+- 进行中的软件优化轮：`OPT-1`…`OPT-12`（2026-09-30 起，与 `P6` 并行，不改变 `P6` 的 BLOCKED 状态；`OPT-12` 为详情页主操作固定底栏与下载状态感知，2026-10-02）
 
 ## 记录规则
 
@@ -1334,3 +1334,23 @@
   - 结果：`PASS`；317 个受跟踪文件 0 命中、退出码 0。
 - 风险/阻塞：无。未覆盖：`SOFT_INPUT_STATE_ALWAYS_HIDDEN` 在三档真机上的厂商输入法兼容性（依赖 `P6` 真机验收覆盖）。
 - 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机；模拟器应用数据已被 instrumented 测试轮换清空，下次走查需先重装模型 fixture。
+
+### 2026-10-02 18:55 | OPT-12 | DONE
+
+- 目标：修复模型详情页两处体验问题——主操作按钮埋在页面最底部（首屏不可见，首用转化路径断裂）；已有下载任务时按钮仍显示可点的「下载（469 MB）」，可重复发起且无进度提示。
+- 依赖：无（与 `P6` 并行，不改变其 BLOCKED 状态）。
+- 复现（修复前，x86_64 模拟器，无已安装模型的全新首用路径）：进入模型详情页，首屏只有模型信息与适配结论，「下载（469 MB）」位于示例指令之后需滚动两屏才能看到；发起下载后按钮不变，任务进行中仍可再次点击。
+- 实际修改：
+  - `res/layout/fragment_model_detail.xml`：根布局改为 `LinearLayout`，滚动区（原 ScrollView）占 `weight=1`，`btn_action`/`btn_note` 移入滚动区外固定底栏（`colorSurface` 背景 + 8dp elevation），任何滚动位置主操作都可见。
+  - `feature/market/ModelDetailFragment.kt`：`bind()` 增加任务状态分支——从 `repository.tasks()` 查本模型任务：`PAUSED` 显示「继续下载（大小）」并接 `resume()`；`FAILED` 显示「重试下载（大小）」并接 `retry()`；`QUEUED/VERIFYING/INSTALLING` 显示对应状态并禁点；`DOWNLOADING` 显示「下载中 · N%」（按 `bytesDownloaded/totalBytes` 计算）并禁点；暂停/重试点击前照例请求通知权限。已安装/不支持的分支逻辑不变。
+  - `res/values/strings.xml`：新增 5 条（`btn_resume_fmt`、`btn_retry_fmt`、`detail_downloading_fmt`、`detail_note_active`、`detail_note_failed`），状态文案复用既有 `dl_state_*`，与下载页口径一致。
+- 验证：
+  - 命令：`./gradlew :app:testDebugUnitTest :app:lintDebug --offline --console=plain`
+  - 结果：`PASS`；单测 172 项 0 失败；lint 0 错误、131 警告（与基线持平，无新增）。
+  - 命令：`./gradlew :app:connectedDebugAndroidTest --offline`（同一调用：`StandaloneModelInstrumentedTest` + `DownloadDeviceInstrumentedTest` + `ChatInputInstrumentedTest`，`allowModelDownload=true`）
+  - 结果：`PASS`；5 项全部通过（fixture 下载 + 下载中断/恢复 + 输入/键盘回归）。
+  - 走查（模拟器，明暗两种模式）：已安装态底栏常驻「开始对话」（暗色 `qa/build/opt12/verify-installed-cta.png`）；未安装态首屏即见「下载（469 MB）」（浅色证据 `qa/e2e/opt12-detail-pinned-cta.png`）；点击后变「下载中 · 0%」禁点 +「进行中 · 进度可在下载页查看」（`qa/e2e/opt12-detail-downloading.png`）；在下载页暂停后详情页变「继续下载（469 MB）」（`qa/e2e/opt12-detail-paused.png`），点击恢复并完成安装后自动翻回「开始对话」。模拟器下载速率快（469 MB 约 10 秒），「下载中」百分比仅见到 0% 与完成两态；`FAILED` 态与已验证状态走同一绑定路径（同一 `bind()` 分支树），未单独构造。
+  - 命令：`python qa/release/log_redaction_scan.py`
+  - 结果：`PASS`；317 个受跟踪文件 0 命中、退出码 0。
+- 风险/阻塞：无。未覆盖：三档真机上固定底栏在小屏（<360dp）下的布局（模拟器 1080x2400 已验证明暗两态）；`FAILED` 态按钮未单独实测。
+- 下一阶段依赖：`P6` 真机验收仍缺 arm64-v8a 真机；模拟器应用数据被 instrumented 测试轮换清空，下次走查需先重装模型 fixture（`StandaloneModelInstrumentedTest` 可自动完成）。

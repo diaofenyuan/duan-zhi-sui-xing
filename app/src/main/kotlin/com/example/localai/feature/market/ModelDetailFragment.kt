@@ -17,6 +17,7 @@ import com.example.localai.common.ModelDisplay
 import com.example.localai.core.compatibility.CompatibilityEngine
 import com.example.localai.core.device.DeviceProfiler
 import com.example.localai.core.inference.ApprovedModels
+import com.example.localai.data.room.DownloadState
 import com.example.localai.feature.settings.InferencePolicy
 import com.example.localai.data.ServiceLocator
 import com.example.localai.feature.download.DownloadForegroundService
@@ -180,11 +181,15 @@ class ModelDetailFragment : Fragment() {
         view.findViewById<View>(R.id.sample_2).setOnClickListener(toChat)
         view.findViewById<View>(R.id.sample_3).setOnClickListener(toChat)
 
-        // 主操作按钮
+        // 主操作按钮（固定底栏）；已有下载任务时按任务状态切换，进行中不再显示可点的「下载」
         val note = view.findViewById<TextView>(R.id.btn_note)
         val action = view.findViewById<MaterialButton>(R.id.btn_action)
         action.isEnabled = true
         action.alpha = 1f
+        val sizeText = MarketModels.sizeLabel(item.sizeBytes)
+        val activeTask = ServiceLocator.downloads()?.tasks()?.firstOrNull {
+            it.entity.modelId == item.modelId && it.entity.version == item.version
+        }?.entity
         if (item.installed) {
             action.setText(R.string.btn_open_chat)
             note.text = if (item.isApproved())
@@ -195,13 +200,44 @@ class ModelDetailFragment : Fragment() {
                     (activity as MainActivity).openChatWithModel(item.modelId!!)
                 }
             }
+        } else if (activeTask != null && DownloadState.PAUSED == activeTask.state) {
+            action.text = getString(R.string.btn_resume_fmt, sizeText)
+            note.setText(R.string.download_note_fmt)
+            action.setOnClickListener {
+                // 恢复长下载同样需要常驻进度通知；未授权时前台服务仍保活，只是通知不可见
+                DownloadForegroundService.ensureNotificationPermission(requireActivity())
+                ServiceLocator.downloads()?.resume(activeTask.taskId)
+            }
+        } else if (activeTask != null && DownloadState.FAILED == activeTask.state) {
+            action.text = getString(R.string.btn_retry_fmt, sizeText)
+            note.setText(R.string.detail_note_failed)
+            action.setOnClickListener {
+                DownloadForegroundService.ensureNotificationPermission(requireActivity())
+                ServiceLocator.downloads()?.retry(activeTask.taskId)
+            }
+        } else if (activeTask != null && DownloadState.isRecoverable(activeTask.state)) {
+            // 等待/下载/校验/安装中：进行中禁点，避免重复发起同一模型下载
+            action.isEnabled = false
+            action.alpha = 0.5f
+            action.text = when (activeTask.state) {
+                DownloadState.QUEUED -> getString(R.string.dl_state_queued)
+                DownloadState.VERIFYING -> getString(R.string.dl_state_verifying)
+                DownloadState.INSTALLING -> getString(R.string.dl_state_installing)
+                else -> {
+                    val total = if (activeTask.totalBytes > 0) activeTask.totalBytes else item.sizeBytes
+                    val percent = if (total > 0)
+                        ((activeTask.bytesDownloaded * 100) / total).toInt().coerceIn(0, 100) else 0
+                    getString(R.string.detail_downloading_fmt, percent)
+                }
+            }
+            note.setText(R.string.detail_note_active)
         } else if (result.isUnsupported()) {
             action.setText(R.string.btn_unsupported)
             action.isEnabled = false
             action.alpha = 0.5f
             note.text = reason
         } else {
-            action.text = getString(R.string.btn_download_fmt, MarketModels.sizeLabel(item.sizeBytes))
+            action.text = getString(R.string.btn_download_fmt, sizeText)
             note.setText(R.string.download_note_fmt)
             action.setOnClickListener {
                 val repository = ServiceLocator.downloads()

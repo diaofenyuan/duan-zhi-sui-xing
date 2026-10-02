@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:scrollbars="none">
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="28dp">
+        android:paddingBottom="16dp">
 
         <!-- 顶栏 -->
         <LinearLayout
@@ -347,15 +353,27 @@
                 android:text="@string/sample_prompt_poem" />
         </com.google.android.material.chip.ChipGroup>
 
-        <!-- 底部操作 -->
+        <!-- 底部操作：主 CTA 固定在滚动区之外，任何位置都能一键下载 / 开始对话 -->
+    </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="?attr/colorSurface"
+        android:elevation="8dp"
+        android:outlineProvider="bounds"
+        android:paddingStart="@dimen/pad_screen"
+        android:paddingEnd="@dimen/pad_screen"
+        android:paddingTop="10dp"
+        android:paddingBottom="12dp">
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_action"
             style="@style/Widget.App.Button"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:layout_marginStart="@dimen/pad_screen"
-            android:layout_marginEnd="@dimen/pad_screen"
-            android:layout_marginTop="@dimen/gap_xl"
             android:textSize="15sp" />
 
         <TextView
@@ -366,4 +384,4 @@
             android:gravity="center"
             android:layout_marginTop="@dimen/gap_sm" />
     </LinearLayout>
-</ScrollView>
+</LinearLayout>

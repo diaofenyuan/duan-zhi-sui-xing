@@ -75,6 +75,11 @@
     <string name="btn_open_chat">开始对话</string>
     <string name="btn_unsupported">当前设备不支持</string>
     <string name="download_note_fmt">下载完成后可离线使用，文件将自动校验。</string>
+    <string name="btn_resume_fmt">继续下载（%s）</string>
+    <string name="btn_retry_fmt">重试下载（%s）</string>
+    <string name="detail_downloading_fmt">下载中 · %1$d%%</string>
+    <string name="detail_note_active">进行中 · 进度可在下载页查看</string>
+    <string name="detail_note_failed">上次下载未完成</string>
 
     <!-- 下载管理 -->
     <string name="dl_title">下载</string>
